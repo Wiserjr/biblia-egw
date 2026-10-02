@@ -32,7 +32,16 @@ function Sincronizar-Main {
             "`nGuarde com 'git stash' (ou desfaca) e rode de novo.")
     }
 
-    $json = & $gh pr list --repo $repo --state open --base main --json 'number,title,isDraft'
+    # O gh responde em UTF-8; sem isto, os acentos dos titulos saem trocados
+    # no Windows PowerShell 5.1.
+    # (Sem console de verdade, trocar a codificacao falha; ai fica como esta.)
+    $codificacao = [Console]::OutputEncoding
+    try { [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false } catch { }
+    try {
+        $json = & $gh pr list --repo $repo --state open --base main --json 'number,title,isDraft'
+    } finally {
+        try { [Console]::OutputEncoding = $codificacao } catch { }
+    }
     if ($LASTEXITCODE -ne 0) { throw 'Nao consegui listar os PRs abertos (gh pr list).' }
     # No PowerShell 5.1 o ConvertFrom-Json entrega a lista inteira como um
     # objeto so; no 7, item a item (e nada para "[]"). Assim funciona nos dois.
