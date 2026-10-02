@@ -39,8 +39,11 @@ class TelaPdf extends StatefulWidget {
 
 class _TelaPdfState extends State<TelaPdf> {
   final _controle = PdfViewerController();
-  late final PdfTextSearcher _busca = PdfTextSearcher(_controle)
-    ..addListener(_atualizar);
+
+  /// A busca no livro. Só pode ser criada depois que o livro carregou: o
+  /// PdfTextSearcher lê o documento do controle já no construtor, e criá-lo
+  /// antes deixava a tela cinza.
+  PdfTextSearcher? _busca;
   final _campoBusca = TextEditingController();
   bool _procurando = false;
   late final Future<String> _caminho = Biblioteca.instancia
@@ -72,8 +75,8 @@ class _TelaPdfState extends State<TelaPdf> {
   void dispose() {
     Ajustes.instancia.removeListener(_realcesMudaram);
     if (LeituraVoz.instancia.falandoTrecho) LeituraVoz.instancia.parar();
-    _busca.removeListener(_atualizar);
-    _busca.dispose();
+    _busca?.removeListener(_atualizar);
+    _busca?.dispose();
     _campoBusca.dispose();
     super.dispose();
   }
@@ -355,27 +358,44 @@ class _TelaPdfState extends State<TelaPdf> {
 
   // --- busca no livro ---
 
+  void _livroPronto(PdfDocument documento, PdfViewerController controle) {
+    final busca = _busca ??= PdfTextSearcher(controle)..addListener(_atualizar);
+    final d = widget.destaque;
+    if (d != null && d.isNotEmpty && !_procurando) {
+      busca.startTextSearch(d, goToFirstMatch: false);
+    }
+    _atualizar();
+  }
+
+  void _pintarBusca(ui.Canvas canvas, Rect pageRect, PdfPage page) =>
+      _busca?.pageTextMatchPaintCallback(canvas, pageRect, page);
+
+  void _procurar(String texto, {bool jaVai = false}) =>
+      _busca?.startTextSearch(texto, searchImmediately: jaVai);
+
   void _abrirBusca([String? texto]) {
     final t = (texto ?? '').replaceAll(RegExp(r'\s+'), ' ').trim();
     setState(() => _procurando = true);
     if (t.isNotEmpty) {
       _campoBusca.text = t.length > 80 ? t.substring(0, 80) : t;
-      _busca.startTextSearch(_campoBusca.text, searchImmediately: true);
+      _procurar(_campoBusca.text, jaVai: true);
     }
   }
 
   void _fecharBusca() {
     setState(() => _procurando = false);
     _campoBusca.clear();
-    _busca.resetTextSearch();
+    _busca?.resetTextSearch();
   }
 
   String get _contagem {
-    if (_busca.isSearching && !_busca.hasMatches) return '…';
-    final i = _busca.currentIndex;
-    final n = _busca.matches.length;
+    final busca = _busca;
+    if (busca == null) return '';
+    if (busca.isSearching && !busca.hasMatches) return '…';
+    final i = busca.currentIndex;
+    final n = busca.matches.length;
     if (n == 0) return _campoBusca.text.isEmpty ? '' : '0';
-    return '${(i ?? 0) + 1}/$n${_busca.isSearching ? '…' : ''}';
+    return '${(i ?? 0) + 1}/$n${busca.isSearching ? '…' : ''}';
   }
 
   PreferredSizeWidget _barra() {
@@ -386,7 +406,7 @@ class _TelaPdfState extends State<TelaPdf> {
           IconButton(
             tooltip: 'Procurar no livro',
             icon: const Icon(Icons.search),
-            onPressed: _abrirBusca,
+            onPressed: _busca == null ? null : _abrirBusca,
           ),
         ],
       );
@@ -405,25 +425,31 @@ class _TelaPdfState extends State<TelaPdf> {
           hintText: 'Procurar no livro',
           border: InputBorder.none,
         ),
-        onChanged: (t) => _busca.startTextSearch(t.trim()),
-        onSubmitted: (t) =>
-            _busca.startTextSearch(t.trim(), searchImmediately: true),
+        onChanged: (t) => _procurar(t.trim()),
+        onSubmitted: (t) => _procurar(t.trim(), jaVai: true),
       ),
       actions: [
         Center(child: Text(_contagem)),
         IconButton(
           tooltip: 'Anterior',
           icon: const Icon(Icons.keyboard_arrow_up),
-          onPressed: _busca.hasMatches ? _busca.goToPrevMatch : null,
+          onPressed: _busca?.hasMatches == true ? _busca!.goToPrevMatch : null,
         ),
         IconButton(
           tooltip: 'Próximo',
           icon: const Icon(Icons.keyboard_arrow_down),
-          onPressed: _busca.hasMatches ? _busca.goToNextMatch : null,
+          onPressed: _busca?.hasMatches == true ? _busca!.goToNextMatch : null,
         ),
       ],
     );
   }
+
+  /// Os mesmos parâmetros a cada desenho, para o leitor não achar que mudaram.
+  late final _parametros = PdfViewerParams(
+    pagePaintCallbacks: [_pintarRealces, _pintarBusca],
+    customizeContextMenuItems: _itensDoMenu,
+    onViewerReady: _livroPronto,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -462,19 +488,7 @@ class _TelaPdfState extends State<TelaPdf> {
             caminho,
             controller: _controle,
             initialPageNumber: widget.pagina + 1,
-            params: PdfViewerParams(
-              pagePaintCallbacks: [
-                _pintarRealces,
-                _busca.pageTextMatchPaintCallback,
-              ],
-              customizeContextMenuItems: _itensDoMenu,
-              onViewerReady: (document, controller) {
-                final d = widget.destaque;
-                if (d != null && d.isNotEmpty) {
-                  _busca.startTextSearch(d, goToFirstMatch: false);
-                }
-              },
-            ),
+            params: _parametros,
           );
         },
       ),
