@@ -9,7 +9,7 @@
 #     & "C:\Program Files\GitHub CLI\gh.exe" auth login
 #     Visual Studio com "Desenvolvimento para desktop com C++" (build Windows)
 #
-# Depois, dentro da pasta biblia\:
+# Depois, na raiz deste repositorio:
 #     powershell -ExecutionPolicy Bypass -File publicar.ps1
 #
 # Opcoes:
@@ -18,10 +18,8 @@
 #     -SoAndroid     nao compila nem publica o Windows
 #
 # ATUALIZACAO AUTOMATICA (lib/dados/atualizacao.dart):
-#   - Este app mora no MESMO repositorio do Louvor JA. A release "latest" e
-#     do Louvor JA (os apps dele procuram o manifesto la), entao as releases
-#     da Biblia sao criadas com --latest=false, e o manifesto vai para uma
-#     release fixa, "biblia-atual", que este script regrava a cada versao.
+#   - O manifesto vai para uma release fixa, "biblia-atual", que este script
+#     regrava a cada versao (por ultimo, depois dos instaladores).
 #   - Os apps instalados consultam
 #       releases/download/biblia-atual/atualizacao-br.com.wisejr.bibliaestudo.json
 #   - Suba o numero depois do + a cada release: e ele que os apps comparam, e
@@ -41,14 +39,14 @@ $flutter = Join-Path $env:USERPROFILE 'flutter\bin\flutter.bat'
 $apk = 'build\app\outputs\flutter-apk'
 $windows = 'build\windows\x64\runner\Release'
 $saida = 'build\publicar'
-$repo = 'Wiserjr/louvorja'
+$repo = 'Wiserjr/biblia-egw'
 $id = 'br.com.wisejr.bibliaestudo'
 $canal = 'biblia-atual'
 $prefixo = 'biblia'
 $abis = @('arm64-v8a', 'armeabi-v7a', 'x86_64')
 
 if (-not (Test-Path $gh)) { throw "gh nao encontrado em $gh" }
-if (-not (Test-Path 'pubspec.yaml')) { throw 'Rode dentro da pasta biblia (pubspec.yaml nao encontrado).' }
+if (-not (Test-Path 'pubspec.yaml')) { throw 'Rode na raiz do repositorio (pubspec.yaml nao encontrado).' }
 
 # --- versao ---
 $linha = Select-String -Path 'pubspec.yaml' -Pattern '^version:\s*(.+)$' | Select-Object -First 1
@@ -166,12 +164,11 @@ git push origin main
 if ($LASTEXITCODE -ne 0) { throw 'git push falhou.' }
 
 # --- release da versao ---
-# --latest=false: a "latest" do repositorio e do Louvor JA.
 $notas = 'NOTAS_DA_VERSAO.md'
 & $gh release view $tag --repo $repo --json tagName 2>$null | Out-Null
 if ($LASTEXITCODE -ne 0) {
     Write-Output "Criando a release $tag..."
-    & $gh release create $tag $arquivos $caminhoManifesto --repo $repo --latest=false `
+    & $gh release create $tag $arquivos $caminhoManifesto --repo $repo `
         --title "Biblia de Estudo $versao" --notes-file $notas
 } else {
     Write-Output "Release $tag ja existe; substituindo os arquivos..."

@@ -1,8 +1,10 @@
 """Gera ``assets/biblia.db.gz`` — o texto das traduções que vai no app.
 
-    python ferramentas/construir_biblia.py          (de dentro de biblia/)
+    python ferramentas/construir_biblia.py          (na raiz do repositório)
+    python ferramentas/construir_biblia.py CAMINHO  (catálogo já baixado)
 
-A fonte é o catálogo do Louvor JA (``../assets/louvorja_pt.db.gz``), que já tem
+A fonte é o catálogo do Louvor JA (``assets/louvorja_pt.db.gz`` do repositório
+Wiserjr/louvorja, baixado para ``ferramentas/cache/``), que já tem
 as doze traduções conferidas pelo ``conferir_catalogo.py`` daquele app —
 incluindo as duas edições da Bíblia Livre injetadas pelo ``build_db.py``. Assim
 os dois apps mostram exatamente o mesmo texto e só existe um lugar para
@@ -14,6 +16,7 @@ import shutil
 import sqlite3
 import sys
 import tempfile
+import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -21,7 +24,9 @@ from referencias_pt import CAPITULOS, LIVROS  # noqa: E402
 
 PASTA = os.path.dirname(os.path.abspath(__file__))
 RAIZ = os.path.dirname(PASTA)
-ORIGEM = os.path.join(RAIZ, "..", "assets", "louvorja_pt.db.gz")
+ORIGEM = os.path.join(PASTA, "cache", "louvorja_pt.db.gz")
+URL_ORIGEM = ("https://raw.githubusercontent.com/Wiserjr/louvorja/main/"
+              "assets/louvorja_pt.db.gz")
 DESTINO = os.path.join(RAIZ, "assets", "biblia.db.gz")
 
 # Ordem de exibição. A ARA vem primeiro: é a versão da Bíblia de Estudo
@@ -56,8 +61,21 @@ CREATE TABLE info (chave TEXT PRIMARY KEY, valor TEXT);
 """
 
 
+def baixar_origem():
+    """Baixa o catálogo do Louvor JA para ``ferramentas/cache/``."""
+    os.makedirs(os.path.dirname(ORIGEM), exist_ok=True)
+    print("Baixando o catálogo do Louvor JA: %s" % URL_ORIGEM)
+    parcial = ORIGEM + ".parcial"
+    with urllib.request.urlopen(URL_ORIGEM, timeout=60) as r, \
+            open(parcial, "wb") as f:
+        shutil.copyfileobj(r, f)
+    os.replace(parcial, ORIGEM)
+
+
 def main():
     origem = sys.argv[1] if len(sys.argv) > 1 else ORIGEM
+    if origem == ORIGEM and not os.path.exists(origem):
+        baixar_origem()
     tmp = tempfile.mkdtemp()
     try:
         fonte = os.path.join(tmp, "fonte.db")

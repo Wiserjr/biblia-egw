@@ -16,10 +16,11 @@ import 'package:path_provider/path_provider.dart';
 /// O canal é uma release fixa do GitHub, regravada pelo `publicar.ps1` a cada
 /// versão (os instaladores em si ficam na release da versão):
 ///
-///     https://github.com/Wiserjr/louvorja/releases/download/biblia-atual/atualizacao-br.com.wisejr.bibliaestudo.json
+///     https://github.com/Wiserjr/biblia-egw/releases/download/biblia-atual/atualizacao-br.com.wisejr.bibliaestudo.json
 ///
-/// Uma release fixa, e não a `latest`, porque este app mora no mesmo
-/// repositório do Louvor JA: a `latest` é dele, e os dois não podem disputá-la.
+/// Uma release fixa, e não a `latest`: o endereço do manifesto não muda, e a
+/// versão só passa a valer quando o manifesto é regravado, depois que os
+/// instaladores já estão na release.
 ///
 ///     {
 ///       "applicationId": "br.com.wisejr.bibliaestudo",
@@ -36,7 +37,7 @@ class Atualizacao {
   Atualizacao._();
   static final Atualizacao instancia = Atualizacao._();
 
-  static const repositorio = 'Wiserjr/louvorja';
+  static const repositorio = 'Wiserjr/biblia-egw';
   static const canal = 'biblia-atual';
   static const pacote = 'br.com.wisejr.bibliaestudo';
   static const _canalNativo = MethodChannel(
