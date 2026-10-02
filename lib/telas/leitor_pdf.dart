@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -55,6 +56,11 @@ class _TelaPdfState extends State<TelaPdf> {
   late List<Realce> _realces = Ajustes.instancia.realces(widget.obra.id);
   final _textos = <int, PdfPageText>{};
   final _pedidos = <int>{};
+  StreamSubscription<PdfDocumentEvent>? _eventos;
+
+  /// Realçar muitas páginas de uma vez (um "Selecionar tudo") guardaria o
+  /// livro inteiro nos ajustes; acima disto, pede um trecho menor.
+  static const _maxPaginasRealce = 10;
 
   @override
   void initState() {
@@ -74,7 +80,12 @@ class _TelaPdfState extends State<TelaPdf> {
   @override
   void dispose() {
     Ajustes.instancia.removeListener(_realcesMudaram);
-    if (LeituraVoz.instancia.falandoTrecho) LeituraVoz.instancia.parar();
+    // Fora do dispose: parar avisa outras telas, que não podem se refazer
+    // enquanto a árvore de widgets está sendo desmontada.
+    if (LeituraVoz.instancia.falandoTrecho) {
+      Future.microtask(LeituraVoz.instancia.parar);
+    }
+    _eventos?.cancel();
     _busca?.removeListener(_atualizar);
     _busca?.dispose();
     _campoBusca.dispose();
@@ -92,11 +103,20 @@ class _TelaPdfState extends State<TelaPdf> {
     if (daPagina.isEmpty) return;
     final texto = _textos[n];
     if (texto == null) {
+      // O leitor carrega as páginas aos poucos e já desenha as que ainda não
+      // carregaram; o texto delas viria vazio. Espera a página carregar (o
+      // aviso chega em _eventoDoLivro, que manda redesenhar).
+      if (!page.isLoaded) return;
       if (_pedidos.add(n)) {
-        page.loadStructuredText().then((t) {
-          _textos[n] = t;
-          if (mounted && _controle.isReady) _controle.invalidate();
-        });
+        page.loadStructuredText().then(
+          (t) {
+            _textos[n] = t;
+            if (mounted && _controle.isReady) _controle.invalidate();
+          },
+          onError: (Object _) {
+            _pedidos.remove(n);
+          },
+        );
       }
       return;
     }
@@ -143,32 +163,39 @@ class _TelaPdfState extends State<TelaPdf> {
   ];
 
   /// Grava o trecho selecionado como realce. Realces que encostam nele são
-  /// juntados num só, sem perder as anotações.
+  /// juntados num só, sem perder as anotações. Com [trocarNota], a anotação
+  /// digitada substitui as de todo o trecho e fica na primeira página dele.
+  ///
+  /// Tudo é montado antes e gravado de uma vez: se algo der errado no meio,
+  /// nenhum realce antigo some.
   void _gravar(
     List<PdfPageTextRange> trechos, {
     int? cor,
     String? nota,
     bool trocarNota = false,
   }) {
-    final aj = Ajustes.instancia;
-    var primeiro = true;
+    final apagar = <Realce>[];
+    final novos = <Realce>[];
     for (final t in trechos) {
-      if (t.end <= t.start) continue;
+      final tamanho = t.pageText.fullText.length;
+      final ini0 = t.start.clamp(0, tamanho);
+      final fim0 = t.end.clamp(0, tamanho);
+      if (fim0 <= ini0) continue;
       _textos[t.pageNumber] = t.pageText;
+      // Realces de outra edição do PDF passam do fim da página: não dá para
+      // juntá-los (nem são desenhados), então ficam como estão.
       final juntos = [
         for (final r in _realces)
-          if (r.sobrepoe(t.pageNumber, t.start, t.end)) r,
+          if (r.fim <= tamanho && r.sobrepoe(t.pageNumber, ini0, fim0)) r,
       ];
-      final ini = juntos.fold(t.start, (m, r) => math.min(m, r.inicio));
-      final fim = juntos.fold(t.end, (m, r) => math.max(m, r.fim));
+      final ini = juntos.fold(ini0, (m, r) => math.min(m, r.inicio));
+      final fim = juntos.fold(fim0, (m, r) => math.max(m, r.fim));
       final notas = {
         for (final r in juntos)
           if (r.nota != null) r.nota!,
       }.join('\n\n');
-      for (final r in juntos) {
-        aj.apagarRealce(r);
-      }
-      aj.realcar(
+      apagar.addAll(juntos);
+      novos.add(
         Realce(
           obra: widget.obra.id,
           pagina: t.pageNumber,
@@ -176,16 +203,14 @@ class _TelaPdfState extends State<TelaPdf> {
           fim: fim,
           cor: cor ?? (juntos.isEmpty ? 0 : juntos.first.cor),
           texto: t.pageText.fullText.substring(ini, fim).trim(),
-        ).comNota(trocarNota && primeiro ? nota : notas),
+        ).comNota(trocarNota ? (novos.isEmpty ? nota : null) : notas),
       );
-      primeiro = false;
     }
+    if (novos.isEmpty) return;
+    Ajustes.instancia.trocarRealces(remover: apagar, adicionar: novos);
   }
 
-  Future<void> _realcar(
-    PdfTextSelectionDelegate sel,
-    List<PdfPageTextRange> trechos,
-  ) async {
+  Future<void> _realcar(List<PdfPageTextRange> trechos) async {
     final existentes = _sobrepostos(trechos);
     final escolha = await showModalBottomSheet<int>(
       context: context,
@@ -234,21 +259,15 @@ class _TelaPdfState extends State<TelaPdf> {
         ),
       ),
     );
-    if (escolha == null) return;
+    if (escolha == null || !mounted) return;
     if (escolha < 0) {
-      for (final r in existentes) {
-        Ajustes.instancia.apagarRealce(r);
-      }
+      Ajustes.instancia.trocarRealces(remover: existentes);
     } else {
       _gravar(trechos, cor: escolha);
     }
-    await sel.clearTextSelection();
   }
 
-  Future<void> _anotar(
-    PdfTextSelectionDelegate sel,
-    List<PdfPageTextRange> trechos,
-  ) async {
+  Future<void> _anotar(List<PdfPageTextRange> trechos) async {
     final atuais = {
       for (final r in _sobrepostos(trechos))
         if (r.nota != null) r.nota!,
@@ -285,9 +304,8 @@ class _TelaPdfState extends State<TelaPdf> {
     );
     final nota = ctrl.text;
     ctrl.dispose();
-    if (salvar != true) return;
+    if (salvar != true || !mounted) return;
     _gravar(trechos, nota: nota, trocarNota: true);
-    await sel.clearTextSelection();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -303,6 +321,55 @@ class _TelaPdfState extends State<TelaPdf> {
 
   // --- menu da seleção ---
 
+  /// Os trechos selecionados, um por página, na ordem do livro; null se a
+  /// seleção passa de [maxPaginas] páginas.
+  ///
+  /// Não usa getSelectedTextRanges/getSelectedText do pdfrx: quando a
+  /// seleção é feita de trás para a frente entre duas páginas, eles pegam a
+  /// página errada (ou lançam RangeError), porque supõem que a ponta A está
+  /// na primeira página.
+  Future<List<PdfPageTextRange>?> _trechosDaSelecao(
+    PdfTextSelectionDelegate sel, {
+    int? maxPaginas,
+  }) async {
+    final faixa = sel.textSelectionPointRange;
+    if (faixa == null) return const [];
+    final a = faixa.start, b = faixa.end;
+    if (maxPaginas != null &&
+        b.text.pageNumber - a.text.pageNumber + 1 > maxPaginas) {
+      return null;
+    }
+    PdfPageTextRange trecho(PdfPageText t, int ini, int fim) {
+      final n = t.fullText.length;
+      return PdfPageTextRange(
+        pageText: t,
+        start: ini.clamp(0, n),
+        end: fim.clamp(0, n),
+      );
+    }
+
+    if (a.text.pageNumber == b.text.pageNumber) {
+      return [
+        trecho(
+          a.text,
+          math.min(a.index, b.index),
+          math.max(a.index, b.index) + 1,
+        ),
+      ];
+    }
+    final trechos = [trecho(a.text, a.index, a.text.fullText.length)];
+    final doc = _controle.document;
+    for (var p = a.text.pageNumber + 1; p < b.text.pageNumber; p++) {
+      final t = await doc.pages[p - 1].loadStructuredText();
+      if (t.fullText.isNotEmpty) trechos.add(trecho(t, 0, t.fullText.length));
+    }
+    trechos.add(trecho(b.text, 0, b.index + 1));
+    return [
+      for (final t in trechos)
+        if (t.end > t.start) t,
+    ];
+  }
+
   void _itensDoMenu(
     PdfViewerContextMenuBuilderParams params,
     List<ContextMenuButtonItem> itens,
@@ -314,26 +381,56 @@ class _TelaPdfState extends State<TelaPdf> {
       return;
     }
 
+    /// Cada ação lê a seleção e a desfaz antes de agir: no Android a barra de
+    /// opções só some quando a seleção acaba.
     void item(
       String rotulo,
-      Future<void> Function(String texto, List<PdfPageTextRange> trechos) f,
-    ) {
+      Future<void> Function(String texto, List<PdfPageTextRange> trechos) f, {
+      int? maxPaginas,
+    }) {
       itens.add(
         ContextMenuButtonItem(
           label: rotulo,
           onPressed: () async {
-            final trechos = await sel.getSelectedTextRanges();
-            final texto = await sel.getSelectedText();
-            params.dismissContextMenu();
-            if (!mounted || texto.trim().isEmpty) return;
+            List<PdfPageTextRange>? trechos;
+            try {
+              trechos = await _trechosDaSelecao(sel, maxPaginas: maxPaginas);
+            } catch (_) {
+              trechos = const [];
+            } finally {
+              params.dismissContextMenu();
+              await sel.clearTextSelection();
+            }
+            if (!mounted) return;
+            if (trechos == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Para realçar ou anotar, selecione um trecho de até '
+                    '$maxPaginas páginas.',
+                  ),
+                ),
+              );
+              return;
+            }
+            final texto = trechos.map((t) => t.text).join();
+            if (texto.trim().isEmpty) return;
             await f(texto, trechos);
           },
         ),
       );
     }
 
-    item('Realçar', (_, trechos) => _realcar(sel, trechos));
-    item('Nota', (_, trechos) => _anotar(sel, trechos));
+    item(
+      'Realçar',
+      (_, trechos) => _realcar(trechos),
+      maxPaginas: _maxPaginasRealce,
+    );
+    item(
+      'Nota',
+      (_, trechos) => _anotar(trechos),
+      maxPaginas: _maxPaginasRealce,
+    );
     item('Compartilhar', (texto, _) async {
       final o = widget.obra;
       await SharePlus.instance.share(
@@ -347,10 +444,7 @@ class _TelaPdfState extends State<TelaPdf> {
     if (LeituraVoz.suportada) {
       item('Ouvir', (texto, _) => LeituraVoz.instancia.falar(texto));
     }
-    item('Procurar no livro', (texto, _) async {
-      await sel.clearTextSelection();
-      _abrirBusca(texto);
-    });
+    item('Procurar no livro', (texto, _) async => _abrirBusca(texto));
     if (acoesDoSistemaDisponiveis) {
       item('Mais', (texto, _) => mostrarMaisAcoes(context, texto));
     }
@@ -358,26 +452,67 @@ class _TelaPdfState extends State<TelaPdf> {
 
   // --- busca no livro ---
 
+  /// O livro abriu: passa a acompanhar as páginas que vão carregando.
   void _livroPronto(PdfDocument documento, PdfViewerController controle) {
-    final busca = _busca ??= PdfTextSearcher(controle)..addListener(_atualizar);
-    final d = widget.destaque;
-    if (d != null && d.isNotEmpty && !_procurando) {
-      busca.startTextSearch(d, goToFirstMatch: false);
+    _eventos ??= documento.events.listen(_eventoDoLivro);
+    _criarBusca();
+  }
+
+  void _eventoDoLivro(PdfDocumentEvent evento) {
+    if (evento is PdfDocumentPageStatusChangedEvent) {
+      // A página mudou (em geral, acabou de carregar): o texto dela, se
+      // havia, é refeito no próximo desenho.
+      for (final n in evento.changes.keys) {
+        _textos.remove(n);
+        _pedidos.remove(n);
+      }
+      if (_controle.isReady) _controle.invalidate();
     }
+    _criarBusca();
+  }
+
+  /// A busca só nasce com todas as páginas carregadas. O PdfTextSearcher lê
+  /// o documento do controle já no construtor (criá-lo antes de o livro abrir
+  /// deixava a tela cinza) e guarda o texto de cada página na primeira
+  /// leitura: uma página ainda não carregada ficaria sem texto para sempre.
+  void _criarBusca() {
+    if (_busca != null || !mounted || !_controle.isReady) return;
+    if (!_controle.document.pages.every((p) => p.isLoaded)) return;
+    final busca = _busca = PdfTextSearcher(_controle)..addListener(_atualizar);
+    _procurarDestaque(busca);
     _atualizar();
+  }
+
+  void _procurarDestaque(PdfTextSearcher busca) {
+    final d = widget.destaque?.trim();
+    if (d != null && d.isNotEmpty) {
+      busca.startTextSearch(padraoDeBusca(d), goToFirstMatch: false);
+    }
   }
 
   void _pintarBusca(ui.Canvas canvas, Rect pageRect, PdfPage page) =>
       _busca?.pageTextMatchPaintCallback(canvas, pageRect, page);
 
-  void _procurar(String texto, {bool jaVai = false}) =>
-      _busca?.startTextSearch(texto, searchImmediately: jaVai);
+  void _procurar(String texto, {bool jaVai = false}) {
+    final busca = _busca;
+    if (busca == null) return;
+    if (texto.trim().isEmpty) {
+      busca.resetTextSearch();
+      return;
+    }
+    final padrao = padraoDeBusca(texto);
+    // Pedir de novo a mesma busca cancela a que está em andamento e não
+    // recomeça (o pdfrx ignora padrão repetido), e ela ficaria parada.
+    final atual = busca.pattern;
+    if (atual is RegExp && atual.pattern == padrao.pattern) return;
+    busca.startTextSearch(padrao, searchImmediately: jaVai);
+  }
 
   void _abrirBusca([String? texto]) {
     final t = (texto ?? '').replaceAll(RegExp(r'\s+'), ' ').trim();
     setState(() => _procurando = true);
     if (t.isNotEmpty) {
-      _campoBusca.text = t.length > 80 ? t.substring(0, 80) : t;
+      _campoBusca.text = (t.length > 80 ? t.substring(0, 80) : t).trim();
       _procurar(_campoBusca.text, jaVai: true);
     }
   }
@@ -385,16 +520,28 @@ class _TelaPdfState extends State<TelaPdf> {
   void _fecharBusca() {
     setState(() => _procurando = false);
     _campoBusca.clear();
-    _busca?.resetTextSearch();
+    final busca = _busca;
+    if (busca == null) return;
+    busca.resetTextSearch();
+    // Volta a marcar a citação que trouxe a pessoa até o livro.
+    _procurarDestaque(busca);
+  }
+
+  bool get _temResultados =>
+      _campoBusca.text.trim().isNotEmpty && _busca?.hasMatches == true;
+
+  void _irPara(Future<int> Function() ir) {
+    unawaited(ir());
+    _atualizar(); // o índice já mudou; a contagem acompanha
   }
 
   String get _contagem {
     final busca = _busca;
-    if (busca == null) return '';
+    if (busca == null || _campoBusca.text.trim().isEmpty) return '';
     if (busca.isSearching && !busca.hasMatches) return '…';
     final i = busca.currentIndex;
     final n = busca.matches.length;
-    if (n == 0) return _campoBusca.text.isEmpty ? '' : '0';
+    if (n == 0) return '0';
     return '${(i ?? 0) + 1}/$n${busca.isSearching ? '…' : ''}';
   }
 
@@ -433,12 +580,16 @@ class _TelaPdfState extends State<TelaPdf> {
         IconButton(
           tooltip: 'Anterior',
           icon: const Icon(Icons.keyboard_arrow_up),
-          onPressed: _busca?.hasMatches == true ? _busca!.goToPrevMatch : null,
+          onPressed: _temResultados
+              ? () => _irPara(_busca!.goToPrevMatch)
+              : null,
         ),
         IconButton(
           tooltip: 'Próximo',
           icon: const Icon(Icons.keyboard_arrow_down),
-          onPressed: _busca?.hasMatches == true ? _busca!.goToNextMatch : null,
+          onPressed: _temResultados
+              ? () => _irPara(_busca!.goToNextMatch)
+              : null,
         ),
       ],
     );
@@ -449,6 +600,9 @@ class _TelaPdfState extends State<TelaPdf> {
     pagePaintCallbacks: [_pintarRealces, _pintarBusca],
     customizeContextMenuItems: _itensDoMenu,
     onViewerReady: _livroPronto,
+    onDocumentLoadFinished: (_, carregou) {
+      if (carregou) _criarBusca();
+    },
   );
 
   @override
@@ -495,3 +649,11 @@ class _TelaPdfState extends State<TelaPdf> {
     );
   }
 }
+
+/// O texto procurado como expressão que aceita quebra de linha (ou de
+/// página) entre as palavras e ignora maiúsculas e minúsculas.
+@visibleForTesting
+RegExp padraoDeBusca(String texto) => RegExp(
+  texto.trim().split(RegExp(r'\s+')).map(RegExp.escape).join(r'\s*'),
+  caseSensitive: false,
+);

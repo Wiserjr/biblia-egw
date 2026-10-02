@@ -21,9 +21,20 @@ Future<void> mostrarMaisAcoes(BuildContext context, String texto) async {
   }
   if (!context.mounted) return;
   if (acoes.isEmpty) {
-    msg.showSnackBar(
-      const SnackBar(
-        content: Text('Nenhum outro app do celular oferece ações de texto.'),
+    // Um aviso de rodapé ficaria escondido atrás do painel de estudo.
+    await showDialog<void>(
+      context: context,
+      builder: (c) => AlertDialog(
+        content: const Text(
+          'Nenhum app do celular oferece ações para texto (como o Google '
+          'Tradutor).',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
     return;

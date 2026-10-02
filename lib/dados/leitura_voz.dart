@@ -89,8 +89,10 @@ class LeituraVoz extends ChangeNotifier {
     notifyListeners();
     try {
       final tts = await _motor();
-      if (rodada != _rodada) return;
-      await tts.speak(textoFalado(texto));
+      for (final parte in partesFaladas(textoFalado(texto))) {
+        if (rodada != _rodada) return;
+        await tts.speak(parte);
+      }
     } finally {
       if (rodada == _rodada) {
         _falandoTrecho = false;
@@ -116,3 +118,27 @@ String textoFalado(String texto) => texto
     .replaceAll(RegExp(r'<[^>]*>'), '')
     .replaceAll(RegExp(r'\s+'), ' ')
     .trim();
+
+/// [texto] em partes de até [max] caracteres, cortadas no fim de uma frase
+/// (ou, se não houver, num espaço). O Android recusa falar mais de 4.000
+/// caracteres de uma vez, e o flutter_tts nunca avisa que terminou o que foi
+/// recusado.
+@visibleForTesting
+List<String> partesFaladas(String texto, {int max = 3500}) {
+  final partes = <String>[];
+  var resto = texto.trim();
+  while (resto.length > max) {
+    final janela = resto.substring(0, max);
+    var corte = janela.lastIndexOf(RegExp(r'[.!?;:]\s'));
+    if (corte >= max ~/ 2) {
+      corte += 1; // inclui a pontuação
+    } else {
+      corte = janela.lastIndexOf(' ');
+      if (corte <= 0) corte = max;
+    }
+    partes.add(resto.substring(0, corte).trim());
+    resto = resto.substring(corte).trim();
+  }
+  if (resto.isNotEmpty) partes.add(resto);
+  return partes;
+}

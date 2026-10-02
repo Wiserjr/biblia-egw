@@ -181,6 +181,56 @@ void main() {
       expect(aj.realces(7), hasLength(2));
       expect(aj.realces(7).first.nota, 'do aparelho\n\nda cópia');
       expect(aj.realces(1), isEmpty);
+
+      // Restaurar a mesma cópia de novo não repete a anotação.
+      aj.importar(copia);
+      expect(aj.realces(7).first.nota, 'do aparelho\n\nda cópia');
+    });
+
+    test('troca vários de uma vez, com um só aviso', () {
+      final aj = Ajustes.instancia;
+      aj.trocarRealces(adicionar: [realce(7, 1, 0, 5), realce(7, 2, 0, 5)]);
+      var avisos = 0;
+      void contar() => avisos++;
+      aj.addListener(contar);
+      aj.trocarRealces(
+        remover: [realce(7, 1, 0, 5), realce(7, 2, 0, 5)],
+        adicionar: [for (var p = 1; p <= 5; p++) realce(7, p, 2, 9)],
+      );
+      aj.removeListener(contar);
+      expect(avisos, 1);
+      expect(aj.realces(7).map((r) => (r.pagina, r.inicio)), [
+        for (var p = 1; p <= 5; p++) (p, 2),
+      ]);
+    });
+  });
+
+  group('trecho falado em partes', () {
+    test('texto curto vai inteiro', () {
+      expect(partesFaladas('  Uma frase.  '), ['Uma frase.']);
+      expect(partesFaladas(''), isEmpty);
+    });
+
+    test('texto longo é cortado no fim das frases, sem perder nada', () {
+      final frase = 'Bem-aventurados os mansos, porque herdarão a terra. ';
+      final texto = (frase * 200).trim(); // ~10 mil caracteres
+      final partes = partesFaladas(texto);
+      expect(partes.length, greaterThan(2));
+      expect(partes.every((p) => p.length <= 3500), isTrue);
+      expect(partes.every((p) => p.endsWith('terra.')), isTrue);
+      expect(partes.join(' '), texto);
+    });
+
+    test('sem pontuação, corta num espaço; sem espaço, no limite', () {
+      final palavras = List.filled(2000, 'amor').join(' ');
+      final partes = partesFaladas(palavras, max: 100);
+      expect(partes.every((p) => p.length <= 100), isTrue);
+      expect(partes.join(' '), palavras);
+      expect(partesFaladas('x' * 250, max: 100).map((p) => p.length), [
+        100,
+        100,
+        50,
+      ]);
     });
   });
 

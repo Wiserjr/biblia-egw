@@ -171,18 +171,22 @@ class Ajustes extends ChangeNotifier {
   }
 
   /// Grava [r], trocando o realce que já cobria exatamente o mesmo trecho.
-  void realcar(Realce r) {
-    _gravarRealces([
-      for (final x in todosRealces())
-        if (!x.mesmoTrecho(r)) x,
-      r,
-    ]);
-  }
+  void realcar(Realce r) => trocarRealces(adicionar: [r]);
 
-  void apagarRealce(Realce r) {
+  void apagarRealce(Realce r) => trocarRealces(remover: [r]);
+
+  /// Apaga [remover] e grava [adicionar] (trocando o que já cobria o mesmo
+  /// trecho) de uma vez só: uma gravação e um aviso às telas.
+  void trocarRealces({
+    Iterable<Realce> remover = const [],
+    Iterable<Realce> adicionar = const [],
+  }) {
+    if (remover.isEmpty && adicionar.isEmpty) return;
+    final fora = [...remover, ...adicionar];
     _gravarRealces([
       for (final x in todosRealces())
-        if (!x.mesmoTrecho(r)) x,
+        if (!fora.any(x.mesmoTrecho)) x,
+      ...adicionar,
     ]);
   }
 
@@ -319,13 +323,14 @@ class Ajustes extends ChangeNotifier {
         if (i < 0) {
           lista.add(r);
         } else {
-          final atual = lista[i];
-          final nota = [atual.nota, r.nota]
-              .whereType<String>()
-              .where((n) => n.trim().isNotEmpty)
-              .toSet()
-              .join('\n\n');
-          lista[i] = r.comNota(nota.isEmpty ? null : nota);
+          // Restaurar a mesma cópia de novo não repete a anotação.
+          final a = lista[i].nota?.trim() ?? '';
+          final b = r.nota?.trim() ?? '';
+          lista[i] = r.comNota(
+            a.isEmpty || a == b || b.isEmpty || a.contains(b)
+                ? (a.isEmpty ? b : a)
+                : '$a\n\n$b',
+          );
         }
         nRealces++;
       }
