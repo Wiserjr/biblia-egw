@@ -45,6 +45,16 @@ $canal = 'biblia-atual'
 $prefixo = 'biblia'
 $abis = @('arm64-v8a', 'armeabi-v7a', 'x86_64')
 
+# gh avisa "release not found" pelo stderr. No Windows PowerShell 5.1, com
+# ErrorActionPreference = 'Stop', qualquer saida de erro de um programa externo
+# vira erro fatal, mesmo redirecionada. Aqui a falta da release e esperada (e a
+# primeira publicacao), entao a consulta roda com 'Continue'.
+function Existe-Release([string]$nome) {
+    $ErrorActionPreference = 'Continue'
+    & $gh release view $nome --repo $repo --json tagName 2>&1 | Out-Null
+    return ($LASTEXITCODE -eq 0)
+}
+
 if (-not (Test-Path $gh)) { throw "gh nao encontrado em $gh" }
 if (-not (Test-Path 'pubspec.yaml')) { throw 'Rode na raiz do repositorio (pubspec.yaml nao encontrado).' }
 
@@ -165,8 +175,7 @@ if ($LASTEXITCODE -ne 0) { throw 'git push falhou.' }
 
 # --- release da versao ---
 $notas = 'NOTAS_DA_VERSAO.md'
-& $gh release view $tag --repo $repo --json tagName 2>$null | Out-Null
-if ($LASTEXITCODE -ne 0) {
+if (-not (Existe-Release $tag)) {
     Write-Output "Criando a release $tag..."
     & $gh release create $tag $arquivos $caminhoManifesto --repo $repo `
         --title "Biblia de Estudo $versao" --notes-file $notas
@@ -180,8 +189,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Falha ao publicar a release.' }
 # --- canal da atualizacao ---
 # O manifesto vai por ULTIMO: se algo acima falhar, os apps continuam vendo a
 # versao anterior, cujos arquivos existem.
-& $gh release view $canal --repo $repo --json tagName 2>$null | Out-Null
-if ($LASTEXITCODE -ne 0) {
+if (-not (Existe-Release $canal)) {
     & $gh release create $canal $caminhoManifesto --repo $repo --prerelease --latest=false `
         --title 'Biblia de Estudo - canal de atualizacao' `
         --notes 'Manifesto lido pelos apps instalados. Os instaladores estao nas releases biblia-v*.'
