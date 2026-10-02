@@ -149,7 +149,9 @@ O `construir_estudo.py` confere que cada versículo existe e que toda
 citação do tipo "O Desejado, cap. 12" ou "Parábolas de Jesus, cap. 2, "A
 sementeira da verdade"" aponta para um capítulo que existe no índice (e, com
 título, que o título bate). Para acrescentar ou corrigir uma nota, edite o
-arquivo do livro e rode o `construir_estudo.py`. O gerador abaixo só escreve
+arquivo do livro e rode o `construir_estudo.py`, ou, sem os PDFs em
+`ferramentas/cache/`, o `ferramentas/atualizar_notas.py`, que troca só as notas
+no banco atual, com as mesmas conferências. O gerador abaixo só escreve
 notas para capítulos que ainda não têm nenhuma.
 
 `ferramentas/gerar_notas.py` escreve notas curtas por versículo com a API do

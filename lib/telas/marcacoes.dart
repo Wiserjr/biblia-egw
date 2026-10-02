@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../dados/ajustes.dart';
 import '../dados/modelos.dart';
 import '../dados/referencias.dart';
+import 'backup.dart';
 
 /// Versículos marcados e anotados. Tocar leva ao versículo.
 class TelaMarcacoes extends StatelessWidget {
@@ -16,6 +17,29 @@ class TelaMarcacoes extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Marcações e anotações'),
+          actions: [
+            PopupMenuButton<String>(
+              onSelected: (op) => op == 'salvar'
+                  ? salvarCopia(context)
+                  : restaurarCopia(context),
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'salvar',
+                  child: ListTile(
+                    leading: Icon(Icons.save_alt),
+                    title: Text('Salvar cópia'),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'restaurar',
+                  child: ListTile(
+                    leading: Icon(Icons.restore),
+                    title: Text('Restaurar cópia'),
+                  ),
+                ),
+              ],
+            ),
+          ],
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Marcações'),
