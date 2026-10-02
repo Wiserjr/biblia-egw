@@ -84,8 +84,7 @@ de novo e publique uma versão.
 ## Estrutura
 
 ```
-biblia/
-  lib/dados/      bancos, consultas, PDFs, atualização
+lib/dados/      bancos, consultas, PDFs, atualização
   lib/telas/      leitor, painel de estudo, biblioteca, busca, ajustes
   android/        app Android (Kotlin: instalador da atualização)
   windows/        app Windows
@@ -94,18 +93,17 @@ biblia/
   test/           testes (Dart); ferramentas/test_*.py (Python)
 ```
 
-Fica dentro do repositório do Louvor JA porque reaproveita dele as traduções
-(`../assets/louvorja_pt.db.gz`) e o mecanismo de atualização. É um projeto
-Flutter independente: para movê-lo a um repositório próprio, copie a pasta e
-troque `repositorio` em `lib/dados/atualizacao.dart` e `$repo` no
-`publicar.ps1`.
+Até outubro de 2026 o app morava na pasta `biblia/` do repositório
+[Wiserjr/louvorja](https://github.com/Wiserjr/louvorja); o histórico dos
+commits veio junto na separação. Do Louvor JA ele ainda reaproveita as
+traduções: o `construir_biblia.py` baixa o `assets/louvorja_pt.db.gz` daquele
+repositório para `ferramentas/cache/` (ou recebe o caminho do arquivo).
 
 ## Ferramentas (gerar os bancos)
 
 ```bash
 pip install pypdfium2           # e anthropic, para as notas
-cd biblia
-python ferramentas/construir_biblia.py   # texto, a partir do catálogo do Louvor JA
+python ferramentas/construir_biblia.py   # texto, a partir do catálogo do Louvor JA (baixa)
 python ferramentas/indexar_obras.py      # baixa os 106 PDFs (~155 MB) e indexa
 pip install shapely pyshp
 python ferramentas/construir_mapas.py    # lugares (OpenBible) e contornos (Natural Earth)
@@ -200,15 +198,14 @@ versão nova, baixa e instala com a confirmação da pessoa. Também em
   usuário (ex.: `%LOCALAPPDATA%\Biblia de Estudo`), não em *Arquivos de
   Programas*, onde o app não tem permissão de gravar.
 
-Como o repositório é o do Louvor JA, cuja release *latest* os apps dele
-consultam, este app publica em releases `biblia-vX.Y.Z` (com
-`--latest=false`) e o manifesto numa release fixa, `biblia-atual`:
+Cada versão sai numa release `biblia-vX.Y.Z`, e o manifesto numa release
+fixa, `biblia-atual`, regravada por último:
 
 ```
-https://github.com/Wiserjr/louvorja/releases/download/biblia-atual/atualizacao-br.com.wisejr.bibliaestudo.json
+https://github.com/Wiserjr/biblia-egw/releases/download/biblia-atual/atualizacao-br.com.wisejr.bibliaestudo.json
 ```
 
-Publicar (no PC com Windows, dentro de `biblia\`):
+Publicar (no PC com Windows, na raiz do repositório):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File publicar.ps1

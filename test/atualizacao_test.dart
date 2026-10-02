@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const pacote = 'br.com.wisejr.bibliaestudo';
   const base =
-      'https://github.com/Wiserjr/louvorja/releases/download/biblia-v1.0.1';
+      'https://github.com/Wiserjr/biblia-egw/releases/download/biblia-v1.0.1';
 
   Map<String, dynamic> manifesto({
     Object? applicationId = pacote,
@@ -94,11 +94,11 @@ void main() {
     test('o zip também só vem de uma release deste repositório', () {
       for (final link in [
         'https://exemplo.com/biblia-windows.zip',
-        'http://github.com/Wiserjr/louvorja/releases/download/v1/a.zip',
-        'https://github.com/outro/louvorja/releases/download/v1/a.zip',
-        'https://github.com/Wiserjr/louvorja/releases/download/v1/a.exe',
-        'https://github.com/Wiserjr/louvorja/releases/download/v1/a.zip?x=1',
-        'https://github.com/Wiserjr/louvorja/releases/download/../a.zip',
+        'http://github.com/Wiserjr/biblia-egw/releases/download/v1/a.zip',
+        'https://github.com/outro/biblia-egw/releases/download/v1/a.zip',
+        'https://github.com/Wiserjr/biblia-egw/releases/download/v1/a.exe',
+        'https://github.com/Wiserjr/biblia-egw/releases/download/v1/a.zip?x=1',
+        'https://github.com/Wiserjr/biblia-egw/releases/download/../a.zip',
       ]) {
         expect(
           () => ler(manifesto(windows: link), instalada: 1, windows: true),
@@ -154,14 +154,16 @@ void main() {
     test('apontar para outro servidor ou outro repositório', () {
       for (final link in [
         'https://exemplo.com/biblia.apk',
-        'http://github.com/Wiserjr/louvorja/releases/download/v1/a.apk',
-        'https://github.com/outro/louvorja/releases/download/v1/a.apk',
-        'https://github.com:8443/Wiserjr/louvorja/releases/download/v1/a.apk',
-        'https://x@github.com/Wiserjr/louvorja/releases/download/v1/a.apk',
-        'https://github.com/Wiserjr/louvorja/releases/download/v1/a.apk?x=1',
-        'https://github.com/Wiserjr/louvorja/releases/download/v1/a.apk#x',
-        'https://github.com/Wiserjr/louvorja/releases/download/v1/a.exe',
-        'https://github.com/Wiserjr/louvorja/releases/download/../a.apk',
+        'http://github.com/Wiserjr/biblia-egw/releases/download/v1/a.apk',
+        'https://github.com/outro/biblia-egw/releases/download/v1/a.apk',
+        // O repositório antigo, de antes da separação, também não vale mais.
+        'https://github.com/Wiserjr/louvorja/releases/download/v1/a.apk',
+        'https://github.com:8443/Wiserjr/biblia-egw/releases/download/v1/a.apk',
+        'https://x@github.com/Wiserjr/biblia-egw/releases/download/v1/a.apk',
+        'https://github.com/Wiserjr/biblia-egw/releases/download/v1/a.apk?x=1',
+        'https://github.com/Wiserjr/biblia-egw/releases/download/v1/a.apk#x',
+        'https://github.com/Wiserjr/biblia-egw/releases/download/v1/a.exe',
+        'https://github.com/Wiserjr/biblia-egw/releases/download/../a.apk',
       ]) {
         expect(
           () => ler(manifesto(apks: {'arm64-v8a': link})),
@@ -189,10 +191,10 @@ void main() {
     expect(hostPermitido(Uri.parse('https://evil.io/github.com')), isFalse);
   });
 
-  test('o manifesto fica numa release fixa, não na latest do Louvor JA', () {
+  test('o manifesto fica numa release fixa do repositório da Bíblia', () {
     expect(
       Atualizacao.instancia.urlManifesto.toString(),
-      'https://github.com/Wiserjr/louvorja/releases/download/biblia-atual/'
+      'https://github.com/Wiserjr/biblia-egw/releases/download/biblia-atual/'
       'atualizacao-br.com.wisejr.bibliaestudo.json',
     );
   });
