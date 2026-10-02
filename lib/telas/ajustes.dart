@@ -5,6 +5,7 @@ import '../dados/ajustes.dart';
 import '../dados/atualizacao.dart';
 import '../dados/biblioteca.dart';
 import 'atualizacao_app.dart';
+import 'backup.dart';
 import 'texto_biblico.dart';
 import 'tema.dart';
 
@@ -107,6 +108,24 @@ class _TelaAjustesState extends State<TelaAjustes> {
                   snap.hasData ? 'Ocupando ${tamanhoLegivel(snap.data!)}' : '…',
                 ),
               ),
+            ),
+            _titulo(context, 'Seus dados'),
+            ListTile(
+              leading: const Icon(Icons.save_alt),
+              title: const Text('Salvar cópia'),
+              subtitle: const Text(
+                'Marcações, anotações e plano de leitura num arquivo, para '
+                'guardar ou levar a outro aparelho',
+              ),
+              onTap: () => salvarCopia(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.restore),
+              title: const Text('Restaurar cópia'),
+              subtitle: const Text(
+                'Junta uma cópia salva ao que já está no app, sem apagar nada',
+              ),
+              onTap: () => restaurarCopia(context),
             ),
             _titulo(context, 'Aplicativo'),
             if (Atualizacao.suportada)

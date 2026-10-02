@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'modelos.dart';
+import 'plano.dart';
 
 /// Preferências e o que a pessoa cria: tradução, letra, tema, onde parou,
 /// marcações e anotações. Tudo nas preferências do app, fora dos bancos —
@@ -146,6 +147,131 @@ class Ajustes extends ChangeNotifier {
     }
     r.sort((a, b) => _comparar(a.$1, b.$1));
     return r;
+  }
+
+  // --- plano de leitura ---
+
+  /// Id do plano em andamento ([PlanoLeitura.todos]), ou null.
+  String? get plano => _p.getString('plano');
+
+  /// Dias do plano já lidos (índices a partir de 0).
+  Set<int> get diasLidos => {
+    for (final d in _p.getStringList('planoLidos') ?? const <String>[])
+      ?int.tryParse(d),
+  };
+
+  void iniciarPlano(String id) {
+    _p.setString('plano', id);
+    _p.remove('planoLidos');
+    notifyListeners();
+  }
+
+  void encerrarPlano() {
+    _p.remove('plano');
+    _p.remove('planoLidos');
+    notifyListeners();
+  }
+
+  void marcarDia(int dia, bool lido) {
+    final d = diasLidos;
+    lido ? d.add(dia) : d.remove(dia);
+    _p.setStringList('planoLidos', [for (final x in d.toList()..sort()) '$x']);
+    notifyListeners();
+  }
+
+  // --- cópia de segurança ---
+
+  /// Tudo o que a pessoa criou, para guardar fora do aparelho: marcações,
+  /// anotações e o plano de leitura. As preferências de leitura (letra, tema)
+  /// ficam de fora: são do aparelho, não do estudo.
+  Map<String, Object?> exportar() => {
+    'app': 'br.com.wisejr.bibliaestudo',
+    'formato': 1,
+    'criadoEm': DateTime.now().toUtc().toIso8601String(),
+    'marcacoes': {
+      for (final (k, cor) in todasMarcacoes()) '${k.$1}:${k.$2}:${k.$3}': cor,
+    },
+    'anotacoes': {
+      for (final (k, texto) in todasAnotacoes())
+        '${k.$1}:${k.$2}:${k.$3}': texto,
+    },
+    if (plano != null)
+      'plano': {'id': plano, 'lidos': diasLidos.toList()..sort()},
+  };
+
+  /// Junta uma cópia de [exportar] ao que já está no aparelho, sem apagar
+  /// nada: a marcação da cópia vale sobre a local; anotações diferentes do
+  /// mesmo versículo ficam as duas, uma abaixo da outra. O plano da cópia só
+  /// entra se não houver outro em andamento (ou se for o mesmo plano, quando
+  /// os dias lidos se somam).
+  ///
+  /// Lança [FormatException] se o conteúdo não for uma cópia deste app.
+  ({int marcacoes, int anotacoes}) importar(Object? dados) {
+    if (dados is! Map || dados['app'] != 'br.com.wisejr.bibliaestudo') {
+      throw const FormatException(
+        'Este arquivo não é uma cópia da Bíblia de Estudo.',
+      );
+    }
+    (int, int, int)? chave(Object? k) {
+      if (k is! String) return null;
+      final p = k.split(':').map(int.tryParse).toList();
+      if (p.length != 3 || p.contains(null)) return null;
+      final (l, c, v) = (p[0]!, p[1]!, p[2]!);
+      if (l < 1 || l > 66 || c < 1 || v < 1) return null;
+      return (l, c, v);
+    }
+
+    var nMarcas = 0;
+    final marcas = _lerMarcas();
+    final m = dados['marcacoes'];
+    if (m is Map) {
+      for (final e in m.entries) {
+        final k = chave(e.key);
+        final cor = e.value;
+        if (k == null || cor is! int || cor < 0) continue;
+        marcas[_k(k.$1, k.$2, k.$3)] = cor;
+        nMarcas++;
+      }
+    }
+    _p.setStringList('marcacoes', [
+      for (final e in marcas.entries) '${e.key}=${e.value}',
+    ]);
+    _marcas = null;
+
+    var nNotas = 0;
+    final a = dados['anotacoes'];
+    if (a is Map) {
+      for (final e in a.entries) {
+        final k = chave(e.key);
+        final texto = e.value;
+        if (k == null || texto is! String || texto.trim().isEmpty) continue;
+        final atual = anotacao(k.$1, k.$2, k.$3);
+        final novo = texto.trim();
+        final junto = atual == null || atual == novo || atual.contains(novo)
+            ? (atual ?? novo)
+            : '$atual\n\n$novo';
+        _p.setString('nota:${_k(k.$1, k.$2, k.$3)}', junto);
+        nNotas++;
+      }
+    }
+
+    final pl = dados['plano'];
+    if (pl is Map && PlanoLeitura.porId(pl['id'] as String?) != null) {
+      final id = pl['id'] as String;
+      if (plano == null || plano == id) {
+        final lidos = {
+          if (plano == id) ...diasLidos,
+          for (final d in (pl['lidos'] as List?) ?? const [])
+            if (d is int && d >= 0) d,
+        };
+        _p.setString('plano', id);
+        _p.setStringList('planoLidos', [
+          for (final x in lidos.toList()..sort()) '$x',
+        ]);
+      }
+    }
+    notifyListeners();
+    return (marcacoes: nMarcas, anotacoes: nNotas);
   }
 
   static int _comparar((int, int, int) x, (int, int, int) y) => x.$1 != y.$1

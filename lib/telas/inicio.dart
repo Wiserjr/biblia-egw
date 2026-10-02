@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../dados/ajustes.dart';
 import '../dados/biblia.dart';
+import '../dados/leitura_voz.dart';
 import '../dados/modelos.dart';
 import '../dados/referencias.dart';
 import 'ajustes.dart';
@@ -14,6 +15,7 @@ import 'leitor.dart';
 import 'mapas.dart';
 import 'marcacoes.dart';
 import 'navegacao.dart';
+import 'plano.dart';
 import 'seletor.dart';
 import 'sinotico.dart';
 import 'temas.dart';
@@ -54,7 +56,19 @@ class _TelaInicioState extends State<TelaInicio> {
   @override
   void dispose() {
     destinoLeitura.removeListener(_destinoPedido);
+    LeituraVoz.instancia.parar();
     super.dispose();
+  }
+
+  void _ouvir() {
+    final versao = _versao;
+    if (versao == null) return;
+    final voz = LeituraVoz.instancia;
+    if (voz.lendo) {
+      voz.parar();
+    } else {
+      voz.ler(versao.id, _pos.livro, _pos.capitulo);
+    }
   }
 
   /// Versículo pedido por um mapa, tema ou estudo (ver navegacao.dart).
@@ -75,6 +89,10 @@ class _TelaInicioState extends State<TelaInicio> {
   }
 
   void _ir(Posicao p, {bool abrirEstudo = false}) {
+    final voz = LeituraVoz.instancia.capitulo;
+    if (voz != null && (voz.livro != p.livro || voz.capitulo != p.capitulo)) {
+      LeituraVoz.instancia.parar();
+    }
     setState(() {
       _pos = Posicao(p.livro, p.capitulo);
       _selecionado = p.versiculo;
@@ -212,6 +230,21 @@ class _TelaInicioState extends State<TelaInicio> {
             icon: const Icon(Icons.info_outline),
             onPressed: () => _abrir(TelaIntroducao(livro: _pos.livro)),
           ),
+          if (LeituraVoz.suportada)
+            ListenableBuilder(
+              listenable: LeituraVoz.instancia,
+              builder: (context, _) => IconButton(
+                tooltip: LeituraVoz.instancia.lendo
+                    ? 'Parar a leitura'
+                    : 'Ouvir o capítulo',
+                icon: Icon(
+                  LeituraVoz.instancia.lendo
+                      ? Icons.stop_circle_outlined
+                      : Icons.volume_up_outlined,
+                ),
+                onPressed: versao == null ? null : _ouvir,
+              ),
+            ),
           IconButton(
             tooltip: 'Buscar',
             icon: const Icon(Icons.search),
@@ -230,11 +263,19 @@ class _TelaInicioState extends State<TelaInicio> {
               'estudos' when versao != null => _abrir(
                 TelaTemas(versao: versao, abaInicial: 1),
               ),
+              'plano' => _abrir(const TelaPlano()),
               'marcacoes' => _abrir(const TelaMarcacoes()),
               'ajustes' => _abrir(const TelaAjustes()),
               _ => null,
             },
             itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'plano',
+                child: ListTile(
+                  leading: Icon(Icons.event_note_outlined),
+                  title: Text('Plano de leitura'),
+                ),
+              ),
               PopupMenuItem(
                 value: 'temas',
                 child: ListTile(
@@ -287,6 +328,33 @@ class _TelaInicioState extends State<TelaInicio> {
             ],
           ),
         ],
+      ),
+      bottomNavigationBar: ListenableBuilder(
+        listenable: LeituraVoz.instancia,
+        builder: (context, _) {
+          final voz = LeituraVoz.instancia;
+          final cap = voz.capitulo;
+          if (cap == null) return const SizedBox.shrink();
+          final v = voz.versiculo;
+          return Material(
+            color: Theme.of(context).colorScheme.secondaryContainer,
+            child: SafeArea(
+              top: false,
+              child: ListTile(
+                dense: true,
+                leading: const Icon(Icons.record_voice_over_outlined),
+                title: Text(
+                  'Lendo ${Referencias.nome(cap.livro)} ${cap.capitulo}'
+                  '${v != null && v > 0 ? ':$v' : ''}',
+                ),
+                trailing: TextButton(
+                  onPressed: voz.parar,
+                  child: const Text('Parar'),
+                ),
+              ),
+            ),
+          );
+        },
       ),
       body: versao == null
           ? const Center(child: CircularProgressIndicator())
