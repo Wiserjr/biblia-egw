@@ -157,9 +157,16 @@ class _TelaPdfState extends State<TelaPdf> {
   }
 
   /// Os realces que encostam no trecho selecionado.
+  /// (Os de outra edição do PDF, que passam do fim da página, ficam de fora,
+  /// como em [_gravar].)
   List<Realce> _sobrepostos(List<PdfPageTextRange> trechos) => [
     for (final r in _realces)
-      if (trechos.any((t) => r.sobrepoe(t.pageNumber, t.start, t.end))) r,
+      if (trechos.any(
+        (t) =>
+            r.fim <= t.pageText.fullText.length &&
+            r.sobrepoe(t.pageNumber, t.start, t.end),
+      ))
+        r,
   ];
 
   /// Grava o trecho selecionado como realce. Realces que encostam nele são
@@ -479,7 +486,13 @@ class _TelaPdfState extends State<TelaPdf> {
     if (_busca != null || !mounted || !_controle.isReady) return;
     if (!_controle.document.pages.every((p) => p.isLoaded)) return;
     final busca = _busca = PdfTextSearcher(_controle)..addListener(_atualizar);
-    _procurarDestaque(busca);
+    final pedido = _campoBusca.text.trim();
+    if (_procurando && pedido.isNotEmpty) {
+      // A pessoa pediu uma busca enquanto o livro carregava: faz agora.
+      _procurar(pedido, jaVai: true);
+    } else {
+      _procurarDestaque(busca);
+    }
     _atualizar();
   }
 
@@ -490,21 +503,52 @@ class _TelaPdfState extends State<TelaPdf> {
     }
   }
 
-  void _pintarBusca(ui.Canvas canvas, Rect pageRect, PdfPage page) =>
-      _busca?.pageTextMatchPaintCallback(canvas, pageRect, page);
+  /// Pinta os resultados linha a linha (o pdfrx pinta um retângulo só, que
+  /// cobriria duas linhas inteiras quando o resultado quebra de linha).
+  void _pintarBusca(ui.Canvas canvas, Rect pageRect, PdfPage page) {
+    final busca = _busca;
+    final faixa = busca?.getMatchesRangeForPage(page.pageNumber);
+    if (busca == null || faixa == null) return;
+    final atual = busca.currentIndex;
+    final resultados = busca.matches;
+    for (var i = faixa.start; i < faixa.end && i < resultados.length; i++) {
+      final tinta = Paint()
+        ..color = (i == atual ? Colors.orange : Colors.yellow).withAlpha(127);
+      for (final f in resultados[i].enumerateFragmentBoundingRects()) {
+        canvas.drawRect(
+          f.bounds
+              .toRect(page: page, scaledPageSize: pageRect.size)
+              .translate(pageRect.left, pageRect.top),
+          tinta,
+        );
+      }
+    }
+  }
+
+  /// O último padrão que a pessoa pediu (null: nenhum; a busca da citação
+  /// não conta).
+  String? _padraoPedido;
 
   void _procurar(String texto, {bool jaVai = false}) {
+    // Sem a busca ainda (o livro carregando), _criarBusca refaz o pedido.
     final busca = _busca;
     if (busca == null) return;
     if (texto.trim().isEmpty) {
+      _padraoPedido = null;
       busca.resetTextSearch();
       return;
     }
     final padrao = padraoDeBusca(texto);
-    // Pedir de novo a mesma busca cancela a que está em andamento e não
-    // recomeça (o pdfrx ignora padrão repetido), e ela ficaria parada.
+    // O mesmo pedido de novo (Enter repetido) não faz nada: pedir outra vez
+    // cancelaria a busca em andamento.
+    if (padrao.pattern == _padraoPedido) return;
+    _padraoPedido = padrao.pattern;
+    // O pdfrx ignora um padrão igual ao último que ele começou (por exemplo,
+    // o da citação, que não vai ao primeiro resultado); limpa antes.
     final atual = busca.pattern;
-    if (atual is RegExp && atual.pattern == padrao.pattern) return;
+    if (atual is RegExp && atual.pattern == padrao.pattern) {
+      busca.resetTextSearch();
+    }
     busca.startTextSearch(padrao, searchImmediately: jaVai);
   }
 
@@ -522,6 +566,7 @@ class _TelaPdfState extends State<TelaPdf> {
     _campoBusca.clear();
     final busca = _busca;
     if (busca == null) return;
+    _padraoPedido = null;
     busca.resetTextSearch();
     // Volta a marcar a citação que trouxe a pessoa até o livro.
     _procurarDestaque(busca);
@@ -650,10 +695,10 @@ class _TelaPdfState extends State<TelaPdf> {
   }
 }
 
-/// O texto procurado como expressão que aceita quebra de linha (ou de
-/// página) entre as palavras e ignora maiúsculas e minúsculas.
+/// O texto procurado como expressão que aceita quebra de linha entre as
+/// palavras e ignora maiúsculas e minúsculas.
 @visibleForTesting
 RegExp padraoDeBusca(String texto) => RegExp(
-  texto.trim().split(RegExp(r'\s+')).map(RegExp.escape).join(r'\s*'),
+  texto.trim().split(RegExp(r'\s+')).map(RegExp.escape).join(r'\s+'),
   caseSensitive: false,
 );

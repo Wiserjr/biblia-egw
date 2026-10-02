@@ -86,6 +86,7 @@ void main() {
     expect(p.hasMatch('Marcos 4:40'), isFalse);
     expect(padraoDeBusca('é a vida').hasMatch('É A\nVIDA'), isTrue);
     expect(padraoDeBusca('a.b').hasMatch('axb'), isFalse);
+    expect(padraoDeBusca('por que').hasMatch('porque'), isFalse);
   });
 
   // Antes, o leitor criava a busca do destaque antes de o livro carregar, e a
@@ -220,6 +221,27 @@ void main() {
         await tester.testTextInput.receiveAction(TextInputAction.search);
         await _esperar(tester, () => false, vezes: 10);
         expect(find.text('2/5'), findsOneWidget);
+
+        // Uma letra a mais, apagada logo: vale o que está no campo.
+        await tester.enterText(find.byType(TextField), 'PARABOLAX');
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.enterText(find.byType(TextField), 'PARABOLA');
+        await _esperar(tester, () => false, vezes: 15);
+        expect(find.text('1/5'), findsOneWidget);
+
+        // A mesma citação que já estava marcada: vai ao primeiro resultado.
+        await tester.enterText(find.byType(TextField), 'Marcos 4');
+        await tester.testTextInput.receiveAction(TextInputAction.search);
+        await _esperar(tester, () => find.text('1/5').evaluate().isNotEmpty);
+        expect(find.text('1/5'), findsOneWidget);
+        expect(
+          tester
+              .widget<IconButton>(
+                find.widgetWithIcon(IconButton, Icons.keyboard_arrow_down),
+              )
+              .onPressed,
+          isNotNull,
+        );
         expect(tester.takeException(), isNull);
       },
       skip: !temPdfium,
