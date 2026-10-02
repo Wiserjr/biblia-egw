@@ -207,13 +207,38 @@ fixa, `biblia-atual`, regravada por último:
 https://github.com/Wiserjr/biblia-egw/releases/download/biblia-atual/atualizacao-br.com.wisejr.bibliaestudo.json
 ```
 
-Publicar (no PC com Windows, na raiz do repositório):
+### Publicar uma versão
+
+**Regra:** uma versão nova só existe quando o `main` do GitHub tem a versão
+nova no `pubspec.yaml` (o número depois do `+` também maior) e as novidades
+dela no topo de `NOTAS_DA_VERSAO.md`. Isso normalmente vem num PR; publicar
+antes de mesclar o PR publica de novo a versão antiga.
+
+No PC com Windows, na raiz do repositório, rode só:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File publicar.ps1
 ```
 
-O script exige o número depois do `+` no `pubspec.yaml` maior que o publicado.
+O script cuida do resto, nesta ordem, e para com uma explicação se algo não
+estiver certo:
+
+1. Confere que a pasta está no `main` e sem alterações por salvar.
+2. Mostra cada PR aberto no GitHub e pergunta se ele entra nesta versão
+   (S/N); os que entram, ele mescla.
+3. Traz o `main` do GitHub (`git pull`). Se isso trouxer uma versão nova do
+   próprio script, ele pede para rodar de novo.
+4. Recusa publicar uma versão que já está publicada, e recusa notas que não
+   falem da versão.
+5. Analisa, testa, compila Android e Windows, publica a release e, por
+   último, avisa os apps instalados.
+
+Para refazer os arquivos de uma versão já publicada (mesmo número), use
+`-Republicar`. As conferências têm testes próprios, sem tocar o GitHub:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ferramentas\test_publicacao.ps1
+```
 
 ### Chave de assinatura
 
