@@ -59,13 +59,20 @@ Future<void> restaurarCopia(BuildContext context) async {
       );
     }
     final r = Ajustes.instancia.importar(dados);
+    String n(int q, String um, String varios) => '$q ${q == 1 ? um : varios}';
+    final partes = [
+      n(r.marcacoes, 'marcação', 'marcações'),
+      n(r.anotacoes, 'anotação', 'anotações'),
+      if (r.realces > 0)
+        n(r.realces, 'realce nos livros', 'realces nos livros'),
+    ];
+    final lista = partes.length == 2
+        ? partes.join(' e ')
+        : '${partes[0]}, ${partes[1]} e ${partes[2]}';
     msg.showSnackBar(
       SnackBar(
         content: Text(
-          'Cópia restaurada: ${r.marcacoes} '
-          '${r.marcacoes == 1 ? 'marcação' : 'marcações'} e ${r.anotacoes} '
-          '${r.anotacoes == 1 ? 'anotação' : 'anotações'}. '
-          'Nada do que já estava no app foi apagado.',
+          'Cópia restaurada: $lista. Nada do que já estava no app foi apagado.',
         ),
       ),
     );

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -149,6 +151,56 @@ class Ajustes extends ChangeNotifier {
     return r;
   }
 
+  // --- realces nos livros (Ellen G. White e pioneiros) ---
+
+  /// Realces da [obra], na ordem em que estão no livro.
+  List<Realce> realces(int obra) => [
+    for (final r in todosRealces())
+      if (r.obra == obra) r,
+  ];
+
+  /// Todos os realces de todos os livros, por livro e página.
+  List<Realce> todosRealces() {
+    final r = <Realce>[];
+    for (final e in _p.getStringList('realces') ?? const <String>[]) {
+      final x = Realce.deMapa(_jsonOuNull(e));
+      if (x != null) r.add(x);
+    }
+    r.sort(Realce.comparar);
+    return r;
+  }
+
+  /// Grava [r], trocando o realce que já cobria exatamente o mesmo trecho.
+  void realcar(Realce r) {
+    _gravarRealces([
+      for (final x in todosRealces())
+        if (!x.mesmoTrecho(r)) x,
+      r,
+    ]);
+  }
+
+  void apagarRealce(Realce r) {
+    _gravarRealces([
+      for (final x in todosRealces())
+        if (!x.mesmoTrecho(r)) x,
+    ]);
+  }
+
+  void _gravarRealces(List<Realce> lista) {
+    _p.setStringList('realces', [
+      for (final r in lista) jsonEncode(r.paraMapa()),
+    ]);
+    notifyListeners();
+  }
+
+  static Object? _jsonOuNull(String s) {
+    try {
+      return jsonDecode(s);
+    } on FormatException {
+      return null;
+    }
+  }
+
   // --- plano de leitura ---
 
   /// Id do plano em andamento ([PlanoLeitura.todos]), ou null.
@@ -195,6 +247,7 @@ class Ajustes extends ChangeNotifier {
       for (final (k, texto) in todasAnotacoes())
         '${k.$1}:${k.$2}:${k.$3}': texto,
     },
+    'realces': [for (final r in todosRealces()) r.paraMapa()],
     if (plano != null)
       'plano': {'id': plano, 'lidos': diasLidos.toList()..sort()},
   };
@@ -206,7 +259,7 @@ class Ajustes extends ChangeNotifier {
   /// os dias lidos se somam).
   ///
   /// Lança [FormatException] se o conteúdo não for uma cópia deste app.
-  ({int marcacoes, int anotacoes}) importar(Object? dados) {
+  ({int marcacoes, int anotacoes, int realces}) importar(Object? dados) {
     if (dados is! Map || dados['app'] != 'br.com.wisejr.bibliaestudo') {
       throw const FormatException(
         'Este arquivo não é uma cópia da Bíblia de Estudo.',
@@ -255,6 +308,32 @@ class Ajustes extends ChangeNotifier {
       }
     }
 
+    var nRealces = 0;
+    final rs = dados['realces'];
+    if (rs is List) {
+      final lista = todosRealces();
+      for (final e in rs) {
+        final r = Realce.deMapa(e);
+        if (r == null) continue;
+        final i = lista.indexWhere((x) => x.mesmoTrecho(r));
+        if (i < 0) {
+          lista.add(r);
+        } else {
+          final atual = lista[i];
+          final nota = [atual.nota, r.nota]
+              .whereType<String>()
+              .where((n) => n.trim().isNotEmpty)
+              .toSet()
+              .join('\n\n');
+          lista[i] = r.comNota(nota.isEmpty ? null : nota);
+        }
+        nRealces++;
+      }
+      _p.setStringList('realces', [
+        for (final r in lista) jsonEncode(r.paraMapa()),
+      ]);
+    }
+
     final pl = dados['plano'];
     if (pl is Map && PlanoLeitura.porId(pl['id'] as String?) != null) {
       final id = pl['id'] as String;
@@ -271,7 +350,7 @@ class Ajustes extends ChangeNotifier {
       }
     }
     notifyListeners();
-    return (marcacoes: nMarcas, anotacoes: nNotas);
+    return (marcacoes: nMarcas, anotacoes: nNotas, realces: nRealces);
   }
 
   static int _comparar((int, int, int) x, (int, int, int) y) => x.$1 != y.$1
@@ -290,3 +369,102 @@ const coresMarcacao = <Color>[
   Color(0x55F48FB1), // rosa
   Color(0x55FFB74D), // laranja
 ];
+
+/// Um trecho realçado (e, se quiser, anotado) num livro em PDF.
+///
+/// [pagina] conta a partir de 1; [inicio] e [fim] são posições no texto da
+/// página como o leitor de PDF o extrai, e [texto] guarda o trecho, para a
+/// lista de marcações não precisar abrir o livro.
+class Realce {
+  const Realce({
+    required this.obra,
+    required this.pagina,
+    required this.inicio,
+    required this.fim,
+    required this.cor,
+    required this.texto,
+    this.nota,
+  });
+
+  final int obra;
+  final int pagina;
+  final int inicio;
+  final int fim;
+  final int cor;
+  final String texto;
+  final String? nota;
+
+  bool mesmoTrecho(Realce o) =>
+      o.obra == obra &&
+      o.pagina == pagina &&
+      o.inicio == inicio &&
+      o.fim == fim;
+
+  /// Se o trecho [inicio]..[fim] da [pagina] encosta neste realce.
+  bool sobrepoe(int pagina, int inicio, int fim) =>
+      pagina == this.pagina && inicio < this.fim && this.inicio < fim;
+
+  Realce comCor(int cor) => Realce(
+    obra: obra,
+    pagina: pagina,
+    inicio: inicio,
+    fim: fim,
+    cor: cor,
+    texto: texto,
+    nota: nota,
+  );
+
+  Realce comNota(String? nota) => Realce(
+    obra: obra,
+    pagina: pagina,
+    inicio: inicio,
+    fim: fim,
+    cor: cor,
+    texto: texto,
+    nota: nota == null || nota.trim().isEmpty ? null : nota.trim(),
+  );
+
+  Map<String, Object?> paraMapa() => {
+    'obra': obra,
+    'pagina': pagina,
+    'inicio': inicio,
+    'fim': fim,
+    'cor': cor,
+    'texto': texto,
+    if (nota != null) 'nota': nota,
+  };
+
+  static Realce? deMapa(Object? m) {
+    if (m is! Map) return null;
+    final obra = m['obra'], pagina = m['pagina'];
+    final inicio = m['inicio'], fim = m['fim'], cor = m['cor'];
+    final texto = m['texto'], nota = m['nota'];
+    if (obra is! int ||
+        pagina is! int ||
+        inicio is! int ||
+        fim is! int ||
+        cor is! int ||
+        texto is! String ||
+        pagina < 1 ||
+        inicio < 0 ||
+        fim <= inicio ||
+        cor < 0) {
+      return null;
+    }
+    return Realce(
+      obra: obra,
+      pagina: pagina,
+      inicio: inicio,
+      fim: fim,
+      cor: cor,
+      texto: texto,
+      nota: nota is String && nota.trim().isNotEmpty ? nota : null,
+    );
+  }
+
+  static int comparar(Realce a, Realce b) => a.obra != b.obra
+      ? a.obra.compareTo(b.obra)
+      : a.pagina != b.pagina
+      ? a.pagina.compareTo(b.pagina)
+      : a.inicio.compareTo(b.inicio);
+}

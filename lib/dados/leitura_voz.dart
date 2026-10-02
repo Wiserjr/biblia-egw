@@ -30,6 +30,10 @@ class LeituraVoz extends ChangeNotifier {
 
   bool get lendo => _capitulo != null;
 
+  /// Se está lendo um trecho avulso (ver [falar]).
+  bool get falandoTrecho => _falandoTrecho;
+  bool _falandoTrecho = false;
+
   /// Incrementado a cada início e parada: uma leitura antiga que ainda está
   /// no meio do laço percebe que foi substituída e para.
   int _rodada = 0;
@@ -43,9 +47,10 @@ class LeituraVoz extends ChangeNotifier {
     return _tts = tts;
   }
 
-  /// Lê o capítulo inteiro na tradução [versaoId]. Termina sozinha no fim do
-  /// capítulo, ou quando [parar] é chamada.
-  Future<void> ler(int versaoId, int livro, int cap) async {
+  /// Lê o capítulo na tradução [versaoId], do versículo [aPartirDe] em
+  /// diante (do começo, se null). Termina sozinha no fim do capítulo, ou
+  /// quando [parar] é chamada.
+  Future<void> ler(int versaoId, int livro, int cap, {int? aPartirDe}) async {
     await parar();
     final rodada = ++_rodada;
     _capitulo = Posicao(livro, cap);
@@ -55,9 +60,14 @@ class LeituraVoz extends ChangeNotifier {
       final tts = await _motor();
       final versiculos = await Biblia.instancia.capitulo(versaoId, livro, cap);
       if (rodada != _rodada) return;
-      await tts.speak('${Referencias.nome(livro)}, capítulo $cap.');
+      await tts.speak(
+        aPartirDe == null
+            ? '${Referencias.nome(livro)}, capítulo $cap.'
+            : '${Referencias.nome(livro)} $cap, versículo $aPartirDe.',
+      );
       for (final v in versiculos) {
         if (rodada != _rodada) return;
+        if (aPartirDe != null && v.numero < aPartirDe) continue;
         _versiculo = v.numero;
         notifyListeners();
         await tts.speak(textoFalado(v.texto));
@@ -71,11 +81,30 @@ class LeituraVoz extends ChangeNotifier {
     }
   }
 
+  /// Lê um trecho avulso (o que foi selecionado num livro, por exemplo).
+  Future<void> falar(String texto) async {
+    await parar();
+    final rodada = ++_rodada;
+    _falandoTrecho = true;
+    notifyListeners();
+    try {
+      final tts = await _motor();
+      if (rodada != _rodada) return;
+      await tts.speak(textoFalado(texto));
+    } finally {
+      if (rodada == _rodada) {
+        _falandoTrecho = false;
+        notifyListeners();
+      }
+    }
+  }
+
   Future<void> parar() async {
-    if (!lendo) return;
+    if (!lendo && !_falandoTrecho) return;
     _rodada++;
     _capitulo = null;
     _versiculo = null;
+    _falandoTrecho = false;
     notifyListeners();
     await _tts?.stop();
   }

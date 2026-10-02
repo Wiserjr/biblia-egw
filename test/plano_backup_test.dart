@@ -117,6 +117,73 @@ void main() {
     });
   });
 
+  group('realces nos livros', () {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      await Ajustes.instancia.carregar();
+    });
+
+    Realce realce(int obra, int pagina, int ini, int fim, {String? nota}) =>
+        Realce(
+          obra: obra,
+          pagina: pagina,
+          inicio: ini,
+          fim: fim,
+          cor: 1,
+          texto: 'trecho $ini',
+          nota: nota,
+        );
+
+    test('grava, troca o mesmo trecho e apaga', () {
+      final aj = Ajustes.instancia;
+      aj.realcar(realce(7, 30, 10, 20));
+      aj.realcar(realce(7, 12, 0, 5));
+      aj.realcar(realce(3, 1, 0, 5));
+      aj.realcar(realce(7, 30, 10, 20).comCor(3).comNota('  boa  '));
+      expect(aj.realces(7).map((r) => (r.pagina, r.inicio)), [
+        (12, 0),
+        (30, 10),
+      ]);
+      expect(aj.realces(7).last.cor, 3);
+      expect(aj.realces(7).last.nota, 'boa');
+      expect(aj.todosRealces().first.obra, 3);
+      aj.apagarRealce(realce(7, 12, 0, 5));
+      expect(aj.realces(7), hasLength(1));
+    });
+
+    test('sobreposição', () {
+      final r = realce(1, 5, 10, 20);
+      expect(r.sobrepoe(5, 15, 30), isTrue);
+      expect(r.sobrepoe(5, 0, 11), isTrue);
+      expect(r.sobrepoe(5, 20, 30), isFalse);
+      expect(r.sobrepoe(6, 15, 30), isFalse);
+    });
+
+    test('vão na cópia e voltam juntando as anotações', () async {
+      final aj = Ajustes.instancia;
+      aj.realcar(realce(7, 30, 10, 20, nota: 'da cópia'));
+      aj.realcar(realce(7, 31, 0, 8));
+      final copia = aj.exportar();
+
+      SharedPreferences.setMockInitialValues({});
+      await aj.carregar();
+      aj.realcar(realce(7, 30, 10, 20, nota: 'do aparelho'));
+      final r = aj.importar({
+        ...copia,
+        'realces': [
+          ...(copia['realces'] as List),
+          {'obra': 1, 'pagina': 0, 'inicio': 0, 'fim': 3, 'cor': 0},
+          {'obra': 1, 'pagina': 2, 'inicio': 5, 'fim': 3, 'cor': 0},
+          'lixo',
+        ],
+      });
+      expect(r.realces, 2);
+      expect(aj.realces(7), hasLength(2));
+      expect(aj.realces(7).first.nota, 'do aparelho\n\nda cópia');
+      expect(aj.realces(1), isEmpty);
+    });
+  });
+
   test('a voz não lê a marcação do texto', () {
     expect(
       textoFalado('<J>Eu sou o caminho,</J> e a <i>verdade</i>.'),
