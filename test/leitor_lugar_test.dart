@@ -72,7 +72,13 @@ void main() {
     versao = (await Biblia.instancia.versoes()).first;
   });
 
-  tearDownAll(() => pasta.deleteSync(recursive: true));
+  tearDownAll(() async {
+    // No Windows um arquivo aberto não pode ser apagado: fecha os bancos
+    // antes de apagar a pasta.
+    await Banco.instancia.biblia.close();
+    await Banco.instancia.estudo.close();
+    await pasta.delete(recursive: true);
+  });
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
