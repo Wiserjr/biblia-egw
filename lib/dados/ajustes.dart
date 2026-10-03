@@ -106,20 +106,6 @@ class Ajustes extends ChangeNotifier {
   static const minLarguraPainel = 0.2;
   static const maxLarguraPainel = 0.7;
 
-  /// O zoom dos livros (PDF), como múltiplo da página inteira na tela: 1
-  /// mostra a página toda. O livro seguinte abre com o zoom do último, até a
-  /// largura da tela (ver `zoomInicial` no leitor de livros).
-  ///
-  /// Não avisa os ouvintes: muda a cada movimento do zoom e não muda nada nas
-  /// outras telas.
-  double get zoomLivros =>
-      (_p.getDouble('zoomLivros') ?? 1.0).clamp(minZoomLivros, maxZoomLivros);
-  set zoomLivros(double v) =>
-      _p.setDouble('zoomLivros', v.clamp(minZoomLivros, maxZoomLivros));
-
-  static const minZoomLivros = 1.0;
-  static const maxZoomLivros = 6.0;
-
   Posicao get ultimaPosicao {
     final l = _p.getInt('ultLivro') ?? 43;
     final c = _p.getInt('ultCapitulo') ?? 1;

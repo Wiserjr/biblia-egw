@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../dados/ajustes.dart';
 import '../dados/biblia.dart';
@@ -7,6 +8,7 @@ import '../dados/modelos.dart';
 import '../dados/referencias.dart';
 import 'acoes_versiculo.dart';
 import 'cartao_trecho.dart';
+import 'largura_texto.dart';
 import 'tema.dart';
 import 'texto_biblico.dart';
 
@@ -59,6 +61,25 @@ class _LeitorState extends State<Leitor> {
   late final Future<_DadosCapitulo> _dados = _carregar();
   final _chaves = <int, GlobalKey>{};
   final _rolagem = ScrollController();
+  final _vista = GlobalKey();
+
+  /// O lugar da leitura: o primeiro versículo à vista e a distância dele ao
+  /// topo, guardados ao fim de cada rolagem. Quando o texto muda de largura
+  /// (o painel abriu ou fechou, a divisória foi arrastada, a letra mudou), as
+  /// linhas se refazem e a mesma rolagem em pontos cairia em outro lugar; o
+  /// versículo volta para onde estava.
+  (int, double)? _ancora;
+
+  /// O que define a quebra das linhas; mudou, o lugar da leitura é refeito.
+  Object? _forma;
+
+  /// O versículo foi tocado agora, e a pessoa não rolou desde então: se o
+  /// texto mudar de largura (o painel abrindo), ele continua à vista.
+  bool _mostrarSelecionado = false;
+
+  /// A rolagem é a do próprio leitor devolvendo o lugar: não muda o lugar
+  /// guardado, e abrir e fechar o painel volta exatamente ao começo.
+  bool _restaurando = false;
 
   Future<_DadosCapitulo> _carregar() async {
     final p = widget.posicao;
@@ -89,9 +110,93 @@ class _LeitorState extends State<Leitor> {
   }
 
   @override
+  void didUpdateWidget(Leitor antes) {
+    super.didUpdateWidget(antes);
+    if (widget.selecionado != antes.selecionado) {
+      _mostrarSelecionado = widget.selecionado != null;
+    }
+  }
+
+  @override
   void dispose() {
     _rolagem.dispose();
     super.dispose();
+  }
+
+  // --- lugar da leitura ---
+
+  /// Distância do versículo [n] ao topo da área do texto, e a altura dele.
+  (double, double)? _naTela(int n) {
+    final vista = _vista.currentContext?.findRenderObject();
+    final caixa = _chaves[n]?.currentContext?.findRenderObject();
+    if (vista is! RenderBox || caixa is! RenderBox) return null;
+    if (!vista.attached || !caixa.attached || !caixa.hasSize) return null;
+    return (
+      caixa.localToGlobal(Offset.zero, ancestor: vista).dy,
+      caixa.size.height,
+    );
+  }
+
+  bool _aoRolar(ScrollEndNotification n) {
+    if (n.depth != 0 || _restaurando) return false;
+    _mostrarSelecionado = false;
+    // A geometria só pode ser lida fora da montagem do quadro.
+    if (SchedulerBinding.instance.schedulerPhase !=
+        SchedulerPhase.persistentCallbacks) {
+      _guardarAncora();
+    }
+    return false;
+  }
+
+  /// O primeiro versículo que começa na tela; se nenhum começa (um
+  /// versículo maior que a tela), o que está à vista.
+  void _guardarAncora() {
+    (int, double)? cortado;
+    for (final n in _chaves.keys.toList()..sort()) {
+      final p = _naTela(n);
+      if (p == null || p.$1 + p.$2 <= 0) continue;
+      if (p.$1 >= 0) {
+        _ancora = (n, p.$1);
+        return;
+      }
+      cortado ??= (n, p.$1);
+    }
+    _ancora = cortado;
+  }
+
+  /// Chamado depois que as linhas se refizeram com a largura nova.
+  void _restaurarLugar() {
+    if (!mounted || !_rolagem.hasClients) return;
+    _restaurando = true;
+    try {
+      _devolverLugar();
+    } finally {
+      _restaurando = false;
+    }
+  }
+
+  void _devolverLugar() {
+    final a = _ancora;
+    final agora = a == null ? null : _naTela(a.$1);
+    if (a != null && agora != null) {
+      final pos = _rolagem.position;
+      final alvo = (pos.pixels + agora.$1 - a.$2).clamp(
+        pos.minScrollExtent,
+        pos.maxScrollExtent,
+      );
+      if (alvo != pos.pixels) _rolagem.jumpTo(alvo);
+    }
+    final s = widget.selecionado;
+    final ctx = s == null ? null : _chaves[s]?.currentContext;
+    if (_mostrarSelecionado && ctx != null && ctx.mounted) {
+      final p = _naTela(s!);
+      Scrollable.ensureVisible(
+        ctx,
+        alignmentPolicy: p != null && p.$1 < 0
+            ? ScrollPositionAlignmentPolicy.keepVisibleAtStart
+            : ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+      );
+    }
   }
 
   @override
@@ -125,73 +230,90 @@ class _LeitorState extends State<Leitor> {
     final t = Theme.of(context);
     final aj = Ajustes.instancia;
     final p = widget.posicao;
-    return SingleChildScrollView(
-      controller: _rolagem,
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-      child: Center(
-        // A largura do texto é ajuste da pessoa: a tela toda, ou menos, com
-        // linhas mais curtas no meio da tela.
-        child: FractionallySizedBox(
-          widthFactor: aj.larguraTexto,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                '${Referencias.nome(p.livro)} ${p.capitulo}',
-                textAlign: TextAlign.center,
-                style: t.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                widget.versao.nome,
-                textAlign: TextAlign.center,
-                style: t.textTheme.bodySmall?.copyWith(color: t.hintColor),
-              ),
-              if (d.narrativas.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _Narrativas(trechos: d.narrativas),
-              ],
-              const SizedBox(height: 12),
-              for (final v in d.versiculos)
-                KeyedSubtree(
-                  key: _chaves.putIfAbsent(v.numero, GlobalKey.new),
-                  child: _LinhaVersiculo(
-                    posicao: p,
-                    versiculo: v,
-                    versao: widget.versao,
-                    selecionado: v.numero == widget.selecionado,
-                    egw: aj.marcadoresEgw ? (d.contagem[v.numero] ?? 0) : 0,
-                    citacao: d.citacoes[v.numero],
-                    temNota: d.notas.contains(v.numero),
-                    aoTocar: () => widget.aoSelecionar(v.numero),
-                  ),
-                ),
-              const SizedBox(height: 24),
-              Row(
+    return LayoutBuilder(
+      builder: (context, c) {
+        final forma = (
+          c.maxWidth,
+          aj.larguraTexto,
+          aj.tamanhoLetra,
+          MediaQuery.sizeOf(context).width >= larguraMinimaParaAjuste,
+        );
+        if (_forma != null && _forma != forma) {
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => _restaurarLugar(),
+          );
+        }
+        _forma = forma;
+        return NotificationListener<ScrollEndNotification>(
+          onNotification: _aoRolar,
+          child: SingleChildScrollView(
+            key: _vista,
+            controller: _rolagem,
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+            // A largura do texto é ajuste da pessoa: a tela toda, ou menos, com
+            // linhas mais curtas no meio da tela.
+            child: LarguraDoTexto(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (p.livro > 1 || p.capitulo > 1)
-                    OutlinedButton.icon(
-                      onPressed: () => widget.aoMudarCapitulo(-1),
-                      icon: const Icon(Icons.chevron_left),
-                      label: const Text('Anterior'),
+                  Text(
+                    '${Referencias.nome(p.livro)} ${p.capitulo}',
+                    textAlign: TextAlign.center,
+                    style: t.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
-                  const Spacer(),
-                  if (p.livro < 66 ||
-                      p.capitulo < Referencias.capitulos[p.livro - 1])
-                    FilledButton.tonalIcon(
-                      onPressed: () => widget.aoMudarCapitulo(1),
-                      icon: const Icon(Icons.chevron_right),
-                      label: const Text('Próximo'),
-                      iconAlignment: IconAlignment.end,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.versao.nome,
+                    textAlign: TextAlign.center,
+                    style: t.textTheme.bodySmall?.copyWith(color: t.hintColor),
+                  ),
+                  if (d.narrativas.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _Narrativas(trechos: d.narrativas),
+                  ],
+                  const SizedBox(height: 12),
+                  for (final v in d.versiculos)
+                    KeyedSubtree(
+                      key: _chaves.putIfAbsent(v.numero, GlobalKey.new),
+                      child: _LinhaVersiculo(
+                        posicao: p,
+                        versiculo: v,
+                        versao: widget.versao,
+                        selecionado: v.numero == widget.selecionado,
+                        egw: aj.marcadoresEgw ? (d.contagem[v.numero] ?? 0) : 0,
+                        citacao: d.citacoes[v.numero],
+                        temNota: d.notas.contains(v.numero),
+                        aoTocar: () => widget.aoSelecionar(v.numero),
+                      ),
                     ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      if (p.livro > 1 || p.capitulo > 1)
+                        OutlinedButton.icon(
+                          onPressed: () => widget.aoMudarCapitulo(-1),
+                          icon: const Icon(Icons.chevron_left),
+                          label: const Text('Anterior'),
+                        ),
+                      const Spacer(),
+                      if (p.livro < 66 ||
+                          p.capitulo < Referencias.capitulos[p.livro - 1])
+                        FilledButton.tonalIcon(
+                          onPressed: () => widget.aoMudarCapitulo(1),
+                          icon: const Icon(Icons.chevron_right),
+                          label: const Text('Próximo'),
+                          iconAlignment: IconAlignment.end,
+                        ),
+                    ],
+                  ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

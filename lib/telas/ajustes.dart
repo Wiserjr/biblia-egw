@@ -7,6 +7,7 @@ import '../dados/biblioteca.dart';
 import 'atualizacao_app.dart';
 import 'backup.dart';
 import 'inicio.dart' show TelaInicio;
+import 'largura_texto.dart' show larguraMinimaParaAjuste;
 import 'texto_biblico.dart';
 import 'tema.dart';
 
@@ -26,8 +27,9 @@ class _TelaAjustesState extends State<TelaAjustes> {
     final aj = Ajustes.instancia;
     final t = Theme.of(context);
     final largura = MediaQuery.sizeOf(context).width;
-    // No celular em pé o texto já ocupa a tela toda, e não há painel ao lado.
-    final larguraAjustavel = largura >= 600;
+    // No celular em pé o texto ocupa a tela toda (o ajuste não vale ali), e
+    // não há painel ao lado.
+    final larguraAjustavel = largura >= larguraMinimaParaAjuste;
     final telaLarga = largura >= TelaInicio.larguraDividida;
     return Scaffold(
       appBar: AppBar(title: const Text('Ajustes')),

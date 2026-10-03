@@ -65,17 +65,10 @@ class _TelaPdfState extends State<TelaPdf> {
   /// O livro já abriu e está na página e no zoom iniciais.
   bool _pronto = false;
 
-  /// O zoom visto por último, para guardar só quando ele muda (rolar a
-  /// página também avisa o controle).
-  double? _ultimoZoom;
-  double? _fatorParaGuardar;
-  Timer? _guardarZoom;
-
   @override
   void initState() {
     super.initState();
     Ajustes.instancia.addListener(_realcesMudaram);
-    _controle.addListener(_zoomMudou);
   }
 
   void _atualizar() {
@@ -90,10 +83,6 @@ class _TelaPdfState extends State<TelaPdf> {
   @override
   void dispose() {
     Ajustes.instancia.removeListener(_realcesMudaram);
-    _controle.removeListener(_zoomMudou);
-    _guardarZoom?.cancel();
-    final fator = _fatorParaGuardar;
-    if (fator != null) Ajustes.instancia.zoomLivros = fator;
     // Fora do dispose: parar avisa outras telas, que não podem se refazer
     // enquanto a árvore de widgets está sendo desmontada.
     if (LeituraVoz.instancia.falandoTrecho) {
@@ -108,37 +97,12 @@ class _TelaPdfState extends State<TelaPdf> {
 
   // --- zoom ---
 
-  /// A página inteira na tela, como o livro abre (com o aumento que a pessoa
-  /// usou por último).
-  double? _zoomInicial(
+  static double? _zoomInicial(
     PdfDocument documento,
     PdfViewerController controle,
     double paginaInteira,
     double larguraDaTela,
-  ) => zoomInicial(
-    paginaInteira: paginaInteira,
-    larguraDaTela: larguraDaTela,
-    fator: Ajustes.instancia.zoomLivros,
-  );
-
-  /// Guarda o aumento em relação à página inteira, para o próximo livro abrir
-  /// igual. Espera o movimento parar para não gravar a cada quadro.
-  void _zoomMudou() {
-    if (!_pronto || !_controle.isReady) return;
-    final zoom = _controle.currentZoom;
-    final antes = _ultimoZoom;
-    _ultimoZoom = zoom;
-    if (antes == null || (zoom - antes).abs() < 0.001) return;
-    final inteira = _controle.alternativeFitScale ?? _controle.coverScale;
-    if (inteira <= 0) return;
-    _fatorParaGuardar = zoom / inteira;
-    _guardarZoom?.cancel();
-    _guardarZoom = Timer(const Duration(milliseconds: 600), () {
-      final fator = _fatorParaGuardar;
-      _fatorParaGuardar = null;
-      if (fator != null) Ajustes.instancia.zoomLivros = fator;
-    });
-  }
+  ) => zoomInicial(paginaInteira: paginaInteira, larguraDaTela: larguraDaTela);
 
   /// Volta a mostrar a página atual inteira.
   void _paginaInteira() {
@@ -525,7 +489,6 @@ class _TelaPdfState extends State<TelaPdf> {
   void _livroPronto(PdfDocument documento, PdfViewerController controle) {
     _eventos ??= documento.events.listen(_eventoDoLivro);
     _pronto = true;
-    _ultimoZoom = controle.currentZoom;
     _criarBusca();
     _atualizar();
   }
@@ -732,8 +695,9 @@ class _TelaPdfState extends State<TelaPdf> {
     sizeDelegateProvider: PdfViewerSizeDelegateProviderLegacy(
       calculateInitialZoom: _zoomInicial,
     ),
-    // Zoom em passos pequenos (botões e Ctrl + / Ctrl -), e a roda do mouse
-    // com Ctrl, ou o gesto de pinça no touchpad, pela metade.
+    // Zoom em passos pequenos (botões e Ctrl + / Ctrl -), e o Ctrl com a
+    // roda do mouse pela metade. (A pinça, no celular e no touchpad do PC,
+    // segue os dedos e não passa por aqui.)
     zoomStepsDelegateProvider: const _PassosDeZoom(),
     scaleByPointerScale: 0.5,
     pagePaintCallbacks: [_pintarRealces, _pintarBusca],
@@ -789,18 +753,20 @@ class _TelaPdfState extends State<TelaPdf> {
   }
 }
 
-/// O zoom com que o livro abre: a página inteira na tela, vezes o [fator]
-/// que a pessoa usou por último, sem passar da largura da tela (o zoom com
-/// que os livros abriam até a versão 1.4).
+/// O zoom com que o livro abre: a página inteira na tela. Só quando a tela
+/// é baixa demais para isso (celular deitado, janela achatada), a letra
+/// ficaria miúda: aí abre no tamanho real da página (zoom 1), sem passar da
+/// largura da tela, que era o zoom com que os livros abriam até a 1.4.
 @visibleForTesting
 double zoomInicial({
   required double paginaInteira,
   required double larguraDaTela,
-  required double fator,
 }) {
   final menor = math.min(paginaInteira, larguraDaTela);
   final maior = math.max(paginaInteira, larguraDaTela);
-  return (paginaInteira * fator).clamp(menor, maior);
+  return math
+      .max(paginaInteira, math.min(1.0, larguraDaTela))
+      .clamp(menor, maior);
 }
 
 /// Os passos do zoom dos botões e do teclado: de 15% em 15%, passando pela

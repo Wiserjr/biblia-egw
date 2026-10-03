@@ -175,6 +175,9 @@ class _TelaInicioState extends State<TelaInicio> {
     if (versao == null) return;
     final destino = await showModalBottomSheet<Posicao>(
       context: context,
+      // Na janela estreita do PC ou no tablet em pé, a largura toda (o
+      // padrão para em 640).
+      constraints: const BoxConstraints(),
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,

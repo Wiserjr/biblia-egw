@@ -1,5 +1,6 @@
 import 'package:biblia_estudo/dados/ajustes.dart';
 import 'package:biblia_estudo/telas/area_dividida.dart';
+import 'package:biblia_estudo/telas/largura_texto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -52,16 +53,37 @@ void main() {
     expect(aj.painelEstudo, isTrue);
     expect(aj.abrirPainelAoTocar, isTrue);
     expect(aj.larguraPainel, Ajustes.larguraPainelPadrao);
-    expect(aj.zoomLivros, 1.0, reason: 'a página inteira');
 
     aj.larguraTexto = 0.1;
     expect(aj.larguraTexto, Ajustes.minLarguraTexto);
     aj.larguraPainel = 0.95;
     expect(aj.larguraPainel, Ajustes.maxLarguraPainel);
-    aj.zoomLivros = 0.5;
-    expect(aj.zoomLivros, Ajustes.minZoomLivros);
-    aj.zoomLivros = 50;
-    expect(aj.zoomLivros, Ajustes.maxZoomLivros);
+  });
+
+  test('a largura do texto só vale onde o ajuste aparece', () {
+    // A tela toda, por padrão.
+    expect(
+      larguraDaColuna(disponivel: 1500, fracao: 1, larguraDaTela: 1600),
+      1500,
+    );
+    expect(
+      larguraDaColuna(disponivel: 1500, fracao: 0.6, larguraDaTela: 1600),
+      900,
+    );
+    // Celular em pé: o ajuste não aparece e não vale.
+    expect(
+      larguraDaColuna(disponivel: 320, fracao: 0.4, larguraDaTela: 360),
+      320,
+    );
+    // Com o painel largo, a coluna não fica estreita demais.
+    expect(
+      larguraDaColuna(disponivel: 431, fracao: 0.4, larguraDaTela: 1600),
+      420,
+    );
+    expect(
+      larguraDaColuna(disponivel: 400, fracao: 0.4, larguraDaTela: 1600),
+      400,
+    );
   });
 
   group('na tela do PC', () {

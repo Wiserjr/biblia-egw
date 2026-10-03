@@ -109,31 +109,18 @@ void main() {
   });
 
   group('zoom', () {
-    test('o livro abre com a página inteira, sem passar da largura', () {
-      // Monitor largo: a página inteira é bem menor que a largura da tela.
-      expect(
-        zoomInicial(paginaInteira: 1.4, larguraDaTela: 3.8, fator: 1),
-        1.4,
-      );
-      expect(
-        zoomInicial(paginaInteira: 1.4, larguraDaTela: 3.8, fator: 1.5),
-        closeTo(2.1, 1e-9),
-      );
-      expect(
-        zoomInicial(paginaInteira: 1.4, larguraDaTela: 3.8, fator: 6),
-        3.8,
-        reason: 'nunca mais perto do que o zoom de antes',
-      );
+    test('o livro abre com a página inteira, e a letra legível', () {
+      // Monitor largo: a página inteira, bem menor que a largura da tela
+      // (com que os livros abriam até a 1.4).
+      expect(zoomInicial(paginaInteira: 1.4, larguraDaTela: 3.8), 1.4);
       // Celular em pé: a largura da tela é a página inteira.
-      expect(
-        zoomInicial(paginaInteira: 0.9, larguraDaTela: 0.9, fator: 3),
-        0.9,
-      );
-      // Celular deitado: a largura passa da página inteira, que fica.
-      expect(
-        zoomInicial(paginaInteira: 0.6, larguraDaTela: 2.2, fator: 1),
-        0.6,
-      );
+      expect(zoomInicial(paginaInteira: 0.9, larguraDaTela: 0.9), 0.9);
+      expect(zoomInicial(paginaInteira: 0.9, larguraDaTela: 0.92), 0.92);
+      // Celular deitado: a página inteira deixaria a letra miúda; abre no
+      // tamanho real da página, ainda menor que a largura.
+      expect(zoomInicial(paginaInteira: 0.56, larguraDaTela: 2.04), 1.0);
+      // Janela estreita e baixa: nunca passa da largura.
+      expect(zoomInicial(paginaInteira: 0.5, larguraDaTela: 0.7), 0.7);
     });
 
     test('passos de 15%, pela página inteira e pela largura', () {
@@ -282,27 +269,13 @@ void main() {
       await _esperar(tester, () => false, vezes: 4);
       expect(c.currentZoom, closeTo(inteira, 0.01));
       expect(c.pageNumber, 3);
-      expect(tester.takeException(), isNull);
-    }, skip: !temPdfium);
 
-    testWidgets('o próximo livro abre com o zoom que a pessoa usou', (
-      tester,
-    ) async {
-      var c = await abrirNoPc(tester);
-      final inteira = c.alternativeFitScale!;
+      // Aproximar num livro não faz o próximo abrir aproximado.
       await tester.tap(find.widgetWithIcon(IconButton, Icons.zoom_in));
       await _esperar(tester, () => false, vezes: 10);
-      expect(Ajustes.instancia.zoomLivros, closeTo(1.15, 0.01));
-
       await tester.pumpWidget(const SizedBox());
-      c = await abrirNoPc(tester);
-      expect(c.currentZoom, closeTo(inteira * 1.15, 0.01));
-
-      // Um zoom guardado maior que a largura da tela não passa dela.
-      await tester.pumpWidget(const SizedBox());
-      Ajustes.instancia.zoomLivros = 6;
-      c = await abrirNoPc(tester);
-      expect(c.currentZoom, closeTo(c.coverScale, 0.01));
+      final outro = await abrirNoPc(tester);
+      expect(outro.currentZoom, closeTo(outro.alternativeFitScale!, 0.01));
       expect(tester.takeException(), isNull);
     }, skip: !temPdfium);
 

@@ -8,7 +8,8 @@ import '../dados/ajustes.dart';
 /// [Ajustes.painelEstudo]), a divisória e o painel à direita.
 ///
 /// O texto fica sempre na mesma posição da árvore: abrir ou fechar o painel
-/// não o recria (nem perde a rolagem). Arrastar a divisória muda a largura do
+/// não o recria, e o leitor devolve o lugar da leitura quando as linhas se
+/// refazem com a largura nova. Arrastar a divisória muda a largura do
 /// painel, guardada nos ajustes ao soltar; dois cliques voltam à largura
 /// padrão.
 class AreaDividida extends StatefulWidget {
@@ -40,12 +41,17 @@ class _AreaDivididaState extends State<AreaDividida> {
       builder: (context, c) {
         final aj = Ajustes.instancia;
         final total = c.maxWidth;
+        final comPainel = widget.telaLarga && aj.painelEstudo;
+        // A divisória saiu da tela no meio de um arrasto (o painel fechou, a
+        // janela estreitou): o arrasto não termina mais, e a largura volta a
+        // ser a dos ajustes.
+        if (!comPainel) _arrastando = null;
         double largura() =>
             larguraDoPainel(total, _arrastando ?? aj.larguraPainel);
         return Row(
           children: [
             Expanded(child: widget.texto),
-            if (widget.telaLarga && aj.painelEstudo) ...[
+            if (comPainel) ...[
               _Divisoria(
                 aoArrastar: (dx) =>
                     setState(() => _arrastando = (largura() - dx) / total),
