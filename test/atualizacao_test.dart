@@ -110,16 +110,27 @@ void main() {
 
     test('o script espera o app fechar, copia e reabre', () {
       expect(scriptWindows, contains('>>"%ALVO%" (call )'));
-      expect(
-        scriptWindows,
-        contains('robocopy "%BIBLIA_ORIGEM%" "%BIBLIA_DESTINO%" /E'),
-      );
       expect(scriptWindows, contains(r'"%BIBLIA_DESTINO%\%BIBLIA_EXE%"'));
       expect(
         scriptWindows.split('\r\n').every((l) => !l.contains('\n')),
         isTrue,
         reason: 'cmd.exe espera CRLF',
       );
+    });
+
+    test('o executável vai por último, e só se o resto entrou', () {
+      // Uma cópia pela metade deixa o executável velho: a abertura seguinte
+      // vê a versão antiga e avisa que não terminou.
+      final resto = scriptWindows.indexOf(
+        'robocopy "%BIBLIA_ORIGEM%" "%BIBLIA_DESTINO%" /E /XF "%BIBLIA_EXE%"',
+      );
+      final exe = scriptWindows.indexOf(
+        'robocopy "%BIBLIA_ORIGEM%" "%BIBLIA_DESTINO%" "%BIBLIA_EXE%"',
+      );
+      expect(resto, greaterThan(0));
+      expect(exe, greaterThan(resto));
+      expect(scriptWindows, contains('if %R% GEQ 0 if %R% LSS 8 goto exe'));
+      expect(scriptWindows, contains('if %T% GEQ 2 goto abrir'));
     });
 
     test('a espera tem fim: encerra o app à força e depois desiste', () {
@@ -166,7 +177,21 @@ void main() {
           .allMatches(scriptWindows)
           .map((m) => m.group(1))
           .toSet();
-      expect(usadas.difference({...v.keys, 'ALVO', 'N'}), isEmpty);
+      expect(
+        usadas.difference({...v.keys, 'ALVO', 'N', 'T', 'R', 'ERRORLEVEL'}),
+        isEmpty,
+      );
+    });
+
+    test('na raiz de um disco, o destino não termina em barra', () {
+      // O robocopy lê `"D:\"` como aspas escapadas.
+      final v = variaveisScriptWindows(
+        pid: 1,
+        origem: r'C:\tmp\novo',
+        destino: r'D:\',
+        emUso: 'biblia_estudo.exe',
+      );
+      expect(v['BIBLIA_DESTINO'], r'D:\.');
     });
   });
 

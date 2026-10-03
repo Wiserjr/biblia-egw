@@ -207,8 +207,10 @@ versão nova, baixa e instala com a confirmação da pessoa. Também em
   de uns 10 segundos), copia os arquivos por cima e abre a versão nova, que
   avisa se a troca deu certo. Os dados (livros baixados, marcações) ficam em
   `AppData`, fora da pasta do programa. Até a 1.4.0 o script esperava com
-  `tasklist | find`, que trava no Windows 11; quem tem essas versões instala
-  a 1.4.1 à mão uma vez. Distribua o zip para ser extraído numa pasta do
+  `tasklist | find`, que trava no Windows 11; quem tem essas versões
+  reinicia o PC (o que fecha os scripts presos) e instala a 1.4.1 à mão uma
+  vez. Ao abrir, a 1.4.1 apaga os temporários da atualização, o que também
+  desarma algum script antigo que ainda esteja preso. Distribua o zip para ser extraído numa pasta do
   usuário (ex.: `%LOCALAPPDATA%\Biblia de Estudo`), não em *Arquivos de
   Programas*, onde o app não tem permissão de gravar.
 

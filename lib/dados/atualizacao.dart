@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// Atualização automática do próprio app, no padrão do Louvor JA e do app de
 /// recadastramento: ao abrir, o app consulta um manifesto publicado junto com a
@@ -50,9 +49,14 @@ class Atualizacao {
 
   static const _tetoManifesto = 16 * 1024;
 
-  /// Nas preferências, a versão que o app saiu para instalar no Windows.
-  /// A abertura seguinte confere se ela entrou ([conferirAtualizacaoAnterior]).
-  static const _chavePendente = 'atualizacaoWindowsPendente';
+  /// Arquivo, na pasta de dados do app, com a versão que o app saiu para
+  /// instalar no Windows; a abertura seguinte confere se ela entrou
+  /// ([conferirAtualizacaoAnterior]). Arquivo próprio, e não as
+  /// preferências: outra janela do app aberta regrava as preferências
+  /// inteiras a cada mudança e apagaria a marca.
+  static const _arquivoPendente = 'atualizacao-pendente.txt';
+
+  bool _conferiu = false;
 
   /// O APK tem ~30 MB e o zip do Windows ~40 MB. O teto é contra servidor
   /// comprometido (ou proxy hostil) enchendo o disco.
@@ -260,12 +264,15 @@ class Atualizacao {
     //
     // Os caminhos vão em variáveis de ambiente, e não no texto do script:
     // assim acento e espaço no nome da pasta não quebram nada.
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_chavePendente, info.versionCode);
+    final pendente = await _pendente();
+    await pendente.writeAsString('${info.versionCode}', flush: true);
     try {
       await Process.start(
         Platform.environment['ComSpec'] ?? 'cmd.exe',
-        ['/d', '/c', 'atualizar.cmd'],
+        // `.\` e não só o nome: com NoDefaultCurrentDirectoryInExePath o cmd
+        // não procura na pasta atual. `/e:on` liga as extensões mesmo que o
+        // registro as desligue (o script usa `set /a`).
+        ['/d', '/e:on', '/c', r'.\atualizar.cmd'],
         workingDirectory: base.path,
         environment: variaveisScriptWindows(
           pid: pid,
@@ -275,7 +282,7 @@ class Atualizacao {
         ),
       );
     } catch (_) {
-      await prefs.remove(_chavePendente);
+      await pendente.delete();
       rethrow;
     }
     // Encerra na hora, sem a rotina de saída: se algum plugin travar ao
@@ -285,22 +292,29 @@ class Atualizacao {
     exit(0);
   }
 
+  Future<File> _pendente() async => File(
+    p.join((await getApplicationSupportDirectory()).path, _arquivoPendente),
+  );
+
   /// Na abertura, diz como terminou a atualização que o app saiu para
-  /// instalar no Windows, ou `null` se não havia nenhuma.
+  /// instalar no Windows, ou `null` se não havia nenhuma. Só a primeira
+  /// chamada de cada abertura confere.
+  ///
+  /// Também apaga os temporários (o zip e a pasta extraída, mais de 100 MB).
+  /// Isso desarma, de quebra, os scripts da 1.4.0 e anteriores que tenham
+  /// ficado presos na janela "find": o cmd relê o arquivo a cada linha, e
+  /// sem ele para em vez de copiar a versão velha por cima desta.
   Future<({bool concluida, String versao})?>
   conferirAtualizacaoAnterior() async {
-    if (!Platform.isWindows) return null;
-    final prefs = await SharedPreferences.getInstance();
-    final pendente = prefs.getInt(_chavePendente);
+    if (!Platform.isWindows || _conferiu) return null;
+    _conferiu = true;
+    await _limparTemporarios();
+    final arquivo = await _pendente();
+    if (!await arquivo.exists()) return null;
+    final pendente = int.tryParse((await arquivo.readAsString()).trim());
+    await arquivo.delete();
     if (pendente == null) return null;
-    await prefs.remove(_chavePendente);
     final info = await PackageInfo.fromPlatform();
-    // Quem fez a troca foi o script; os temporários (zip e pasta extraída,
-    // mais de 100 MB) ficam para trás. A espera é para o script terminar e
-    // soltar a pasta.
-    unawaited(
-      Future<void>.delayed(const Duration(seconds: 15), _limparTemporarios),
-    );
     return (
       concluida: (int.tryParse(info.buildNumber) ?? 0) >= pendente,
       versao: info.version,
@@ -554,7 +568,9 @@ Map<String, String> variaveisScriptWindows({
 }) => {
   'BIBLIA_PID': '$pid',
   'BIBLIA_ORIGEM': origem,
-  'BIBLIA_DESTINO': destino,
+  // Na raiz de um disco a pasta é `D:\`, e o robocopy lê `"D:\"` como
+  // aspas escapadas; `D:\.` é a mesma pasta.
+  'BIBLIA_DESTINO': destino.endsWith(r'\') ? '$destino.' : destino,
   'BIBLIA_EM_USO': emUso,
   'BIBLIA_EXE': Atualizacao.executavelWindows,
 };
@@ -574,13 +590,17 @@ Map<String, String> variaveisScriptWindows({
 ///    número). Passados uns 30, desiste da cópia: outra janela do app está
 ///    aberta, e a abertura seguinte avisa que a atualização não terminou.
 /// 3. Copia com robocopy, que tenta de novo arquivos ainda presos (códigos
-///    abaixo de 8 são sucesso), e reabre o app.
+///    de 0 a 7 são sucesso; negativo é robocopy que caiu), com uma nova
+///    tentativa. O executável vai por último, e só se o resto entrou: uma
+///    cópia pela metade deixa o executável velho, e a abertura seguinte vê
+///    a versão antiga e avisa que a atualização não terminou.
+/// 4. Reabre o app.
 ///
 /// `ping` é a pausa de 1 segundo: o `timeout` falha quando a entrada do
 /// script não é um teclado, e aqui ela não é.
 const scriptWindows =
     '@echo off\r\n'
-    'setlocal DisableDelayedExpansion\r\n'
+    'setlocal EnableExtensions DisableDelayedExpansion\r\n'
     'set "ALVO=%BIBLIA_DESTINO%\\%BIBLIA_EM_USO%"\r\n'
     'set /a N=0\r\n'
     ':espera\r\n'
@@ -593,10 +613,17 @@ const scriptWindows =
     'ping -n 2 127.0.0.1 >NUL\r\n'
     'goto espera\r\n'
     ':copiar\r\n'
-    'robocopy "%BIBLIA_ORIGEM%" "%BIBLIA_DESTINO%" /E /R:5 /W:1 /NFL /NDL /NJH /NJS /NP >NUL\r\n'
-    'if not errorlevel 8 goto abrir\r\n'
+    'set /a T=0\r\n'
+    ':copiar_de_novo\r\n'
+    'set /a T+=1\r\n'
+    'robocopy "%BIBLIA_ORIGEM%" "%BIBLIA_DESTINO%" /E /XF "%BIBLIA_EXE%" /R:5 /W:1 /NFL /NDL /NJH /NJS /NP >NUL\r\n'
+    'set R=%ERRORLEVEL%\r\n'
+    'if %R% GEQ 0 if %R% LSS 8 goto exe\r\n'
+    'if %T% GEQ 2 goto abrir\r\n'
     'ping -n 3 127.0.0.1 >NUL\r\n'
-    'robocopy "%BIBLIA_ORIGEM%" "%BIBLIA_DESTINO%" /E /R:5 /W:1 /NFL /NDL /NJH /NJS /NP >NUL\r\n'
+    'goto copiar_de_novo\r\n'
+    ':exe\r\n'
+    'robocopy "%BIBLIA_ORIGEM%" "%BIBLIA_DESTINO%" "%BIBLIA_EXE%" /R:5 /W:1 /NFL /NDL /NJH /NJS /NP >NUL\r\n'
     ':abrir\r\n'
     'start "" /D "%BIBLIA_DESTINO%" "%BIBLIA_DESTINO%\\%BIBLIA_EXE%"\r\n'
     'endlocal\r\n';
