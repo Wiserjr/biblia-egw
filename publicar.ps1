@@ -2,8 +2,17 @@
 # release no GitHub, com o manifesto da atualizacao automatica.
 #
 # A versao vem do `version:` do pubspec.yaml. Para lancar a 1.0.1, suba a
-# versao no pubspec (o numero depois do + TAMBEM) e rode este script; ele cria
-# a release se a tag ainda nao existir, ou substitui os arquivos se ja existir.
+# versao no pubspec (o numero depois do + TAMBEM), escreva as novidades em
+# NOTAS_DA_VERSAO.md e rode este script.
+#
+# O que o script faz sozinho, nesta ordem (ver ferramentas\publicacao.ps1):
+#   1. Confere que esta pasta esta no main, sem alteracoes por salvar.
+#   2. Lista os PRs abertos no GitHub e pergunta, um a um, se entram nesta
+#      versao; os que entram, ele mescla.
+#   3. Traz o main do GitHub (git pull).
+#   4. Recusa publicar de novo uma versao ja publicada (a menos que se use
+#      -Republicar) e recusa notas que nao falem da versao.
+#   5. Testa, compila, publica a release e, por ultimo, avisa os apps.
 #
 # Pre-requisitos, uma vez:
 #     & "C:\Program Files\GitHub CLI\gh.exe" auth login
@@ -13,6 +22,7 @@
 #     powershell -ExecutionPolicy Bypass -File publicar.ps1
 #
 # Opcoes:
+#     -Republicar    refaz os arquivos de uma versao ja publicada (mesmo numero)
 #     -SemCompilar   republica o que ja esta em build\publicar\
 #     -SemTestes     pula analyze e testes (nao recomendado)
 #     -SoAndroid     nao compila nem publica o Windows
@@ -28,6 +38,7 @@
 #     a atualizacao nao entra por cima da versao instalada.
 
 param(
+    [switch]$Republicar,
     [switch]$SemCompilar,
     [switch]$SemTestes,
     [switch]$SoAndroid
@@ -57,37 +68,41 @@ function Existe-Release([string]$nome) {
 
 if (-not (Test-Path $gh)) { throw "gh nao encontrado em $gh" }
 if (-not (Test-Path 'pubspec.yaml')) { throw 'Rode na raiz do repositorio (pubspec.yaml nao encontrado).' }
-
-# --- versao ---
-$linha = Select-String -Path 'pubspec.yaml' -Pattern '^version:\s*(.+)$' | Select-Object -First 1
-if (-not $linha) { throw 'Nao achei a linha version: no pubspec.yaml' }
-$partes = $linha.Matches[0].Groups[1].Value.Trim().Split('+')
-$versao = $partes[0]
-if ($partes.Count -lt 2 -or $partes[1] -notmatch '^\d+$') {
-    throw 'O version: do pubspec precisa do numero depois do + (ex.: 1.0.1+2).'
-}
-$codigo = [int]$partes[1]
-# Com --split-per-abi o Flutter soma 1000 x arquitetura a este numero; os apps
-# comparam so a base, que por isso tem de ficar abaixo de 1000.
-if ($codigo -ge 1000) { throw "O numero depois do + passou de 999 ($codigo)." }
-$tag = "biblia-v$versao"
-Write-Output "Versao do pubspec: $versao (versionCode $codigo)  ->  tag $tag"
+. (Join-Path $PSScriptRoot 'ferramentas\publicacao.ps1')
 
 & $gh auth status
 if ($LASTEXITCODE -ne 0) { throw 'Autentique primeiro: gh auth login' }
 
+# --- main igual ao do GitHub, com os PRs que entram nesta versao ---
+$scripts = @('publicar.ps1', 'ferramentas\publicacao.ps1')
+$antes = $scripts | ForEach-Object { (Get-FileHash $_).Hash }
+Sincronizar-Main -gh $gh -repo $repo
+$depois = $scripts | ForEach-Object { (Get-FileHash $_).Hash }
+if (Compare-Object $antes $depois) {
+    throw 'O git pull trouxe uma versao nova deste script. Rode-o de novo.'
+}
+
+# --- versao ---
+$v = Ler-Versao 'pubspec.yaml'
+$versao = $v.nome
+$codigo = $v.codigo
+$tag = "biblia-v$versao"
+Write-Output "Versao do pubspec: $versao (versionCode $codigo)  ->  tag $tag"
+
 # --- versao publicada ---
-# Publicar com o mesmo numero de uma versao anterior deixa todo mundo sem
-# atualizacao, em silencio. Republicar a MESMA versao e permitido.
+# Publicar com o numero de uma versao anterior deixa todo mundo sem
+# atualizacao, em silencio; publicar de novo a mesma versao so troca os
+# arquivos dela, e so com -Republicar.
 $publicado = $null
 try {
     $publicado = Invoke-RestMethod "https://github.com/$repo/releases/download/$canal/atualizacao-$id.json"
 } catch {
     # Primeira publicacao, ou sem rede.
 }
-if ($publicado -and $publicado.versionName -ne $versao -and $codigo -le [int]$publicado.versionCode) {
-    throw "A versao publicada ($($publicado.versionName)) ja tem versionCode $($publicado.versionCode). Suba o numero depois do + no pubspec."
-}
+Conferir-Versao -versao $versao -codigo $codigo -publicado $publicado `
+    -releaseExiste (Existe-Release $tag) -republicar $Republicar.IsPresent
+$notas = 'NOTAS_DA_VERSAO.md'
+Conferir-Notas $notas $versao
 
 # --- qualidade ---
 if (-not $SemTestes) {
@@ -174,7 +189,6 @@ git push origin main
 if ($LASTEXITCODE -ne 0) { throw 'git push falhou.' }
 
 # --- release da versao ---
-$notas = 'NOTAS_DA_VERSAO.md'
 if (-not (Existe-Release $tag)) {
     Write-Output "Criando a release $tag..."
     & $gh release create $tag $arquivos $caminhoManifesto --repo $repo `

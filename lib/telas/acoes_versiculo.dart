@@ -4,14 +4,17 @@ import 'package:share_plus/share_plus.dart';
 
 import '../dados/ajustes.dart';
 import '../dados/biblia.dart';
+import '../dados/leitura_voz.dart';
 import '../dados/modelos.dart';
 import '../dados/referencias.dart';
+import 'acoes_texto.dart';
 
 String textoParaCompartilhar(Posicao p, String texto, Versao versao) =>
     '“${textoPuro(texto).trim()}”\n'
     '${Referencias.nome(p.livro)} ${p.capitulo}:${p.versiculo} (${versao.sigla})';
 
-/// Menu de um versículo: copiar, compartilhar, marcar com cor, anotar.
+/// Menu de um versículo: copiar, compartilhar, marcar com cor, anotar, ouvir
+/// dali em diante e (no Android) mandar para os outros apps do celular.
 Future<void> mostrarAcoesVersiculo(
   BuildContext context,
   Posicao p,
@@ -62,6 +65,32 @@ Future<void> mostrarAcoesVersiculo(
               editarAnotacao(context, p);
             },
           ),
+          if (LeituraVoz.suportada)
+            ListTile(
+              leading: const Icon(Icons.volume_up_outlined),
+              title: const Text('Ouvir a partir daqui'),
+              onTap: () {
+                Navigator.pop(c);
+                LeituraVoz.instancia.ler(
+                  versao.id,
+                  p.livro,
+                  p.capitulo,
+                  aPartirDe: p.versiculo,
+                );
+              },
+            ),
+          if (acoesDoSistemaDisponiveis)
+            ListTile(
+              leading: const Icon(Icons.more_horiz),
+              title: const Text('Mais (traduzir, outros apps…)'),
+              onTap: () {
+                Navigator.pop(c);
+                mostrarMaisAcoes(
+                  context,
+                  textoParaCompartilhar(p, texto, versao),
+                );
+              },
+            ),
         ],
       ),
     ),

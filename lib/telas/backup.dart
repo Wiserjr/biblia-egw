@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 
 import '../dados/ajustes.dart';
 
-/// Salva marcações, anotações e o plano de leitura num arquivo escolhido pela
+/// Salva marcações, anotações, realces nos livros e o plano de leitura num
+/// arquivo escolhido pela
 /// pessoa (no celular, pode ser o Google Drive), para levar a outro aparelho
 /// ou guardar antes de reinstalar o app.
 Future<void> salvarCopia(BuildContext context) async {
@@ -22,16 +23,12 @@ Future<void> salvarCopia(BuildContext context) async {
       mimeType: 'application/json',
     );
     if (destino == null) return;
-    final m = (dados['marcacoes'] as Map).length;
-    final a = (dados['anotacoes'] as Map).length;
-    msg.showSnackBar(
-      SnackBar(
-        content: Text(
-          'Cópia salva: $m ${m == 1 ? 'marcação' : 'marcações'} e '
-          '$a ${a == 1 ? 'anotação' : 'anotações'}.',
-        ),
-      ),
+    final lista = _resumo(
+      (dados['marcacoes'] as Map).length,
+      (dados['anotacoes'] as Map).length,
+      (dados['realces'] as List).length,
     );
+    msg.showSnackBar(SnackBar(content: Text('Cópia salva: $lista.')));
   } catch (e) {
     msg.showSnackBar(
       SnackBar(content: Text('Não foi possível salvar a cópia: $e')),
@@ -59,13 +56,11 @@ Future<void> restaurarCopia(BuildContext context) async {
       );
     }
     final r = Ajustes.instancia.importar(dados);
+    final lista = _resumo(r.marcacoes, r.anotacoes, r.realces);
     msg.showSnackBar(
       SnackBar(
         content: Text(
-          'Cópia restaurada: ${r.marcacoes} '
-          '${r.marcacoes == 1 ? 'marcação' : 'marcações'} e ${r.anotacoes} '
-          '${r.anotacoes == 1 ? 'anotação' : 'anotações'}. '
-          'Nada do que já estava no app foi apagado.',
+          'Cópia restaurada: $lista. Nada do que já estava no app foi apagado.',
         ),
       ),
     );
@@ -79,3 +74,16 @@ Future<void> restaurarCopia(BuildContext context) async {
 }
 
 String _dois(int n) => n.toString().padLeft(2, '0');
+
+/// "3 marcações, 1 anotação e 2 realces nos livros".
+String _resumo(int marcacoes, int anotacoes, int realces) {
+  String n(int q, String um, String varios) => '$q ${q == 1 ? um : varios}';
+  final partes = [
+    n(marcacoes, 'marcação', 'marcações'),
+    n(anotacoes, 'anotação', 'anotações'),
+    if (realces > 0) n(realces, 'realce nos livros', 'realces nos livros'),
+  ];
+  return partes.length == 2
+      ? partes.join(' e ')
+      : '${partes[0]}, ${partes[1]} e ${partes[2]}';
+}

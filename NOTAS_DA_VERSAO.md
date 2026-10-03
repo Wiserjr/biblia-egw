@@ -1,4 +1,19 @@
-## Bíblia de Estudo — primeira versão
+## Bíblia de Estudo 1.2.0
+
+### Novidades da 1.2.0
+
+- **"No livro" volta a abrir o livro.** Desde a primeira versão, tocar em
+  "No livro" num trecho que cita o versículo deixava a tela cinza. Agora o
+  livro abre na página, com a citação destacada.
+- **Mais opções ao selecionar um trecho nos livros:** Realçar (5 cores),
+  Nota, Compartilhar, Ouvir, Procurar no livro e, no Android, Mais (Traduzir
+  e outros apps do celular).
+- Os realces e as notas dos livros ficam em *Marcações*, na aba *Livros*, e
+  vão na cópia de segurança.
+- Lupa na barra do livro para procurar uma palavra no livro todo.
+- No versículo da Bíblia: *Ouvir a partir daqui* e *Mais*.
+
+---
 
 Uma Bíblia de estudo para Android e Windows em que cada versículo traz o que
 Ellen G. White e os pioneiros adventistas escreveram sobre ele.
@@ -35,7 +50,9 @@ anotações.
   lado a lado e o capítulo de O Desejado de Todas as Nações de cada um.
 - Índice temático com 50 temas e 16 estudos bíblicos em perguntas e
   respostas, com as leituras de Ellen G. White de cada tema.
-- Marcações com cores, anotações e busca.
+- Marcações com cores, anotações e busca; realces e notas também nos livros.
+- Plano de leitura, leitura do capítulo em voz alta e cópia de segurança das
+  marcações e anotações.
 
 Os livros de Ellen G. White são baixados do site do Centro de Pesquisas Ellen
 G. White na primeira vez que você abre um trecho (ou todos de uma vez em

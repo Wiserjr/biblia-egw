@@ -30,6 +30,10 @@ class LeituraVoz extends ChangeNotifier {
 
   bool get lendo => _capitulo != null;
 
+  /// Se está lendo um trecho avulso (ver [falar]).
+  bool get falandoTrecho => _falandoTrecho;
+  bool _falandoTrecho = false;
+
   /// Incrementado a cada início e parada: uma leitura antiga que ainda está
   /// no meio do laço percebe que foi substituída e para.
   int _rodada = 0;
@@ -43,9 +47,10 @@ class LeituraVoz extends ChangeNotifier {
     return _tts = tts;
   }
 
-  /// Lê o capítulo inteiro na tradução [versaoId]. Termina sozinha no fim do
-  /// capítulo, ou quando [parar] é chamada.
-  Future<void> ler(int versaoId, int livro, int cap) async {
+  /// Lê o capítulo na tradução [versaoId], do versículo [aPartirDe] em
+  /// diante (do começo, se null). Termina sozinha no fim do capítulo, ou
+  /// quando [parar] é chamada.
+  Future<void> ler(int versaoId, int livro, int cap, {int? aPartirDe}) async {
     await parar();
     final rodada = ++_rodada;
     _capitulo = Posicao(livro, cap);
@@ -55,9 +60,14 @@ class LeituraVoz extends ChangeNotifier {
       final tts = await _motor();
       final versiculos = await Biblia.instancia.capitulo(versaoId, livro, cap);
       if (rodada != _rodada) return;
-      await tts.speak('${Referencias.nome(livro)}, capítulo $cap.');
+      await tts.speak(
+        aPartirDe == null
+            ? '${Referencias.nome(livro)}, capítulo $cap.'
+            : '${Referencias.nome(livro)} $cap, versículo $aPartirDe.',
+      );
       for (final v in versiculos) {
         if (rodada != _rodada) return;
+        if (aPartirDe != null && v.numero < aPartirDe) continue;
         _versiculo = v.numero;
         notifyListeners();
         await tts.speak(textoFalado(v.texto));
@@ -71,11 +81,32 @@ class LeituraVoz extends ChangeNotifier {
     }
   }
 
+  /// Lê um trecho avulso (o que foi selecionado num livro, por exemplo).
+  Future<void> falar(String texto) async {
+    await parar();
+    final rodada = ++_rodada;
+    _falandoTrecho = true;
+    notifyListeners();
+    try {
+      final tts = await _motor();
+      for (final parte in partesFaladas(textoFalado(texto))) {
+        if (rodada != _rodada) return;
+        await tts.speak(parte);
+      }
+    } finally {
+      if (rodada == _rodada) {
+        _falandoTrecho = false;
+        notifyListeners();
+      }
+    }
+  }
+
   Future<void> parar() async {
-    if (!lendo) return;
+    if (!lendo && !_falandoTrecho) return;
     _rodada++;
     _capitulo = null;
     _versiculo = null;
+    _falandoTrecho = false;
     notifyListeners();
     await _tts?.stop();
   }
@@ -87,3 +118,27 @@ String textoFalado(String texto) => texto
     .replaceAll(RegExp(r'<[^>]*>'), '')
     .replaceAll(RegExp(r'\s+'), ' ')
     .trim();
+
+/// [texto] em partes de até [max] caracteres, cortadas no fim de uma frase
+/// (ou, se não houver, num espaço). O Android recusa falar mais de 4.000
+/// caracteres de uma vez, e o flutter_tts nunca avisa que terminou o que foi
+/// recusado.
+@visibleForTesting
+List<String> partesFaladas(String texto, {int max = 3500}) {
+  final partes = <String>[];
+  var resto = texto.trim();
+  while (resto.length > max) {
+    final janela = resto.substring(0, max);
+    var corte = janela.lastIndexOf(RegExp(r'[.!?;:]\s'));
+    if (corte >= max ~/ 2) {
+      corte += 1; // inclui a pontuação
+    } else {
+      corte = janela.lastIndexOf(' ');
+      if (corte <= 0) corte = max;
+    }
+    partes.add(resto.substring(0, corte).trim());
+    resto = resto.substring(corte).trim();
+  }
+  if (resto.isNotEmpty) partes.add(resto);
+  return partes;
+}
