@@ -7,10 +7,12 @@ import '../dados/lembrete.dart';
 import '../dados/modelos.dart';
 import '../dados/plano.dart';
 import '../dados/referencias.dart';
+import '../dados/versiculo_do_dia.dart';
 import 'ajustes.dart';
 import 'atualizacao_app.dart';
 import 'biblioteca.dart';
 import 'busca.dart';
+import 'cartao_versiculo.dart';
 import 'estudo.dart';
 import 'introducao.dart';
 import 'leitor.dart';
@@ -45,12 +47,24 @@ class _TelaInicioState extends State<TelaInicio> {
   /// A faixa "Leitura de hoje" foi fechada nesta abertura do app.
   bool _semFaixaPlano = false;
 
+  /// Referência do versículo do dia ("Êxodo 20:8"), para a faixa.
+  String? _versiculoDoDia;
+
   static const larguraDividida = 900.0;
 
   @override
   void initState() {
     super.initState();
     _carregarVersoes();
+    VersiculoDoDia.hoje().then((r) {
+      if (r == null || !mounted) return;
+      setState(
+        () => _versiculoDoDia = referenciaDaPassagem(
+          Posicao(r.livro, r.capitulo, r.versiculo),
+          r.ate,
+        ),
+      );
+    });
     destinoLeitura.addListener(_destinoPedido);
     // Checagem silenciosa: só aparece algo se houver versão nova.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -272,6 +286,9 @@ class _TelaInicioState extends State<TelaInicio> {
                 TelaTemas(versao: versao, abaInicial: 1),
               ),
               'plano' => _abrir(const TelaPlano()),
+              'versiculoDoDia' when versao != null => _versiculoDoDiaEmImagem(
+                versao,
+              ),
               'marcacoes' => _abrir(const TelaMarcacoes()),
               'ajustes' => _abrir(const TelaAjustes()),
               _ => null,
@@ -282,6 +299,13 @@ class _TelaInicioState extends State<TelaInicio> {
                 child: ListTile(
                   leading: Icon(Icons.event_note_outlined),
                   title: Text('Plano de leitura'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'versiculoDoDia',
+                child: ListTile(
+                  leading: Icon(Icons.wb_sunny_outlined),
+                  title: Text('Versículo do dia'),
                 ),
               ),
               PopupMenuItem(
@@ -382,10 +406,31 @@ class _TelaInicioState extends State<TelaInicio> {
                       );
                     },
                   ),
+                if (_versiculoDoDia != null)
+                  ListenableBuilder(
+                    listenable: Ajustes.instancia,
+                    builder: (context, _) =>
+                        Ajustes.instancia.versiculoDoDiaVisto
+                        ? const SizedBox.shrink()
+                        : _FaixaVersiculoDoDia(
+                            referencia: _versiculoDoDia!,
+                            aoVer: () {
+                              Ajustes.instancia.marcarVersiculoDoDiaVisto();
+                              _versiculoDoDiaEmImagem(versao);
+                            },
+                            aoFechar:
+                                Ajustes.instancia.marcarVersiculoDoDiaVisto,
+                          ),
+                  ),
                 Expanded(child: _corpo(versao, largo)),
               ],
             ),
     );
+  }
+
+  Future<void> _versiculoDoDiaEmImagem(Versao versao) async {
+    final p = await abrirVersiculoDoDia(context, versao);
+    if (p != null && mounted) _ir(p, abrirEstudo: true);
   }
 
   Widget _corpo(Versao versao, bool largo) => Row(
@@ -473,6 +518,54 @@ class _FaixaLeituraHoje extends StatelessWidget {
               )
             else
               TextButton(onPressed: aoLer, child: const Text('Ler')),
+            IconButton(
+              tooltip: 'Fechar',
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.close, size: 18),
+              onPressed: aoFechar,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Faixa do versículo do dia: aparece uma vez por dia, até a pessoa ver ou
+/// fechar. Depois ele continua no menu.
+class _FaixaVersiculoDoDia extends StatelessWidget {
+  const _FaixaVersiculoDoDia({
+    required this.referencia,
+    required this.aoVer,
+    required this.aoFechar,
+  });
+
+  final String referencia;
+  final VoidCallback aoVer;
+  final VoidCallback aoFechar;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return Material(
+      color: t.colorScheme.tertiaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 4, 4),
+        child: Row(
+          children: [
+            const Icon(Icons.wb_sunny_outlined, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Versículo do dia', style: t.textTheme.labelSmall),
+                  Text(referencia, style: t.textTheme.bodyMedium),
+                ],
+              ),
+            ),
+            TextButton(onPressed: aoVer, child: const Text('Ver')),
             IconButton(
               tooltip: 'Fechar',
               visualDensity: VisualDensity.compact,

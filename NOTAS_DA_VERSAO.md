@@ -1,4 +1,12 @@
-## Bíblia de Estudo 1.3.0
+## Bíblia de Estudo 1.4.0
+
+### Novidades da 1.4.0
+
+- **Versículo do dia**, o mesmo do Louvor JA, numa faixa no alto da tela e no
+  menu. Ele vira uma **imagem** com uma foto de fundo, pronta para enviar ou
+  salvar.
+- **Imagem de qualquer versículo:** segure o versículo e toque em *Imagem
+  para compartilhar*.
 
 ### Novidades da 1.3.0
 
@@ -53,6 +61,7 @@ anotações.
 - Índice temático com 50 temas e 16 estudos bíblicos em perguntas e
   respostas, com as leituras de Ellen G. White de cada tema.
 - Marcações com cores, anotações e busca; realces e notas também nos livros.
+- Versículo do dia e versículos em imagem, para compartilhar.
 - Planos de leitura, entre eles o Reavivados por Sua Palavra no mesmo
   capítulo que a igreja, com lembrete diário; leitura do capítulo em voz
   alta e cópia de segurança das marcações e anotações.

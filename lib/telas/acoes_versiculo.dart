@@ -8,6 +8,7 @@ import '../dados/leitura_voz.dart';
 import '../dados/modelos.dart';
 import '../dados/referencias.dart';
 import 'acoes_texto.dart';
+import 'cartao_versiculo.dart';
 
 String textoParaCompartilhar(Posicao p, String texto, Versao versao) =>
     '“${textoPuro(texto).trim()}”\n'
@@ -25,73 +26,94 @@ Future<void> mostrarAcoesVersiculo(
   await showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
+    isScrollControlled: true,
     builder: (c) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(ref, style: Theme.of(c).textTheme.titleMedium),
-          ),
-          BarraMarcacao(posicao: p),
-          ListTile(
-            leading: const Icon(Icons.copy),
-            title: const Text('Copiar'),
-            onTap: () {
-              Clipboard.setData(
-                ClipboardData(text: textoParaCompartilhar(p, texto, versao)),
-              );
-              Navigator.pop(c);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Versículo copiado.')),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.share_outlined),
-            title: const Text('Compartilhar'),
-            onTap: () {
-              Navigator.pop(c);
-              SharePlus.instance.share(
-                ShareParams(text: textoParaCompartilhar(p, texto, versao)),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.edit_note),
-            title: const Text('Anotar'),
-            onTap: () {
-              Navigator.pop(c);
-              editarAnotacao(context, p);
-            },
-          ),
-          if (LeituraVoz.suportada)
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text(ref, style: Theme.of(c).textTheme.titleMedium),
+            ),
+            BarraMarcacao(posicao: p),
             ListTile(
-              leading: const Icon(Icons.volume_up_outlined),
-              title: const Text('Ouvir a partir daqui'),
+              leading: const Icon(Icons.copy),
+              title: const Text('Copiar'),
               onTap: () {
+                Clipboard.setData(
+                  ClipboardData(text: textoParaCompartilhar(p, texto, versao)),
+                );
                 Navigator.pop(c);
-                LeituraVoz.instancia.ler(
-                  versao.id,
-                  p.livro,
-                  p.capitulo,
-                  aPartirDe: p.versiculo,
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Versículo copiado.')),
                 );
               },
             ),
-          if (acoesDoSistemaDisponiveis)
             ListTile(
-              leading: const Icon(Icons.more_horiz),
-              title: const Text('Mais (traduzir, outros apps…)'),
+              leading: const Icon(Icons.share_outlined),
+              title: const Text('Compartilhar'),
               onTap: () {
                 Navigator.pop(c);
-                mostrarMaisAcoes(
+                SharePlus.instance.share(
+                  ShareParams(text: textoParaCompartilhar(p, texto, versao)),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.image_outlined),
+              title: const Text('Imagem para compartilhar'),
+              onTap: () {
+                Navigator.pop(c);
+                Navigator.push(
                   context,
-                  textoParaCompartilhar(p, texto, versao),
+                  MaterialPageRoute(
+                    builder: (_) => CartaoVersiculo(
+                      inicio: p,
+                      ate: p.versiculo!,
+                      texto: textoPuro(texto).trim(),
+                      sigla: versao.sigla,
+                    ),
+                  ),
                 );
               },
             ),
-        ],
+            ListTile(
+              leading: const Icon(Icons.edit_note),
+              title: const Text('Anotar'),
+              onTap: () {
+                Navigator.pop(c);
+                editarAnotacao(context, p);
+              },
+            ),
+            if (LeituraVoz.suportada)
+              ListTile(
+                leading: const Icon(Icons.volume_up_outlined),
+                title: const Text('Ouvir a partir daqui'),
+                onTap: () {
+                  Navigator.pop(c);
+                  LeituraVoz.instancia.ler(
+                    versao.id,
+                    p.livro,
+                    p.capitulo,
+                    aPartirDe: p.versiculo,
+                  );
+                },
+              ),
+            if (acoesDoSistemaDisponiveis)
+              ListTile(
+                leading: const Icon(Icons.more_horiz),
+                title: const Text('Mais (traduzir, outros apps…)'),
+                onTap: () {
+                  Navigator.pop(c);
+                  mostrarMaisAcoes(
+                    context,
+                    textoParaCompartilhar(p, texto, versao),
+                  );
+                },
+              ),
+          ],
+        ),
       ),
     ),
   );

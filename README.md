@@ -34,6 +34,10 @@ App para **Android e Windows** que junta, em cada versículo:
   mesmo capítulo que a igreja (um capítulo por dia desde 17/04/2025; o app
   calcula o capítulo pela data, sem internet), com a leitura de hoje no alto
   do leitor, calendário, comentário do dia no site e lembrete diário;
+- **versículo do dia** (o calendário do Louvor JA, só referências; o texto
+  sai do banco na tradução escolhida) e **versículo em imagem**: o cartão
+  quadrado do Louvor JA, com 21 fotos escolhidas pelo assunto do versículo,
+  para compartilhar ou salvar em PNG 1080×1080;
 - **atualização automática** no Android e no Windows.
 
 No celular, tocar num versículo abre o painel de estudo por baixo; no PC (ou

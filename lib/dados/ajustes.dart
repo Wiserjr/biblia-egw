@@ -297,6 +297,17 @@ class Ajustes extends ChangeNotifier {
     return null;
   }
 
+  // --- versículo do dia ---
+
+  /// A faixa do versículo do dia já foi vista (ou fechada) hoje.
+  bool get versiculoDoDiaVisto =>
+      _p.getString('versiculoDoDiaVisto') == _diaDeHoje(DateTime.now());
+
+  void marcarVersiculoDoDiaVisto() {
+    _p.setString('versiculoDoDiaVisto', _diaDeHoje(DateTime.now()));
+    notifyListeners();
+  }
+
   // --- lembrete diário ---
 
   bool get lembrete => _p.getBool('lembrete') ?? false;
