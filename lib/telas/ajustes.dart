@@ -6,6 +6,7 @@ import '../dados/atualizacao.dart';
 import '../dados/biblioteca.dart';
 import 'atualizacao_app.dart';
 import 'backup.dart';
+import 'inicio.dart' show TelaInicio;
 import 'texto_biblico.dart';
 import 'tema.dart';
 
@@ -24,6 +25,10 @@ class _TelaAjustesState extends State<TelaAjustes> {
   Widget build(BuildContext context) {
     final aj = Ajustes.instancia;
     final t = Theme.of(context);
+    final largura = MediaQuery.sizeOf(context).width;
+    // No celular em pé o texto já ocupa a tela toda, e não há painel ao lado.
+    final larguraAjustavel = largura >= 600;
+    final telaLarga = largura >= TelaInicio.larguraDividida;
     return Scaffold(
       appBar: AppBar(title: const Text('Ajustes')),
       body: ListenableBuilder(
@@ -58,6 +63,19 @@ class _TelaAjustesState extends State<TelaAjustes> {
                 ),
               ),
             ),
+            if (larguraAjustavel)
+              ListTile(
+                title: const Text('Largura do texto'),
+                subtitle: Slider(
+                  value: aj.larguraTexto,
+                  min: Ajustes.minLarguraTexto,
+                  max: 1,
+                  divisions: 12,
+                  label: '${(aj.larguraTexto * 100).round()}%',
+                  onChanged: (v) => aj.larguraTexto = v,
+                ),
+                trailing: Text('${(aj.larguraTexto * 100).round()}%'),
+              ),
             SwitchListTile(
               title: const Text('Palavras de Jesus em vermelho'),
               subtitle: const Text('Nas traduções que as marcam'),
@@ -85,6 +103,36 @@ class _TelaAjustesState extends State<TelaAjustes> {
                 onSelectionChanged: (s) => aj.tema = s.first,
               ),
             ),
+            if (telaLarga) ...[
+              _titulo(context, 'Painel de estudo'),
+              SwitchListTile(
+                title: const Text('Mostrar o painel ao lado do texto'),
+                subtitle: const Text(
+                  'As notas e as referências do versículo tocado. Também abre '
+                  'e fecha pelo botão no alto da tela.',
+                ),
+                value: aj.painelEstudo,
+                onChanged: (v) => aj.painelEstudo = v,
+              ),
+              SwitchListTile(
+                title: const Text('Abrir o painel ao tocar num versículo'),
+                subtitle: const Text('Quando ele estiver fechado'),
+                value: aj.abrirPainelAoTocar,
+                onChanged: (v) => aj.abrirPainelAoTocar = v,
+              ),
+              ListTile(
+                title: const Text('Largura do painel'),
+                subtitle: Slider(
+                  value: aj.larguraPainel,
+                  min: Ajustes.minLarguraPainel,
+                  max: Ajustes.maxLarguraPainel,
+                  divisions: 10,
+                  label: '${(aj.larguraPainel * 100).round()}%',
+                  onChanged: (v) => aj.larguraPainel = v,
+                ),
+                trailing: Text('${(aj.larguraPainel * 100).round()}%'),
+              ),
+            ],
             _titulo(context, 'Estudo'),
             SwitchListTile(
               title: const Text('Mostrar quantos trechos citam cada versículo'),

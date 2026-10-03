@@ -41,8 +41,9 @@ App para **Android e Windows** que junta, em cada versículo:
 - **atualização automática** no Android e no Windows.
 
 No celular, tocar num versículo abre o painel de estudo por baixo; no PC (ou
-tablet deitado), o painel fica fixo à direita, como as notas de uma Bíblia de
-estudo aberta.
+tablet deitado), o painel fica à direita, como as notas de uma Bíblia de
+estudo aberta. Ali ele abre e fecha pelo botão no alto da tela, e a
+divisória entre o texto e o painel se arrasta para mudar a largura.
 
 ## Números
 

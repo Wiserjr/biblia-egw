@@ -129,8 +129,10 @@ class _LeitorState extends State<Leitor> {
       controller: _rolagem,
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
+        // A largura do texto é ajuste da pessoa: a tela toda, ou menos, com
+        // linhas mais curtas no meio da tela.
+        child: FractionallySizedBox(
+          widthFactor: aj.larguraTexto,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

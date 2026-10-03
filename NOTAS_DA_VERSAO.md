@@ -1,4 +1,23 @@
-## Bíblia de Estudo 1.4.1
+## Bíblia de Estudo 1.5.0
+
+### Novidades da 1.5.0
+
+- **O texto da Bíblia ocupa a tela toda.** Antes ele ficava numa coluna
+  estreita no meio da tela do PC. Quem preferir linhas mais curtas ajusta em
+  *Ajustes → Leitura → Largura do texto*.
+- **Painel de estudo opcional no PC e no tablet.** O botão de painel no alto
+  da tela abre e fecha as notas e referências ao lado do texto. Para mudar a
+  largura, arraste a divisória entre o texto e o painel; dois cliques nela
+  voltam à largura padrão. Em *Ajustes → Painel de estudo* dá para escolher
+  se tocar num versículo abre o painel fechado.
+- **Livros abrem com a página inteira na tela.** Antes eles abriam na
+  largura da janela, com a letra enorme num monitor largo. No PC, os botões
+  *Diminuir*, *Página inteira* e *Aumentar* ficam no alto da tela, e o zoom
+  muda de 15% em 15%. O Ctrl com a roda do mouse também ficou mais suave. O
+  livro seguinte abre com o zoom que você usou por último, nunca maior que a
+  largura da tela.
+
+### Novidades da 1.4.1
 
 ### Novidades da 1.4.1
 

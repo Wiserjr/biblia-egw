@@ -9,6 +9,7 @@ import '../dados/plano.dart';
 import '../dados/referencias.dart';
 import '../dados/versiculo_do_dia.dart';
 import 'ajustes.dart';
+import 'area_dividida.dart';
 import 'atualizacao_app.dart';
 import 'biblioteca.dart';
 import 'busca.dart';
@@ -26,10 +27,15 @@ import 'temas.dart';
 
 /// Tela principal: o leitor e, ao tocar num versículo, o painel de estudo.
 ///
-/// Em tela larga (PC, tablet deitado) o painel fica fixo à direita, como numa
+/// Em tela larga (PC, tablet deitado) o painel fica à direita, como numa
 /// Bíblia de estudo aberta com as notas ao lado; no celular ele sobe por baixo.
+/// Na tela larga o painel abre e fecha pelo botão no alto, e a divisória entre
+/// ele e o texto se arrasta para mudar a largura.
 class TelaInicio extends StatefulWidget {
   const TelaInicio({super.key});
+
+  /// A partir desta largura o painel de estudo fica ao lado do texto.
+  static const larguraDividida = 900.0;
 
   @override
   State<TelaInicio> createState() => _TelaInicioState();
@@ -49,8 +55,6 @@ class _TelaInicioState extends State<TelaInicio> {
 
   /// Referência do versículo do dia ("Êxodo 20:8"), para a faixa.
   String? _versiculoDoDia;
-
-  static const larguraDividida = 900.0;
 
   @override
   void initState() {
@@ -121,10 +125,14 @@ class _TelaInicioState extends State<TelaInicio> {
       _rolarPara = p.versiculo;
     });
     Ajustes.instancia.ultimaPosicao = _pos;
-    if (abrirEstudo && p.versiculo != null && !_largo(context)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _abrirEstudoCelular(p.versiculo!);
-      });
+    if (abrirEstudo && p.versiculo != null) {
+      if (_largo(context)) {
+        _abrirPainelSePedido();
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _abrirEstudoCelular(p.versiculo!);
+        });
+      }
     }
   }
 
@@ -144,11 +152,22 @@ class _TelaInicioState extends State<TelaInicio> {
   }
 
   bool _largo(BuildContext context) =>
-      MediaQuery.sizeOf(context).width >= larguraDividida;
+      MediaQuery.sizeOf(context).width >= TelaInicio.larguraDividida;
 
   void _selecionar(int versiculo) {
     setState(() => _selecionado = versiculo);
-    if (!_largo(context)) _abrirEstudoCelular(versiculo);
+    if (_largo(context)) {
+      _abrirPainelSePedido();
+    } else {
+      _abrirEstudoCelular(versiculo);
+    }
+  }
+
+  /// Painel fechado em tela larga: tocar num versículo abre, se a pessoa não
+  /// desligou isso nos ajustes.
+  void _abrirPainelSePedido() {
+    final aj = Ajustes.instancia;
+    if (!aj.painelEstudo && aj.abrirPainelAoTocar) aj.painelEstudo = true;
   }
 
   Future<void> _abrirEstudoCelular(int versiculo) async {
@@ -247,6 +266,22 @@ class _TelaInicioState extends State<TelaInicio> {
         actions: [
           if (versao != null)
             TextButton(onPressed: _escolherVersao, child: Text(versao.sigla)),
+          if (largo)
+            ListenableBuilder(
+              listenable: Ajustes.instancia,
+              builder: (context, _) {
+                final aberto = Ajustes.instancia.painelEstudo;
+                return IconButton(
+                  tooltip: aberto
+                      ? 'Fechar o painel de estudo'
+                      : 'Abrir o painel de estudo',
+                  isSelected: aberto,
+                  icon: const Icon(Icons.view_sidebar_outlined),
+                  selectedIcon: const Icon(Icons.view_sidebar),
+                  onPressed: () => Ajustes.instancia.painelEstudo = !aberto,
+                );
+              },
+            ),
           IconButton(
             tooltip: 'Introdução ao livro',
             icon: const Icon(Icons.info_outline),
@@ -433,36 +468,27 @@ class _TelaInicioState extends State<TelaInicio> {
     if (p != null && mounted) _ir(p, abrirEstudo: true);
   }
 
-  Widget _corpo(Versao versao, bool largo) => Row(
-    children: [
-      Expanded(
-        flex: 3,
-        child: Leitor(
-          key: ValueKey('${_pos.livro}:${_pos.capitulo}:${versao.id}'),
-          posicao: _pos,
-          versao: versao,
-          selecionado: _selecionado,
-          rolarPara: _rolarPara,
-          aoSelecionar: _selecionar,
-          aoMudarCapitulo: _capituloVizinho,
-          aoIr: (p) => _ir(p, abrirEstudo: true),
-        ),
-      ),
-      if (largo) ...[
-        const VerticalDivider(width: 1),
-        Expanded(
-          flex: 2,
-          child: _selecionado == null
-              ? const _PainelVazio()
-              : PainelEstudo(
-                  key: ValueKey('${_pos.livro}:${_pos.capitulo}:$_selecionado'),
-                  posicao: Posicao(_pos.livro, _pos.capitulo, _selecionado),
-                  versao: versao,
-                  aoIr: (p) => _ir(p),
-                ),
-        ),
-      ],
-    ],
+  /// O leitor e, em tela larga com o painel aberto, o painel de estudo.
+  Widget _corpo(Versao versao, bool largo) => AreaDividida(
+    telaLarga: largo,
+    texto: Leitor(
+      key: ValueKey('${_pos.livro}:${_pos.capitulo}:${versao.id}'),
+      posicao: _pos,
+      versao: versao,
+      selecionado: _selecionado,
+      rolarPara: _rolarPara,
+      aoSelecionar: _selecionar,
+      aoMudarCapitulo: _capituloVizinho,
+      aoIr: (p) => _ir(p, abrirEstudo: true),
+    ),
+    painel: _selecionado == null
+        ? const _PainelVazio()
+        : PainelEstudo(
+            key: ValueKey('${_pos.livro}:${_pos.capitulo}:$_selecionado'),
+            posicao: Posicao(_pos.livro, _pos.capitulo, _selecionado),
+            versao: versao,
+            aoIr: (p) => _ir(p),
+          ),
   );
 }
 
