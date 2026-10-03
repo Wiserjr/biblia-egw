@@ -223,7 +223,9 @@ powershell -ExecutionPolicy Bypass -File publicar.ps1
 O script cuida do resto, nesta ordem, e para com uma explicação se algo não
 estiver certo:
 
-1. Confere que a pasta está no `main` e sem alterações por salvar.
+1. Confere que a pasta está no `main` e sem alterações por salvar. As
+   mudanças que a compilação faz nos arquivos gerados pelo Flutter
+   (`windows/flutter/generated_*`) ele mesmo desfaz.
 2. Mostra cada PR aberto no GitHub e pergunta se ele entra nesta versão
    (S/N); os que entram, ele mescla.
 3. Traz o `main` do GitHub (`git pull`). Se isso trouxer uma versão nova do

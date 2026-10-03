@@ -3,7 +3,8 @@
 # PowerShell 5.1 le este arquivo como ANSI.
 #
 # A regra que elas garantem:
-#   1. Publicar so do main, sem alteracoes por salvar nesta pasta.
+#   1. Publicar so do main, sem alteracoes por salvar nesta pasta (as que a
+#      compilacao faz nos arquivos gerados pelo Flutter sao desfeitas).
 #   2. PR aberto no GitHub: perguntar se entra (e mesclar) antes de publicar.
 #   3. Trazer o main do GitHub (git pull) antes de compilar.
 #   4. Versao nova = pubspec com versao maior E as novidades dela em
@@ -27,6 +28,18 @@ function Sincronizar-Main {
 
     $mudancas = @(git status --porcelain --untracked-files=no)
     if ($LASTEXITCODE -ne 0) { throw 'git status falhou.' }
+    # O Flutter regrava os registros de plugins a cada compilacao (no Windows,
+    # com diferencas so dele); o conteudo vem do pubspec. Voltar ao do git nao
+    # perde nada, e o git pull pode precisar atualiza-los.
+    $geradosPeloFlutter = '^(windows|linux)/flutter/generated_plugin(s\.cmake|_registrant\.(cc|h))$'
+    $gerados = @($mudancas | Where-Object { "$_".Length -gt 3 -and "$_".Substring(3) -match $geradosPeloFlutter })
+    if ($gerados.Count -gt 0) {
+        $caminhos = @($gerados | ForEach-Object { "$_".Substring(3) })
+        git checkout HEAD $caminhos
+        if ($LASTEXITCODE -ne 0) { throw 'Nao consegui desfazer os arquivos gerados pelo Flutter.' }
+        Write-Output ('Desfeitas as mudancas da ultima compilacao em: ' + ($caminhos -join ', '))
+        $mudancas = @($mudancas | Where-Object { $gerados -notcontains $_ })
+    }
     if ($mudancas.Count -gt 0) {
         throw ("Ha alteracoes nao salvas nesta pasta:`n  " + ($mudancas -join "`n  ") +
             "`nGuarde com 'git stash' (ou desfaca) e rode de novo.")

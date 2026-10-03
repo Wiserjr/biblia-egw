@@ -6,7 +6,8 @@
 # NOTAS_DA_VERSAO.md e rode este script.
 #
 # O que o script faz sozinho, nesta ordem (ver ferramentas\publicacao.ps1):
-#   1. Confere que esta pasta esta no main, sem alteracoes por salvar.
+#   1. Confere que esta pasta esta no main, sem alteracoes por salvar (as que
+#      a compilacao faz nos arquivos gerados pelo Flutter, ele desfaz).
 #   2. Lista os PRs abertos no GitHub e pergunta, um a um, se entram nesta
 #      versao; os que entram, ele mescla.
 #   3. Traz o main do GitHub (git pull).

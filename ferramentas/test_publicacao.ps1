@@ -14,8 +14,11 @@ $script:prs = '[]'
 $script:pullFalha = $false
 $script:chamadas = New-Object System.Collections.ArrayList
 
+# Um array passado a um programa vira varios argumentos; aqui, tambem.
+function Juntar($lista) { (@($lista | ForEach-Object { $_ }) -join ' ') }
+
 function git {
-    [void]$script:chamadas.Add("git $($args -join ' ')")
+    [void]$script:chamadas.Add("git $(Juntar $args)")
     $global:LASTEXITCODE = 0
     switch ($args[0]) {
         'rev-parse' { $script:ramo }
@@ -25,7 +28,7 @@ function git {
 }
 
 function GhFalso {
-    [void]$script:chamadas.Add("gh $($args -join ' ')")
+    [void]$script:chamadas.Add("gh $(Juntar $args)")
     $global:LASTEXITCODE = 0
     if ($args[0] -eq 'pr' -and $args[1] -eq 'list') { $script:prs }
 }
@@ -77,6 +80,36 @@ Teste 'fora do main: recusa' {
 Teste 'alteracoes por salvar: recusa e lista os arquivos' {
     Simular -mudancas @(' M pubspec.yaml')
     Deve-Falhar { Sincronizar-Main -gh 'GhFalso' -repo 'a/b' } 'pubspec.yaml'
+}
+
+Teste 'arquivos que a compilacao regera: desfaz e segue' {
+    Simular -mudancas @(
+        ' M windows/flutter/generated_plugin_registrant.cc',
+        ' M windows/flutter/generated_plugin_registrant.h',
+        ' M windows/flutter/generated_plugins.cmake')
+    Sincronizar-Main -gh 'GhFalso' -repo 'a/b' -perguntar (Respostas @())
+    Igual ('git checkout HEAD windows/flutter/generated_plugin_registrant.cc ' +
+        'windows/flutter/generated_plugin_registrant.h windows/flutter/generated_plugins.cmake') `
+        @($script:chamadas | Where-Object { $_ -like 'git checkout*' })[0]
+    Igual 'git pull --ff-only origin main' $script:chamadas[-1]
+}
+
+Teste 'arquivo gerado junto com outra alteracao: recusa so pela outra' {
+    Simular -mudancas @(' M windows/flutter/generated_plugins.cmake', ' M lib/main.dart')
+    try {
+        Sincronizar-Main -gh 'GhFalso' -repo 'a/b' -perguntar (Respostas @())
+        throw 'deveria ter recusado'
+    } catch {
+        $msg = $_.Exception.Message
+        if ($msg -notlike '*lib/main.dart*') { throw "recusou com outra mensagem: $msg" }
+        if ($msg -like '*generated_plugins*') { throw "listou o arquivo gerado: $msg" }
+    }
+    if ($script:chamadas -like 'git pull*') { throw 'fez o pull com alteracao por salvar' }
+}
+
+Teste 'arquivo com nome parecido fora de windows/flutter: recusa' {
+    Simular -mudancas @(' M lib/generated_plugins.cmake')
+    Deve-Falhar { Sincronizar-Main -gh 'GhFalso' -repo 'a/b' } 'lib/generated_plugins.cmake'
 }
 
 Teste 'sem PR aberto: so faz o pull' {
