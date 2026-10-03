@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../dados/ajustes.dart';
 import '../dados/biblia.dart';
 import '../dados/leitura_voz.dart';
+import '../dados/lembrete.dart';
 import '../dados/modelos.dart';
+import '../dados/plano.dart';
 import '../dados/referencias.dart';
 import 'ajustes.dart';
 import 'atualizacao_app.dart';
@@ -40,6 +42,9 @@ class _TelaInicioState extends State<TelaInicio> {
   /// Versículo para onde rolar ao abrir o capítulo.
   int? _rolarPara;
 
+  /// A faixa "Leitura de hoje" foi fechada nesta abertura do app.
+  bool _semFaixaPlano = false;
+
   static const larguraDividida = 900.0;
 
   @override
@@ -50,6 +55,9 @@ class _TelaInicioState extends State<TelaInicio> {
     // Checagem silenciosa: só aparece algo se houver versão nova.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) FluxoAtualizacao.verificar(context);
+      // No Windows os lembretes são marcados alguns dias à frente; cada
+      // abertura renova a lista.
+      Lembrete.instancia.atualizar();
     });
   }
 
@@ -358,45 +366,122 @@ class _TelaInicioState extends State<TelaInicio> {
       ),
       body: versao == null
           ? const Center(child: CircularProgressIndicator())
-          : Row(
+          : Column(
               children: [
-                Expanded(
-                  flex: 3,
-                  child: Leitor(
-                    key: ValueKey(
-                      '${_pos.livro}:${_pos.capitulo}:${versao.id}',
-                    ),
-                    posicao: _pos,
-                    versao: versao,
-                    selecionado: _selecionado,
-                    rolarPara: _rolarPara,
-                    aoSelecionar: _selecionar,
-                    aoMudarCapitulo: _capituloVizinho,
-                    aoIr: (p) => _ir(p, abrirEstudo: true),
+                if (!_semFaixaPlano)
+                  ListenableBuilder(
+                    listenable: Ajustes.instancia,
+                    builder: (context, _) {
+                      final l = Ajustes.instancia.leituraHoje();
+                      if (l == null) return const SizedBox.shrink();
+                      return _FaixaLeituraHoje(
+                        leitura: l,
+                        atual: _pos,
+                        aoLer: () => _ir(l.capitulos.first),
+                        aoFechar: () => setState(() => _semFaixaPlano = true),
+                      );
+                    },
                   ),
-                ),
-                if (largo) ...[
-                  const VerticalDivider(width: 1),
-                  Expanded(
-                    flex: 2,
-                    child: _selecionado == null
-                        ? const _PainelVazio()
-                        : PainelEstudo(
-                            key: ValueKey(
-                              '${_pos.livro}:${_pos.capitulo}:$_selecionado',
-                            ),
-                            posicao: Posicao(
-                              _pos.livro,
-                              _pos.capitulo,
-                              _selecionado,
-                            ),
-                            versao: versao,
-                            aoIr: (p) => _ir(p),
-                          ),
-                  ),
-                ],
+                Expanded(child: _corpo(versao, largo)),
               ],
             ),
+    );
+  }
+
+  Widget _corpo(Versao versao, bool largo) => Row(
+    children: [
+      Expanded(
+        flex: 3,
+        child: Leitor(
+          key: ValueKey('${_pos.livro}:${_pos.capitulo}:${versao.id}'),
+          posicao: _pos,
+          versao: versao,
+          selecionado: _selecionado,
+          rolarPara: _rolarPara,
+          aoSelecionar: _selecionar,
+          aoMudarCapitulo: _capituloVizinho,
+          aoIr: (p) => _ir(p, abrirEstudo: true),
+        ),
+      ),
+      if (largo) ...[
+        const VerticalDivider(width: 1),
+        Expanded(
+          flex: 2,
+          child: _selecionado == null
+              ? const _PainelVazio()
+              : PainelEstudo(
+                  key: ValueKey('${_pos.livro}:${_pos.capitulo}:$_selecionado'),
+                  posicao: Posicao(_pos.livro, _pos.capitulo, _selecionado),
+                  versao: versao,
+                  aoIr: (p) => _ir(p),
+                ),
+        ),
+      ],
+    ],
+  );
+}
+
+/// Faixa no alto do leitor com a leitura de hoje do plano: "Ler" leva ao
+/// capítulo; já nele, vira "Marcar como lido". Some quando a leitura do dia
+/// está feita.
+class _FaixaLeituraHoje extends StatelessWidget {
+  const _FaixaLeituraHoje({
+    required this.leitura,
+    required this.atual,
+    required this.aoLer,
+    required this.aoFechar,
+  });
+
+  final LeituraHoje leitura;
+  final Posicao atual;
+  final VoidCallback aoLer;
+  final VoidCallback aoFechar;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    final aqui = leitura.capitulos.any(
+      (c) => c.livro == atual.livro && c.capitulo == atual.capitulo,
+    );
+    return Material(
+      color: t.colorScheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 4, 4),
+        child: Row(
+          children: [
+            const Icon(Icons.event_note_outlined, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Leitura de hoje', style: t.textTheme.labelSmall),
+                  Text(
+                    leitura.rotulo,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: t.textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+            if (aqui)
+              TextButton(
+                onPressed: () => Ajustes.instancia.marcarDia(leitura.dia, true),
+                child: const Text('Marcar lido'),
+              )
+            else
+              TextButton(onPressed: aoLer, child: const Text('Ler')),
+            IconButton(
+              tooltip: 'Fechar',
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.close, size: 18),
+              onPressed: aoFechar,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
