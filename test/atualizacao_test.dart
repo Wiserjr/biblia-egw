@@ -109,24 +109,89 @@ void main() {
     });
 
     test('o script espera o app fechar, copia e reabre', () {
-      final s = scriptWindows(
-        origem: r'C:\tmp\novo',
-        destino: r'C:\Users\x\Biblia',
-        executavel: 'biblia_estudo.exe',
+      expect(scriptWindows, contains('>>"%ALVO%" (call )'));
+      expect(scriptWindows, contains(r'"%BIBLIA_DESTINO%\%BIBLIA_EXE%"'));
+      expect(
+        scriptWindows.split('\r\n').every((l) => !l.contains('\n')),
+        isTrue,
+        reason: 'cmd.exe espera CRLF',
       );
-      expect(s, contains('tasklist /FI "PID eq %PID%"'));
-      expect(s, contains(r'robocopy "C:\tmp\novo" "C:\Users\x\Biblia" /E'));
-      expect(s, contains('biblia_estudo.exe'));
-      expect(s, contains('\r\n'), reason: 'cmd.exe espera CRLF');
     });
 
-    test('aspas no caminho não quebram o script', () {
-      final s = scriptWindows(
-        origem: r'C:\tmp\a" & del *.* & "',
-        destino: r'C:\x',
-        executavel: 'biblia_estudo.exe',
+    test('o executável vai por último, e só se o resto entrou', () {
+      // Uma cópia pela metade deixa o executável velho: a abertura seguinte
+      // vê a versão antiga e avisa que não terminou.
+      final resto = scriptWindows.indexOf(
+        'robocopy "%BIBLIA_ORIGEM%" "%BIBLIA_DESTINO%" /E /XF "%BIBLIA_EXE%"',
       );
-      expect(s, isNot(contains('" & del')));
+      final exe = scriptWindows.indexOf(
+        'robocopy "%BIBLIA_ORIGEM%" "%BIBLIA_DESTINO%" "%BIBLIA_EXE%"',
+      );
+      expect(resto, greaterThan(0));
+      expect(exe, greaterThan(resto));
+      expect(scriptWindows, contains('if %R% GEQ 0 if %R% LSS 8 goto exe'));
+      expect(scriptWindows, contains('if %T% GEQ 2 goto abrir'));
+    });
+
+    test('a espera tem fim: encerra o app à força e depois desiste', () {
+      expect(
+        scriptWindows,
+        contains(
+          'taskkill /F /FI "PID eq %BIBLIA_PID%" '
+          '/FI "IMAGENAME eq %BIBLIA_EM_USO%"',
+        ),
+      );
+      expect(scriptWindows, contains('if %N% GEQ 30 goto abrir'));
+    });
+
+    test('nada do que travou a versão 1.4.0 no Windows 11', () {
+      // `tasklist | find` ficava preso para sempre, e `timeout` falha
+      // quando a entrada não é um teclado.
+      expect(scriptWindows, isNot(contains('|')));
+      expect(scriptWindows, isNot(contains('tasklist')));
+      expect(scriptWindows, isNot(contains('timeout')));
+      // `msg` não existe no Windows Home.
+      expect(scriptWindows, isNot(contains('msg ')));
+    });
+
+    test('o script só tem ASCII: os caminhos vão nas variáveis', () {
+      // O cmd lê o arquivo na página de código do console; acento gravado
+      // em UTF-8 chegaria trocado.
+      expect(scriptWindows.codeUnits.every((c) => c < 128), isTrue);
+      final v = variaveisScriptWindows(
+        pid: 24128,
+        origem: r'C:\Users\João\AppData\Local\Temp\biblia-atualizacao\novo',
+        destino: r'C:\Users\João\Documents\Bíblia de Estudo',
+        emUso: 'biblia_estudo.exe',
+      );
+      expect(v, {
+        'BIBLIA_PID': '24128',
+        'BIBLIA_ORIGEM':
+            r'C:\Users\João\AppData\Local\Temp\biblia-atualizacao\novo',
+        'BIBLIA_DESTINO': r'C:\Users\João\Documents\Bíblia de Estudo',
+        'BIBLIA_EM_USO': 'biblia_estudo.exe',
+        'BIBLIA_EXE': 'biblia_estudo.exe',
+      });
+      // Toda variável usada no script vem do app (ou do próprio script).
+      final usadas = RegExp(r'%(\w+)%')
+          .allMatches(scriptWindows)
+          .map((m) => m.group(1))
+          .toSet();
+      expect(
+        usadas.difference({...v.keys, 'ALVO', 'N', 'T', 'R', 'ERRORLEVEL'}),
+        isEmpty,
+      );
+    });
+
+    test('na raiz de um disco, o destino não termina em barra', () {
+      // O robocopy lê `"D:\"` como aspas escapadas.
+      final v = variaveisScriptWindows(
+        pid: 1,
+        origem: r'C:\tmp\novo',
+        destino: r'D:\',
+        emUso: 'biblia_estudo.exe',
+      );
+      expect(v['BIBLIA_DESTINO'], r'D:\.');
     });
   });
 

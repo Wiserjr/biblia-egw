@@ -49,6 +49,15 @@ class Atualizacao {
 
   static const _tetoManifesto = 16 * 1024;
 
+  /// Arquivo, na pasta de dados do app, com a versão que o app saiu para
+  /// instalar no Windows; a abertura seguinte confere se ela entrou
+  /// ([conferirAtualizacaoAnterior]). Arquivo próprio, e não as
+  /// preferências: outra janela do app aberta regrava as preferências
+  /// inteiras a cada mudança e apagaria a marca.
+  static const _arquivoPendente = 'atualizacao-pendente.txt';
+
+  bool _conferiu = false;
+
   /// O APK tem ~30 MB e o zip do Windows ~40 MB. O teto é contra servidor
   /// comprometido (ou proxy hostil) enchendo o disco.
   static const _tetoArquivo = 250 * 1024 * 1024;
@@ -247,20 +256,80 @@ class Atualizacao {
     }
 
     final script = File(p.join(base.path, 'atualizar.cmd'));
-    await script.writeAsString(
-      scriptWindows(
-        origem: novo.path,
-        destino: instalacao.path,
-        executavel: executavelWindows,
-      ),
-    );
-    await Process.start(
-      'cmd',
-      ['/c', script.path, '$pid'],
-      mode: ProcessStartMode.detached,
-      runInShell: false,
-    );
+    await script.writeAsString(scriptWindows, flush: true);
+    // O script roda com console escondido (o modo normal do Process.start), e
+    // os programas que ele chama usam o mesmo console. Num processo
+    // "detached" cada um abria uma janela própria, e no Windows 11 o
+    // `tasklist | find` da versão antiga ficava preso para sempre.
+    //
+    // Os caminhos vão em variáveis de ambiente, e não no texto do script:
+    // assim acento e espaço no nome da pasta não quebram nada.
+    final pendente = await _pendente();
+    await pendente.writeAsString('${info.versionCode}', flush: true);
+    try {
+      await Process.start(
+        Platform.environment['ComSpec'] ?? 'cmd.exe',
+        // `.\` e não só o nome: com NoDefaultCurrentDirectoryInExePath o cmd
+        // não procura na pasta atual. `/e:on` liga as extensões mesmo que o
+        // registro as desligue (o script usa `set /a`).
+        ['/d', '/e:on', '/c', r'.\atualizar.cmd'],
+        workingDirectory: base.path,
+        environment: variaveisScriptWindows(
+          pid: pid,
+          origem: novo.path,
+          destino: instalacao.path,
+          emUso: p.basename(Platform.resolvedExecutable),
+        ),
+      );
+    } catch (_) {
+      await pendente.delete();
+      rethrow;
+    }
+    // Encerra na hora, sem a rotina de saída: se algum plugin travar ao
+    // fechar, o processo continuaria vivo prendendo os arquivos. O
+    // `exit` só roda se o Windows recusar.
+    Process.killPid(pid);
     exit(0);
+  }
+
+  Future<File> _pendente() async => File(
+    p.join((await getApplicationSupportDirectory()).path, _arquivoPendente),
+  );
+
+  /// Na abertura, diz como terminou a atualização que o app saiu para
+  /// instalar no Windows, ou `null` se não havia nenhuma. Só a primeira
+  /// chamada de cada abertura confere.
+  ///
+  /// Também apaga os temporários (o zip e a pasta extraída, mais de 100 MB).
+  /// Isso desarma, de quebra, os scripts da 1.4.0 e anteriores que tenham
+  /// ficado presos na janela "find": o cmd relê o arquivo a cada linha, e
+  /// sem ele para em vez de copiar a versão velha por cima desta.
+  Future<({bool concluida, String versao})?>
+  conferirAtualizacaoAnterior() async {
+    if (!Platform.isWindows || _conferiu) return null;
+    _conferiu = true;
+    await _limparTemporarios();
+    final arquivo = await _pendente();
+    if (!await arquivo.exists()) return null;
+    final pendente = int.tryParse((await arquivo.readAsString()).trim());
+    await arquivo.delete();
+    if (pendente == null) return null;
+    final info = await PackageInfo.fromPlatform();
+    return (
+      concluida: (int.tryParse(info.buildNumber) ?? 0) >= pendente,
+      versao: info.version,
+    );
+  }
+
+  Future<void> _limparTemporarios() async {
+    try {
+      final zip = await _destino();
+      final base = Directory(p.join(zip.parent.path, 'biblia-atualizacao'));
+      if (await zip.exists()) await zip.delete();
+      if (await base.exists()) await base.delete(recursive: true);
+    } catch (_) {
+      // Fica para a próxima atualização, que apaga a pasta antes de usar.
+    }
   }
 
   Future<bool> _gravavel(Directory dir) async {
@@ -484,34 +553,77 @@ InfoAtualizacao? interpretarManifesto(
   );
 }
 
-/// O script que troca os arquivos depois que o app fecha (Windows).
+/// As variáveis que o app passa ao [scriptWindows].
 ///
-/// Espera o processo [pid] (passado como %1) terminar — com o .exe aberto o
-/// Windows não deixa sobrescrevê-lo —, copia com robocopy (que tenta de novo
-/// arquivos ainda presos) e reabre o app. Códigos do robocopy abaixo de 8 são
-/// sucesso.
-String scriptWindows({
+/// - `BIBLIA_PID`: o processo do app que está fechando.
+/// - `BIBLIA_ORIGEM`: a pasta com a versão nova, já extraída e conferida.
+/// - `BIBLIA_DESTINO`: a pasta do programa.
+/// - `BIBLIA_EM_USO`: o executável que está rodando, que prende os arquivos.
+/// - `BIBLIA_EXE`: o executável a abrir no fim.
+Map<String, String> variaveisScriptWindows({
+  required int pid,
   required String origem,
   required String destino,
-  required String executavel,
-}) {
-  String q(String s) => s.replaceAll('"', '');
-  return [
-    '@echo off',
-    'setlocal',
-    'set PID=%1',
-    ':espera',
-    'tasklist /FI "PID eq %PID%" 2>NUL | find "%PID%" >NUL',
-    'if not errorlevel 1 (',
-    '  timeout /t 1 /nobreak >NUL',
-    '  goto espera',
-    ')',
-    'robocopy "${q(origem)}" "${q(destino)}" /E /R:5 /W:1 /NFL /NDL /NJH /NJS /NP >NUL',
-    'if %ERRORLEVEL% GEQ 8 (',
-    '  msg "%USERNAME%" "Nao foi possivel concluir a atualizacao da Biblia de Estudo. Abra o app e tente de novo. NAO apague a pasta do programa."',
-    ')',
-    'start "" "${q(p.join(destino, executavel))}"',
-    'endlocal',
-    '',
-  ].join('\r\n');
-}
+  required String emUso,
+}) => {
+  'BIBLIA_PID': '$pid',
+  'BIBLIA_ORIGEM': origem,
+  // Na raiz de um disco a pasta é `D:\`, e o robocopy lê `"D:\"` como
+  // aspas escapadas; `D:\.` é a mesma pasta.
+  'BIBLIA_DESTINO': destino.endsWith(r'\') ? '$destino.' : destino,
+  'BIBLIA_EM_USO': emUso,
+  'BIBLIA_EXE': Atualizacao.executavelWindows,
+};
+
+/// O script que troca os arquivos depois que o app fecha (Windows).
+///
+/// Sem caminho nenhum no texto: tudo vem das variáveis de
+/// [variaveisScriptWindows]. O cmd lê o arquivo na página de código do
+/// console, e um caminho com acento gravado em UTF-8 chegaria trocado.
+///
+/// 1. Espera o executável soltar: enquanto o app roda, o Windows não deixa
+///    abri-lo para gravar. O teste usa só comandos do próprio cmd. A versão
+///    1.4.0 e anteriores usavam `tasklist | find`, que ficava preso para
+///    sempre no Windows 11.
+/// 2. Passados uns 10 segundos, encerra à força o processo do app (o filtro
+///    pelo nome do executável evita matar outro programa que tenha herdado o
+///    número). Passados uns 30, desiste da cópia: outra janela do app está
+///    aberta, e a abertura seguinte avisa que a atualização não terminou.
+/// 3. Copia com robocopy, que tenta de novo arquivos ainda presos (códigos
+///    de 0 a 7 são sucesso; negativo é robocopy que caiu), com uma nova
+///    tentativa. O executável vai por último, e só se o resto entrou: uma
+///    cópia pela metade deixa o executável velho, e a abertura seguinte vê
+///    a versão antiga e avisa que a atualização não terminou.
+/// 4. Reabre o app.
+///
+/// `ping` é a pausa de 1 segundo: o `timeout` falha quando a entrada do
+/// script não é um teclado, e aqui ela não é.
+const scriptWindows =
+    '@echo off\r\n'
+    'setlocal EnableExtensions DisableDelayedExpansion\r\n'
+    'set "ALVO=%BIBLIA_DESTINO%\\%BIBLIA_EM_USO%"\r\n'
+    'set /a N=0\r\n'
+    ':espera\r\n'
+    '2>NUL (\r\n'
+    '  >>"%ALVO%" (call )\r\n'
+    ') && goto copiar\r\n'
+    'set /a N+=1\r\n'
+    'if %N% EQU 10 taskkill /F /FI "PID eq %BIBLIA_PID%" /FI "IMAGENAME eq %BIBLIA_EM_USO%" >NUL 2>&1\r\n'
+    'if %N% GEQ 30 goto abrir\r\n'
+    'ping -n 2 127.0.0.1 >NUL\r\n'
+    'goto espera\r\n'
+    ':copiar\r\n'
+    'set /a T=0\r\n'
+    ':copiar_de_novo\r\n'
+    'set /a T+=1\r\n'
+    'robocopy "%BIBLIA_ORIGEM%" "%BIBLIA_DESTINO%" /E /XF "%BIBLIA_EXE%" /R:5 /W:1 /NFL /NDL /NJH /NJS /NP >NUL\r\n'
+    'set R=%ERRORLEVEL%\r\n'
+    'if %R% GEQ 0 if %R% LSS 8 goto exe\r\n'
+    'if %T% GEQ 2 goto abrir\r\n'
+    'ping -n 3 127.0.0.1 >NUL\r\n'
+    'goto copiar_de_novo\r\n'
+    ':exe\r\n'
+    'robocopy "%BIBLIA_ORIGEM%" "%BIBLIA_DESTINO%" "%BIBLIA_EXE%" /R:5 /W:1 /NFL /NDL /NJH /NJS /NP >NUL\r\n'
+    ':abrir\r\n'
+    'start "" /D "%BIBLIA_DESTINO%" "%BIBLIA_DESTINO%\\%BIBLIA_EXE%"\r\n'
+    'endlocal\r\n';
