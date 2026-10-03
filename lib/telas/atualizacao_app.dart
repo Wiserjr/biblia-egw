@@ -13,6 +13,10 @@ class FluxoAtualizacao {
 
   static bool _emAndamento = false;
 
+  static const _naoTerminou =
+      'A atualização não terminou. Feche as outras janelas da Bíblia de '
+      'Estudo e tente de novo em Ajustes → Procurar atualização.';
+
   /// Consulta e, havendo versão nova, oferece a atualização.
   ///
   /// [manual] é o botão de Ajustes: aí "já está atualizado" e as falhas de
@@ -29,11 +33,22 @@ class FluxoAtualizacao {
         aviso?.showSnackBar(SnackBar(content: Text(texto)));
 
     try {
+      // No Windows, a troca dos arquivos acontece com o app fechado; é aqui,
+      // na abertura seguinte, que dá para dizer se ela deu certo.
+      final anterior = await Atualizacao.instancia
+          .conferirAtualizacaoAnterior()
+          .catchError((_) => null);
+      final falhou = anterior != null && !anterior.concluida;
+      if (anterior != null && anterior.concluida) {
+        dizer('Bíblia de Estudo atualizada para a versão ${anterior.versao}.');
+      }
+
       final InfoAtualizacao? info;
       try {
         info = await Atualizacao.instancia.consultar();
       } on FalhaAtualizacao catch (e) {
         if (manual) dizer(e.motivo);
+        if (falhou) dizer(_naoTerminou);
         return;
       } catch (_) {
         if (manual) {
@@ -42,6 +57,7 @@ class FluxoAtualizacao {
             'Confira a conexão e tente novamente.',
           );
         }
+        if (falhou) dizer(_naoTerminou);
         return;
       }
       if (!context.mounted) return;
@@ -51,20 +67,23 @@ class FluxoAtualizacao {
       }
 
       final versao = info.versionName;
+      final texto = Platform.isWindows
+          ? 'Versão $versao. O aplicativo baixa a atualização, fecha e abre de '
+                'novo já atualizado. Os livros baixados, as marcações e as '
+                'anotações continuam onde estão.'
+          : 'Versão $versao. O aplicativo baixa sozinho e pede a sua '
+                'confirmação para instalar. A atualização entra por cima da '
+                'versão atual, sem desinstalar — os livros baixados, as '
+                'marcações e as anotações continuam onde estão.';
       final aceitou = await showDialog<bool>(
         context: context,
         builder: (c) => AlertDialog(
           title: const Text('Atualização disponível'),
           content: Text(
-            Platform.isWindows
-                ? 'Versão $versao. O aplicativo baixa a atualização, fecha e '
-                      'abre de novo já atualizado. Os livros baixados, as '
-                      'marcações e as anotações continuam onde estão.'
-                : 'Versão $versao. O aplicativo baixa sozinho e pede a '
-                      'sua confirmação para instalar. A atualização entra por '
-                      'cima da versão atual, sem desinstalar — os livros '
-                      'baixados, as marcações e as anotações continuam onde '
-                      'estão.',
+            falhou
+                ? 'A tentativa anterior não terminou. Feche as outras janelas '
+                      'da Bíblia de Estudo antes de continuar.\n\n$texto'
+                : texto,
           ),
           actions: [
             TextButton(

@@ -1,4 +1,15 @@
-## Bíblia de Estudo 1.4.0
+## Bíblia de Estudo 1.4.1
+
+### Novidades da 1.4.1
+
+- **No PC, a atualização automática não trava mais** numa janela preta
+  "find" que não fechava. Ao abrir depois de atualizar, o app avisa que a
+  versão nova entrou, ou que a atualização não terminou.
+- Quem está com a 1.4.0 ou anterior no PC precisa instalar esta versão à mão
+  uma vez: feche o app, baixe o `biblia-windows.zip` desta versão e extraia
+  por cima da pasta do programa, substituindo os arquivos. Livros,
+  marcações e anotações não são afetados. Daí em diante, a atualização é
+  automática.
 
 ### Novidades da 1.4.0
 

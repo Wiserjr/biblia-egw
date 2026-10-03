@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Atualização automática do próprio app, no padrão do Louvor JA e do app de
 /// recadastramento: ao abrir, o app consulta um manifesto publicado junto com a
@@ -48,6 +49,10 @@ class Atualizacao {
   static const executavelWindows = 'biblia_estudo.exe';
 
   static const _tetoManifesto = 16 * 1024;
+
+  /// Nas preferências, a versão que o app saiu para instalar no Windows.
+  /// A abertura seguinte confere se ela entrou ([conferirAtualizacaoAnterior]).
+  static const _chavePendente = 'atualizacaoWindowsPendente';
 
   /// O APK tem ~30 MB e o zip do Windows ~40 MB. O teto é contra servidor
   /// comprometido (ou proxy hostil) enchendo o disco.
@@ -247,20 +252,70 @@ class Atualizacao {
     }
 
     final script = File(p.join(base.path, 'atualizar.cmd'));
-    await script.writeAsString(
-      scriptWindows(
-        origem: novo.path,
-        destino: instalacao.path,
-        executavel: executavelWindows,
-      ),
-    );
-    await Process.start(
-      'cmd',
-      ['/c', script.path, '$pid'],
-      mode: ProcessStartMode.detached,
-      runInShell: false,
-    );
+    await script.writeAsString(scriptWindows, flush: true);
+    // O script roda com console escondido (o modo normal do Process.start), e
+    // os programas que ele chama usam o mesmo console. Num processo
+    // "detached" cada um abria uma janela própria, e no Windows 11 o
+    // `tasklist | find` da versão antiga ficava preso para sempre.
+    //
+    // Os caminhos vão em variáveis de ambiente, e não no texto do script:
+    // assim acento e espaço no nome da pasta não quebram nada.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_chavePendente, info.versionCode);
+    try {
+      await Process.start(
+        Platform.environment['ComSpec'] ?? 'cmd.exe',
+        ['/d', '/c', 'atualizar.cmd'],
+        workingDirectory: base.path,
+        environment: variaveisScriptWindows(
+          pid: pid,
+          origem: novo.path,
+          destino: instalacao.path,
+          emUso: p.basename(Platform.resolvedExecutable),
+        ),
+      );
+    } catch (_) {
+      await prefs.remove(_chavePendente);
+      rethrow;
+    }
+    // Encerra na hora, sem a rotina de saída: se algum plugin travar ao
+    // fechar, o processo continuaria vivo prendendo os arquivos. O
+    // `exit` só roda se o Windows recusar.
+    Process.killPid(pid);
     exit(0);
+  }
+
+  /// Na abertura, diz como terminou a atualização que o app saiu para
+  /// instalar no Windows, ou `null` se não havia nenhuma.
+  Future<({bool concluida, String versao})?>
+  conferirAtualizacaoAnterior() async {
+    if (!Platform.isWindows) return null;
+    final prefs = await SharedPreferences.getInstance();
+    final pendente = prefs.getInt(_chavePendente);
+    if (pendente == null) return null;
+    await prefs.remove(_chavePendente);
+    final info = await PackageInfo.fromPlatform();
+    // Quem fez a troca foi o script; os temporários (zip e pasta extraída,
+    // mais de 100 MB) ficam para trás. A espera é para o script terminar e
+    // soltar a pasta.
+    unawaited(
+      Future<void>.delayed(const Duration(seconds: 15), _limparTemporarios),
+    );
+    return (
+      concluida: (int.tryParse(info.buildNumber) ?? 0) >= pendente,
+      versao: info.version,
+    );
+  }
+
+  Future<void> _limparTemporarios() async {
+    try {
+      final zip = await _destino();
+      final base = Directory(p.join(zip.parent.path, 'biblia-atualizacao'));
+      if (await zip.exists()) await zip.delete();
+      if (await base.exists()) await base.delete(recursive: true);
+    } catch (_) {
+      // Fica para a próxima atualização, que apaga a pasta antes de usar.
+    }
   }
 
   Future<bool> _gravavel(Directory dir) async {
@@ -484,34 +539,64 @@ InfoAtualizacao? interpretarManifesto(
   );
 }
 
-/// O script que troca os arquivos depois que o app fecha (Windows).
+/// As variáveis que o app passa ao [scriptWindows].
 ///
-/// Espera o processo [pid] (passado como %1) terminar — com o .exe aberto o
-/// Windows não deixa sobrescrevê-lo —, copia com robocopy (que tenta de novo
-/// arquivos ainda presos) e reabre o app. Códigos do robocopy abaixo de 8 são
-/// sucesso.
-String scriptWindows({
+/// - `BIBLIA_PID`: o processo do app que está fechando.
+/// - `BIBLIA_ORIGEM`: a pasta com a versão nova, já extraída e conferida.
+/// - `BIBLIA_DESTINO`: a pasta do programa.
+/// - `BIBLIA_EM_USO`: o executável que está rodando, que prende os arquivos.
+/// - `BIBLIA_EXE`: o executável a abrir no fim.
+Map<String, String> variaveisScriptWindows({
+  required int pid,
   required String origem,
   required String destino,
-  required String executavel,
-}) {
-  String q(String s) => s.replaceAll('"', '');
-  return [
-    '@echo off',
-    'setlocal',
-    'set PID=%1',
-    ':espera',
-    'tasklist /FI "PID eq %PID%" 2>NUL | find "%PID%" >NUL',
-    'if not errorlevel 1 (',
-    '  timeout /t 1 /nobreak >NUL',
-    '  goto espera',
-    ')',
-    'robocopy "${q(origem)}" "${q(destino)}" /E /R:5 /W:1 /NFL /NDL /NJH /NJS /NP >NUL',
-    'if %ERRORLEVEL% GEQ 8 (',
-    '  msg "%USERNAME%" "Nao foi possivel concluir a atualizacao da Biblia de Estudo. Abra o app e tente de novo. NAO apague a pasta do programa."',
-    ')',
-    'start "" "${q(p.join(destino, executavel))}"',
-    'endlocal',
-    '',
-  ].join('\r\n');
-}
+  required String emUso,
+}) => {
+  'BIBLIA_PID': '$pid',
+  'BIBLIA_ORIGEM': origem,
+  'BIBLIA_DESTINO': destino,
+  'BIBLIA_EM_USO': emUso,
+  'BIBLIA_EXE': Atualizacao.executavelWindows,
+};
+
+/// O script que troca os arquivos depois que o app fecha (Windows).
+///
+/// Sem caminho nenhum no texto: tudo vem das variáveis de
+/// [variaveisScriptWindows]. O cmd lê o arquivo na página de código do
+/// console, e um caminho com acento gravado em UTF-8 chegaria trocado.
+///
+/// 1. Espera o executável soltar: enquanto o app roda, o Windows não deixa
+///    abri-lo para gravar. O teste usa só comandos do próprio cmd. A versão
+///    1.4.0 e anteriores usavam `tasklist | find`, que ficava preso para
+///    sempre no Windows 11.
+/// 2. Passados uns 10 segundos, encerra à força o processo do app (o filtro
+///    pelo nome do executável evita matar outro programa que tenha herdado o
+///    número). Passados uns 30, desiste da cópia: outra janela do app está
+///    aberta, e a abertura seguinte avisa que a atualização não terminou.
+/// 3. Copia com robocopy, que tenta de novo arquivos ainda presos (códigos
+///    abaixo de 8 são sucesso), e reabre o app.
+///
+/// `ping` é a pausa de 1 segundo: o `timeout` falha quando a entrada do
+/// script não é um teclado, e aqui ela não é.
+const scriptWindows =
+    '@echo off\r\n'
+    'setlocal DisableDelayedExpansion\r\n'
+    'set "ALVO=%BIBLIA_DESTINO%\\%BIBLIA_EM_USO%"\r\n'
+    'set /a N=0\r\n'
+    ':espera\r\n'
+    '2>NUL (\r\n'
+    '  >>"%ALVO%" (call )\r\n'
+    ') && goto copiar\r\n'
+    'set /a N+=1\r\n'
+    'if %N% EQU 10 taskkill /F /FI "PID eq %BIBLIA_PID%" /FI "IMAGENAME eq %BIBLIA_EM_USO%" >NUL 2>&1\r\n'
+    'if %N% GEQ 30 goto abrir\r\n'
+    'ping -n 2 127.0.0.1 >NUL\r\n'
+    'goto espera\r\n'
+    ':copiar\r\n'
+    'robocopy "%BIBLIA_ORIGEM%" "%BIBLIA_DESTINO%" /E /R:5 /W:1 /NFL /NDL /NJH /NJS /NP >NUL\r\n'
+    'if not errorlevel 8 goto abrir\r\n'
+    'ping -n 3 127.0.0.1 >NUL\r\n'
+    'robocopy "%BIBLIA_ORIGEM%" "%BIBLIA_DESTINO%" /E /R:5 /W:1 /NFL /NDL /NJH /NJS /NP >NUL\r\n'
+    ':abrir\r\n'
+    'start "" /D "%BIBLIA_DESTINO%" "%BIBLIA_DESTINO%\\%BIBLIA_EXE%"\r\n'
+    'endlocal\r\n';
