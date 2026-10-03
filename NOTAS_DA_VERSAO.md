@@ -1,17 +1,19 @@
-## Bíblia de Estudo 1.2.0
+## Bíblia de Estudo 1.3.0
 
-### Novidades da 1.2.0
+### Novidades da 1.3.0
 
-- **"No livro" volta a abrir o livro.** Desde a primeira versão, tocar em
-  "No livro" num trecho que cita o versículo deixava a tela cinza. Agora o
-  livro abre na página, com a citação destacada.
-- **Mais opções ao selecionar um trecho nos livros:** Realçar (5 cores),
-  Nota, Compartilhar, Ouvir, Procurar no livro e, no Android, Mais (Traduzir
-  e outros apps do celular).
-- Os realces e as notas dos livros ficam em *Marcações*, na aba *Livros*, e
-  vão na cópia de segurança.
-- Lupa na barra do livro para procurar uma palavra no livro todo.
-- No versículo da Bíblia: *Ouvir a partir daqui* e *Mais*.
+- **Plano Reavivados por Sua Palavra**, junto com a igreja: um capítulo por
+  dia, no mesmo capítulo que todos estão lendo (hoje, 3 de outubro de 2026,
+  é o Salmo 57). Funciona sem internet. Quem já vinha lendo pode marcar de
+  uma vez os capítulos anteriores do ciclo.
+- **Leitura de hoje** no alto da tela: um toque abre o capítulo e, depois de
+  ler, outro marca como lido.
+- No plano: calendário do mês, os capítulos que ficaram para trás, dias
+  seguidos, o **comentário do dia** no site do Reavivados e o programa no
+  rádio Novo Tempo.
+- **Lembrete diário** na hora que você escolher (Android e Windows).
+- Planos novos: Um capítulo por dia (no seu ritmo), Os Salmos em um mês e
+  Provérbios em um mês.
 
 ---
 
@@ -51,8 +53,9 @@ anotações.
 - Índice temático com 50 temas e 16 estudos bíblicos em perguntas e
   respostas, com as leituras de Ellen G. White de cada tema.
 - Marcações com cores, anotações e busca; realces e notas também nos livros.
-- Plano de leitura, leitura do capítulo em voz alta e cópia de segurança das
-  marcações e anotações.
+- Planos de leitura, entre eles o Reavivados por Sua Palavra no mesmo
+  capítulo que a igreja, com lembrete diário; leitura do capítulo em voz
+  alta e cópia de segurança das marcações e anotações.
 
 Os livros de Ellen G. White são baixados do site do Centro de Pesquisas Ellen
 G. White na primeira vez que você abre um trecho (ou todos de uma vez em

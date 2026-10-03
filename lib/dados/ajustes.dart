@@ -216,22 +216,99 @@ class Ajustes extends ChangeNotifier {
       ?int.tryParse(d),
   };
 
-  void iniciarPlano(String id) {
+  /// Dia do plano em que a pessoa começou (nos planos por data, contado
+  /// desde o início do plano). Os dias antes dele não contam como atrasados.
+  int? get planoComecou => _p.getInt('planoComecou');
+
+  /// Começa o plano [id]. Nos planos por data, [comecou] é o dia de hoje; com
+  /// [lidosAntes], os dias do ciclo atual antes de hoje já contam como lidos
+  /// (para quem já vinha lendo com a igreja).
+  void iniciarPlano(
+    String id, {
+    int? comecou,
+    Iterable<int> lidosAntes = const [],
+  }) {
     _p.setString('plano', id);
-    _p.remove('planoLidos');
+    _p.remove('planoLeuEm');
+    if (comecou == null) {
+      _p.remove('planoComecou');
+    } else {
+      _p.setInt('planoComecou', comecou);
+    }
+    _gravarLidos(lidosAntes.toSet());
     notifyListeners();
   }
 
   void encerrarPlano() {
     _p.remove('plano');
     _p.remove('planoLidos');
+    _p.remove('planoComecou');
+    _p.remove('planoLeuEm');
     notifyListeners();
   }
 
-  void marcarDia(int dia, bool lido) {
+  void marcarDia(int dia, bool lido) => marcarDias([dia], lido);
+
+  void marcarDias(Iterable<int> dias, bool lido) {
     final d = diasLidos;
-    lido ? d.add(dia) : d.remove(dia);
-    _p.setStringList('planoLidos', [for (final x in d.toList()..sort()) '$x']);
+    lido ? d.addAll(dias) : d.removeAll(dias);
+    _gravarLidos(d);
+    if (lido) _p.setString('planoLeuEm', _diaDeHoje(DateTime.now()));
+    notifyListeners();
+  }
+
+  static String _diaDeHoje(DateTime d) => '${d.year}-${d.month}-${d.day}';
+
+  void _gravarLidos(Set<int> d) {
+    if (d.isEmpty) {
+      _p.remove('planoLidos');
+    } else {
+      _p.setStringList('planoLidos', [
+        for (final x in d.toList()..sort()) '$x',
+      ]);
+    }
+  }
+
+  /// O que ler hoje no plano em andamento, ou null se não houver plano, se a
+  /// leitura de hoje já foi feita ou se o plano terminou.
+  LeituraHoje? leituraHoje([DateTime? agora]) {
+    final pl = PlanoLeitura.porId(plano);
+    if (pl == null) return null;
+    final lidos = diasLidos;
+    if (pl.porData) {
+      final hoje = pl.diaDe(agora ?? DateTime.now());
+      if (lidos.contains(hoje)) return null;
+      return LeituraHoje(
+        plano: pl,
+        dia: hoje,
+        capitulos: pl.leituraDoDia(hoje),
+      );
+    }
+    // Nos planos sem data, depois de ler a porção de hoje a próxima fica
+    // para amanhã.
+    if (_p.getString('planoLeuEm') == _diaDeHoje(agora ?? DateTime.now())) {
+      return null;
+    }
+    for (var d = 0; d < pl.dias; d++) {
+      if (!lidos.contains(d)) {
+        return LeituraHoje(plano: pl, dia: d, capitulos: pl.leituras[d]);
+      }
+    }
+    return null;
+  }
+
+  // --- lembrete diário ---
+
+  bool get lembrete => _p.getBool('lembrete') ?? false;
+  set lembrete(bool v) {
+    _p.setBool('lembrete', v);
+    notifyListeners();
+  }
+
+  /// Hora do lembrete, em minutos desde a meia-noite (padrão: 7h).
+  int get lembreteMinutos => _p.getInt('lembreteMinutos') ?? 7 * 60;
+  set lembreteMinutos(int v) {
+    _p.setInt('lembreteMinutos', v.clamp(0, 24 * 60 - 1));
     notifyListeners();
   }
 
@@ -253,7 +330,11 @@ class Ajustes extends ChangeNotifier {
     },
     'realces': [for (final r in todosRealces()) r.paraMapa()],
     if (plano != null)
-      'plano': {'id': plano, 'lidos': diasLidos.toList()..sort()},
+      'plano': {
+        'id': plano,
+        'lidos': diasLidos.toList()..sort(),
+        'comecou': ?planoComecou,
+      },
   };
 
   /// Junta uma cópia de [exportar] ao que já está no aparelho, sem apagar
@@ -348,10 +429,15 @@ class Ajustes extends ChangeNotifier {
           for (final d in (pl['lidos'] as List?) ?? const [])
             if (d is int && d >= 0) d,
         };
+        // Vale o começo mais antigo: o que a pessoa leu em qualquer aparelho.
+        final c = pl['comecou'];
+        final atual = plano == id ? planoComecou : null;
+        final comecou = c is int && c >= 0
+            ? (atual == null || c < atual ? c : atual)
+            : atual;
         _p.setString('plano', id);
-        _p.setStringList('planoLidos', [
-          for (final x in lidos.toList()..sort()) '$x',
-        ]);
+        _gravarLidos(lidos);
+        if (comecou != null) _p.setInt('planoComecou', comecou);
       }
     }
     notifyListeners();

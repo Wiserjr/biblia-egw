@@ -30,6 +30,10 @@ App para **Android e Windows** que junta, em cada versículo:
 - **estudos bíblicos**: 16 estudos em perguntas e respostas, com a resposta
   escondida até tocar;
 - marcações com cores, anotações, busca por referência ou por palavras;
+- **planos de leitura**, entre eles o **Reavivados por Sua Palavra** no
+  mesmo capítulo que a igreja (um capítulo por dia desde 17/04/2025; o app
+  calcula o capítulo pela data, sem internet), com a leitura de hoje no alto
+  do leitor, calendário, comentário do dia no site e lembrete diário;
 - **atualização automática** no Android e no Windows.
 
 No celular, tocar num versículo abre o painel de estudo por baixo; no PC (ou
