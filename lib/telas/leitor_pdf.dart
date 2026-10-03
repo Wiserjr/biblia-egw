@@ -65,6 +65,11 @@ class _TelaPdfState extends State<TelaPdf> {
   /// O livro já abriu e está na página e no zoom iniciais.
   bool _pronto = false;
 
+  /// O zoom de abertura, enquanto a pessoa não muda o zoom: se a tela mudar
+  /// de tamanho (o celular girou, a janela mudou), ele é refeito para a
+  /// tela nova. `null` depois que a pessoa escolhe o próprio zoom.
+  double? _zoomDeAbertura;
+
   @override
   void initState() {
     super.initState();
@@ -103,6 +108,31 @@ class _TelaPdfState extends State<TelaPdf> {
     double paginaInteira,
     double larguraDaTela,
   ) => zoomInicial(paginaInteira: paginaInteira, larguraDaTela: larguraDaTela);
+
+  /// A tela mudou de tamanho. O leitor só refaz sozinho o zoom que estava
+  /// na página inteira; o de abertura com a letra no tamanho real (celular
+  /// deitado) ficaria maior que a tela depois de girar o celular.
+  void _telaMudou(Size tela, Size? antes, PdfViewerController controle) {
+    final abertura = _zoomDeAbertura;
+    if (!_pronto || abertura == null || !controle.isReady) return;
+    final atual = controle.currentZoom;
+    final seguiu =
+        (atual - abertura).abs() < 0.01 ||
+        (atual - controle.minScale).abs() < 0.01;
+    if (!seguiu) {
+      // A pessoa escolheu o próprio zoom: fica o dela.
+      _zoomDeAbertura = null;
+      return;
+    }
+    final novo = zoomInicial(
+      paginaInteira: controle.alternativeFitScale ?? controle.coverScale,
+      larguraDaTela: controle.coverScale,
+    ).clamp(controle.minScale, controle.maxScale);
+    _zoomDeAbertura = novo;
+    if ((novo - atual).abs() > 0.001) {
+      controle.setZoom(controle.centerPosition, novo, duration: Duration.zero);
+    }
+  }
 
   /// Volta a mostrar a página atual inteira.
   void _paginaInteira() {
@@ -489,6 +519,7 @@ class _TelaPdfState extends State<TelaPdf> {
   void _livroPronto(PdfDocument documento, PdfViewerController controle) {
     _eventos ??= documento.events.listen(_eventoDoLivro);
     _pronto = true;
+    _zoomDeAbertura = controle.currentZoom;
     _criarBusca();
     _atualizar();
   }
@@ -703,6 +734,7 @@ class _TelaPdfState extends State<TelaPdf> {
     pagePaintCallbacks: [_pintarRealces, _pintarBusca],
     customizeContextMenuItems: _itensDoMenu,
     onViewerReady: _livroPronto,
+    onViewSizeChanged: _telaMudou,
     onDocumentLoadFinished: (_, carregou) {
       if (carregou) _criarBusca();
     },

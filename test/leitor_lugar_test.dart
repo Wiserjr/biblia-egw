@@ -100,56 +100,85 @@ void main() {
     ),
   );
 
-  testWidgets('o versículo tocado continua à vista quando o painel abre', (
-    tester,
-  ) async {
-    Ajustes.instancia.painelEstudo = false;
-    await montar(tester);
-    // Rola até o meio do capítulo e toca num versículo no meio da tela.
-    await tester.drag(
-      find.byType(SingleChildScrollView),
-      const Offset(0, -2400),
-    );
-    await tester.pumpAndSettle();
-    final alvo = [for (var n = 1; n <= 48; n++) n].firstWhere((n) {
-      final r = lugar(tester, n);
-      return r.top > 300 && r.bottom < 800;
-    });
-    await tester.tapAt(lugar(tester, alvo).center);
-    await tester.pumpAndSettle();
-
-    expect(Ajustes.instancia.painelEstudo, isTrue);
-    final depois = lugar(tester, alvo);
-    expect(depois.top, greaterThanOrEqualTo(0), reason: '$depois');
-    expect(depois.bottom, lessThanOrEqualTo(900), reason: '$depois');
-  });
-
-  testWidgets('fechar o painel deixa no lugar o versículo do alto da tela', (
-    tester,
-  ) async {
-    await montar(tester);
+  /// Rola até o meio do capítulo e devolve o primeiro versículo que começa
+  /// na tela.
+  Future<int> rolarAteOMeio(WidgetTester tester) async {
     await tester.drag(
       find.byType(SingleChildScrollView),
       const Offset(0, -3000),
     );
     await tester.pumpAndSettle();
-    // O primeiro versículo que aparece inteiro no alto.
-    final topo = [for (var n = 1; n <= 48; n++) n]
+    return [for (var n = 1; n <= 48; n++) n]
         .firstWhere((n) => lugar(tester, n).top >= 0);
+  }
+
+  testWidgets('o versículo tocado fica parado quando o painel abre', (
+    tester,
+  ) async {
+    Ajustes.instancia.painelEstudo = false;
+    await montar(tester);
+    await rolarAteOMeio(tester);
+    final alvo = [for (var n = 1; n <= 48; n++) n]
+        .firstWhere((n) => lugar(tester, n).top > 400);
+    final antes = lugar(tester, alvo).top;
+    await tester.tapAt(lugar(tester, alvo).center);
+    // Já no primeiro quadro, sem um quadro no lugar errado.
+    await tester.pump();
+    expect(Ajustes.instancia.painelEstudo, isTrue);
+    expect(lugar(tester, alvo).top, closeTo(antes, 1));
+    await tester.pumpAndSettle();
+    expect(lugar(tester, alvo).top, closeTo(antes, 1));
+  });
+
+  testWidgets('fechar e abrir o painel deixa no lugar o versículo do alto', (
+    tester,
+  ) async {
+    await montar(tester);
+    final topo = await rolarAteOMeio(tester);
     final antes = lugar(tester, topo).top;
-    debugPrint('topo $topo antes $antes');
 
     Ajustes.instancia.painelEstudo = false;
-    await tester.pumpAndSettle();
-    debugPrint('fechado ${lugar(tester, topo).top}');
+    await tester.pump();
     expect(lugar(tester, topo).top, closeTo(antes, 1));
-
-    // E de novo ao abrir, e ao mudar a largura do texto.
     Ajustes.instancia.painelEstudo = true;
-    await tester.pumpAndSettle();
+    await tester.pump();
     expect(lugar(tester, topo).top, closeTo(antes, 1));
     Ajustes.instancia.larguraTexto = 0.6;
+    await tester.pump();
+    expect(lugar(tester, topo).top, closeTo(antes, 1));
     await tester.pumpAndSettle();
     expect(lugar(tester, topo).top, closeTo(antes, 1));
+  });
+
+  testWidgets('o texto não treme enquanto a divisória é arrastada', (
+    tester,
+  ) async {
+    await montar(tester);
+    final topo = await rolarAteOMeio(tester);
+    final antes = lugar(tester, topo).top;
+    final divisoria = find.byWidgetPredicate(
+      (w) => w is MouseRegion && w.cursor == SystemMouseCursors.resizeColumn,
+    );
+    final gesto = await tester.startGesture(tester.getCenter(divisoria));
+    for (var i = 0; i < 8; i++) {
+      await gesto.moveBy(const Offset(-40, 0));
+      await tester.pump();
+      expect(lugar(tester, topo).top, closeTo(antes, 1), reason: 'passo $i');
+    }
+    await gesto.up();
+    await tester.pumpAndSettle();
+    expect(lugar(tester, topo).top, closeTo(antes, 1));
+  });
+
+  testWidgets('no começo do capítulo, o título continua à vista', (
+    tester,
+  ) async {
+    await montar(tester);
+    final titulo = tester.getRect(find.text('Mateus 5')).top;
+    Ajustes.instancia.painelEstudo = false;
+    await tester.pumpAndSettle();
+    Ajustes.instancia.larguraTexto = 0.4;
+    await tester.pumpAndSettle();
+    expect(tester.getRect(find.text('Mateus 5')).top, titulo);
   });
 }

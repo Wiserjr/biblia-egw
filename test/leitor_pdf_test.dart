@@ -217,12 +217,13 @@ void main() {
     IconButton botao(WidgetTester tester, IconData icone) =>
         tester.widget<IconButton>(find.widgetWithIcon(IconButton, icone));
 
-    /// Abre o livro em pé numa janela de PC (1600 x 900).
+    /// Abre o livro em pé numa janela de PC (1600 x 900), ou na [tela] dada.
     Future<PdfViewerController> abrirNoPc(
       WidgetTester tester, {
       int pagina = 0,
+      Size tela = const Size(1600, 900),
     }) async {
-      tester.view.physicalSize = const Size(1600, 900);
+      tester.view.physicalSize = tela;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       await tester.pumpWidget(
@@ -382,5 +383,21 @@ void main() {
       },
       skip: !temPdfium,
     );
+
+    testWidgets('celular deitado: letra legível, e a página cabe ao girar', (
+      tester,
+    ) async {
+      final c = await abrirNoPc(tester, tela: const Size(800, 420));
+      // A página inteira deixaria a letra miúda: abre no tamanho real.
+      expect(c.alternativeFitScale!, lessThan(0.7));
+      expect(c.currentZoom, closeTo(1.0, 0.01));
+
+      // Em pé, a página cabe na largura da tela.
+      tester.view.physicalSize = const Size(380, 800);
+      await _esperar(tester, () => false, vezes: 5);
+      expect(c.currentZoom, closeTo(c.coverScale, 0.01));
+      expect(c.currentZoom, lessThan(1.0));
+      expect(tester.takeException(), isNull);
+    }, skip: !temPdfium);
   });
 }
