@@ -12,10 +12,16 @@ $script:ramo = 'main'
 $script:mudancas = @()
 $script:prs = '[]'
 $script:pullFalha = $false
+$script:checkoutFalha = $false
 $script:chamadas = New-Object System.Collections.ArrayList
 
-# Um array passado a um programa vira varios argumentos; aqui, tambem.
-function Juntar($lista) { (@($lista | ForEach-Object { $_ }) -join ' ') }
+# Um array passado a um programa vira varios argumentos; aqui, tambem. Um
+# argumento com espaco sai entre aspas, para nao se confundir com varios.
+function Juntar($lista) {
+    $partes = @($lista | ForEach-Object { $_ }) |
+        ForEach-Object { if ("$_" -match '\s') { "'$_'" } else { "$_" } }
+    return (@($partes) -join ' ')
+}
 
 function git {
     [void]$script:chamadas.Add("git $(Juntar $args)")
@@ -24,6 +30,7 @@ function git {
         'rev-parse' { $script:ramo }
         'status' { $script:mudancas }
         'pull' { if ($script:pullFalha) { $global:LASTEXITCODE = 1 } }
+        'checkout' { if ($script:checkoutFalha) { $global:LASTEXITCODE = 1 } }
     }
 }
 
@@ -38,6 +45,7 @@ function Simular([string]$ramo = 'main', $mudancas = @(), [string]$prs = '[]') {
     $script:mudancas = $mudancas
     $script:prs = $prs
     $script:pullFalha = $false
+    $script:checkoutFalha = $false
     $script:chamadas.Clear()
 }
 
@@ -92,6 +100,13 @@ Teste 'arquivos que a compilacao regera: desfaz e segue' {
         'windows/flutter/generated_plugin_registrant.h windows/flutter/generated_plugins.cmake') `
         @($script:chamadas | Where-Object { $_ -like 'git checkout*' })[0]
     Igual 'git pull --ff-only origin main' $script:chamadas[-1]
+}
+
+Teste 'arquivos gerados que nao voltam: recusa antes do pull' {
+    Simular -mudancas @(' M windows/flutter/generated_plugins.cmake')
+    $script:checkoutFalha = $true
+    Deve-Falhar { Sincronizar-Main -gh 'GhFalso' -repo 'a/b' -perguntar (Respostas @()) } 'desfazer os arquivos gerados'
+    if ($script:chamadas -like 'git pull*') { throw 'fez o pull mesmo assim' }
 }
 
 Teste 'arquivo gerado junto com outra alteracao: recusa so pela outra' {
