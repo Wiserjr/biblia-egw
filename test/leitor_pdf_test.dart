@@ -24,8 +24,27 @@ const _obra = Obra(
   paginas: 1,
 );
 
+/// O mesmo livro, em páginas em pé como as de um livro de verdade.
+const _retrato = Obra(
+  id: 82,
+  arquivo: 'retrato',
+  sigla: 'RET',
+  titulo: 'Livro em pé',
+  autor: 'Ellen G. White',
+  grupo: 'egw',
+  prioridade: 1,
+  url: 'https://cdn.centrowhite.org.br/retrato.pdf',
+  bytes: 1,
+  sha256: '',
+  paginas: 1,
+);
+
 /// Um PDF com uma linha de texto em cada página, montado à mão.
-List<int> _pdfMinimo(List<String> paginas) {
+List<int> _pdfMinimo(
+  List<String> paginas, {
+  int largura = 400,
+  int altura = 200,
+}) {
   final n = paginas.length;
   // 1: catálogo, 2: páginas, 3: fonte, depois página e conteúdo de cada uma.
   final objetos = <String>[
@@ -37,7 +56,7 @@ List<int> _pdfMinimo(List<String> paginas) {
     final fluxo = 'BT /F1 12 Tf 20 100 Td (${paginas[i]}) Tj ET';
     objetos
       ..add(
-        '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 400 200] '
+        '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 $largura $altura] '
         '/Resources << /Font << /F1 3 0 R >> >> /Contents ${5 + 2 * i} 0 R >>',
       )
       ..add('<< /Length ${fluxo.length} >>\nstream\n$fluxo\nendstream');
@@ -89,6 +108,56 @@ void main() {
     expect(padraoDeBusca('por que').hasMatch('porque'), isFalse);
   });
 
+  group('zoom', () {
+    test('o livro abre com a página inteira, e a letra legível', () {
+      // Monitor largo: a página inteira, bem menor que a largura da tela
+      // (com que os livros abriam até a 1.4).
+      expect(zoomInicial(paginaInteira: 1.4, larguraDaTela: 3.8), 1.4);
+      // Celular em pé: a largura da tela é a página inteira.
+      expect(zoomInicial(paginaInteira: 0.9, larguraDaTela: 0.9), 0.9);
+      expect(zoomInicial(paginaInteira: 0.9, larguraDaTela: 0.92), 0.92);
+      // Celular deitado: a página inteira deixaria a letra miúda; abre no
+      // tamanho real da página, ainda menor que a largura.
+      expect(zoomInicial(paginaInteira: 0.56, larguraDaTela: 2.04), 1.0);
+      // Janela estreita e baixa: nunca passa da largura.
+      expect(zoomInicial(paginaInteira: 0.5, larguraDaTela: 0.7), 0.7);
+    });
+
+    test('passos de 15%, pela página inteira e pela largura', () {
+      const m = PdfViewerLayoutMetrics(
+        minScale: 1.37,
+        maxScale: 8,
+        coverScale: 3.85,
+        alternativeFitScale: 1.37,
+      );
+      final passos = passosDeZoom(m);
+      expect(passos.first, 1.37);
+      expect(passos.last, 8);
+      expect(passos, contains(3.85));
+      for (var i = 1; i < passos.length; i++) {
+        final razao = passos[i] / passos[i - 1];
+        expect(razao, greaterThan(1.0), reason: 'em ordem: $passos');
+        expect(razao, lessThanOrEqualTo(1.15 + 1e-9), reason: '$passos');
+      }
+      // O padrão do leitor ia de 1,37 direto para 2,74.
+      expect(passos[1], closeTo(1.37 * 1.15, 1e-9));
+    });
+
+    test('passos sem repetição quando as duas medidas coincidem', () {
+      const m = PdfViewerLayoutMetrics(
+        minScale: 0.9,
+        maxScale: 8,
+        coverScale: 0.905,
+        alternativeFitScale: 0.9,
+      );
+      final passos = passosDeZoom(m);
+      for (var i = 1; i < passos.length; i++) {
+        expect(passos[i] - passos[i - 1], greaterThanOrEqualTo(0.02));
+      }
+      expect(passos.first, 0.9);
+    });
+  });
+
   // Antes, o leitor criava a busca do destaque antes de o livro carregar, e a
   // tela ficava cinza em quase todo "No livro" (os trechos que citam o
   // versículo sempre têm destaque).
@@ -121,6 +190,11 @@ void main() {
               'Pagina $p: Disse Jesus em Marcos 4 a parabola.',
           ]),
         );
+      File('${obras.path}/retrato.pdf').writeAsBytesSync(
+        _pdfMinimo([
+          for (var p = 1; p <= 5; p++) 'Pagina $p em pe.',
+        ], altura: 600),
+      );
       final doc = await PdfDocument.openFile(arquivo.path);
       final texto = await doc.pages[2].loadStructuredText();
       inicioMarcos = texto.fullText.indexOf('Marcos 4');
@@ -142,6 +216,69 @@ void main() {
 
     IconButton botao(WidgetTester tester, IconData icone) =>
         tester.widget<IconButton>(find.widgetWithIcon(IconButton, icone));
+
+    /// Abre o livro em pé numa janela de PC (1600 x 900), ou na [tela] dada.
+    Future<PdfViewerController> abrirNoPc(
+      WidgetTester tester, {
+      int pagina = 0,
+      Size tela = const Size(1600, 900),
+    }) async {
+      tester.view.physicalSize = tela;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: TelaPdf(obra: _retrato, pagina: pagina),
+        ),
+      );
+      await _esperar(
+        tester,
+        () => botao(tester, Icons.zoom_in).onPressed != null,
+      );
+      expect(
+        botao(tester, Icons.zoom_in).onPressed,
+        isNotNull,
+        reason: 'o livro não carregou',
+      );
+      await _esperar(tester, () => false, vezes: 3);
+      return tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+    }
+
+    testWidgets('no PC, o livro abre com a página inteira na tela', (
+      tester,
+    ) async {
+      final c = await abrirNoPc(tester, pagina: 2);
+      expect(tester.takeException(), isNull);
+      expect(c.pageNumber, 3);
+      final inteira = c.alternativeFitScale!;
+      expect(c.currentZoom, closeTo(inteira, 0.01));
+      // Antes abria na largura da tela, quase três vezes maior.
+      expect(c.coverScale, greaterThan(inteira * 2));
+
+      // Um passo de zoom aumenta 15%, não o dobro.
+      await tester.tap(find.widgetWithIcon(IconButton, Icons.zoom_in));
+      await _esperar(tester, () => false, vezes: 4);
+      expect(c.currentZoom, closeTo(inteira * 1.15, 0.01));
+      await tester.tap(find.widgetWithIcon(IconButton, Icons.zoom_in));
+      await _esperar(tester, () => false, vezes: 4);
+      expect(c.currentZoom, closeTo(inteira * 1.15 * 1.15, 0.01));
+
+      // "Página inteira" volta, na mesma página.
+      await tester.tap(
+        find.widgetWithIcon(IconButton, Icons.fit_screen_outlined),
+      );
+      await _esperar(tester, () => false, vezes: 4);
+      expect(c.currentZoom, closeTo(inteira, 0.01));
+      expect(c.pageNumber, 3);
+
+      // Aproximar num livro não faz o próximo abrir aproximado.
+      await tester.tap(find.widgetWithIcon(IconButton, Icons.zoom_in));
+      await _esperar(tester, () => false, vezes: 10);
+      await tester.pumpWidget(const SizedBox());
+      final outro = await abrirNoPc(tester);
+      expect(outro.currentZoom, closeTo(outro.alternativeFitScale!, 0.01));
+      expect(tester.takeException(), isNull);
+    }, skip: !temPdfium);
 
     testWidgets('pinta os realces das páginas que ainda estavam carregando', (
       tester,
@@ -246,5 +383,21 @@ void main() {
       },
       skip: !temPdfium,
     );
+
+    testWidgets('celular deitado: letra legível, e a página cabe ao girar', (
+      tester,
+    ) async {
+      final c = await abrirNoPc(tester, tela: const Size(800, 420));
+      // A página inteira deixaria a letra miúda: abre no tamanho real.
+      expect(c.alternativeFitScale!, lessThan(0.7));
+      expect(c.currentZoom, closeTo(1.0, 0.01));
+
+      // Em pé, a página cabe na largura da tela.
+      tester.view.physicalSize = const Size(380, 800);
+      await _esperar(tester, () => false, vezes: 5);
+      expect(c.currentZoom, closeTo(c.coverScale, 0.01));
+      expect(c.currentZoom, lessThan(1.0));
+      expect(tester.takeException(), isNull);
+    }, skip: !temPdfium);
   });
 }

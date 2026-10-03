@@ -62,6 +62,14 @@ class _TelaPdfState extends State<TelaPdf> {
   /// livro inteiro nos ajustes; acima disto, pede um trecho menor.
   static const _maxPaginasRealce = 10;
 
+  /// O livro já abriu e está na página e no zoom iniciais.
+  bool _pronto = false;
+
+  /// O zoom de abertura, enquanto a pessoa não muda o zoom: se a tela mudar
+  /// de tamanho (o celular girou, a janela mudou), ele é refeito para a
+  /// tela nova. `null` depois que a pessoa escolhe o próprio zoom.
+  double? _zoomDeAbertura;
+
   @override
   void initState() {
     super.initState();
@@ -90,6 +98,54 @@ class _TelaPdfState extends State<TelaPdf> {
     _busca?.dispose();
     _campoBusca.dispose();
     super.dispose();
+  }
+
+  // --- zoom ---
+
+  static double? _zoomInicial(
+    PdfDocument documento,
+    PdfViewerController controle,
+    double paginaInteira,
+    double larguraDaTela,
+  ) => zoomInicial(paginaInteira: paginaInteira, larguraDaTela: larguraDaTela);
+
+  /// A tela mudou de tamanho. O leitor só refaz sozinho o zoom que estava
+  /// na página inteira; o de abertura com a letra no tamanho real (celular
+  /// deitado) ficaria maior que a tela depois de girar o celular.
+  void _telaMudou(Size tela, Size? antes, PdfViewerController controle) {
+    final abertura = _zoomDeAbertura;
+    if (!_pronto || abertura == null || !controle.isReady) return;
+    final atual = controle.currentZoom;
+    final seguiu =
+        (atual - abertura).abs() < 0.01 ||
+        (atual - controle.minScale).abs() < 0.01;
+    if (!seguiu) {
+      // A pessoa escolheu o próprio zoom: fica o dela.
+      _zoomDeAbertura = null;
+      return;
+    }
+    final novo = zoomInicial(
+      paginaInteira: controle.alternativeFitScale ?? controle.coverScale,
+      larguraDaTela: controle.coverScale,
+    ).clamp(controle.minScale, controle.maxScale);
+    _zoomDeAbertura = novo;
+    if ((novo - atual).abs() > 0.001) {
+      controle.setZoom(controle.centerPosition, novo, duration: Duration.zero);
+    }
+  }
+
+  /// Volta a mostrar a página atual inteira.
+  void _paginaInteira() {
+    if (!_controle.isReady) return;
+    final n = _controle.pageNumber ?? 1;
+    final paginas = _controle.layout.pageLayouts;
+    if (n < 1 || n > paginas.length) return;
+    final r = paginas[n - 1].inflate(_parametros.margin);
+    final tela = _controle.viewSize;
+    final zoom = math
+        .min(tela.width / r.width, tela.height / r.height)
+        .clamp(_controle.minScale, _controle.maxScale);
+    _controle.setZoom(r.center, zoom);
   }
 
   // --- realces ---
@@ -462,7 +518,10 @@ class _TelaPdfState extends State<TelaPdf> {
   /// O livro abriu: passa a acompanhar as páginas que vão carregando.
   void _livroPronto(PdfDocument documento, PdfViewerController controle) {
     _eventos ??= documento.events.listen(_eventoDoLivro);
+    _pronto = true;
+    _zoomDeAbertura = controle.currentZoom;
     _criarBusca();
+    _atualizar();
   }
 
   void _eventoDoLivro(PdfDocumentEvent evento) {
@@ -592,9 +651,29 @@ class _TelaPdfState extends State<TelaPdf> {
 
   PreferredSizeWidget _barra() {
     if (!_procurando) {
+      // No celular o zoom é com os dedos; no PC, os botões ajudam (também
+      // há Ctrl + roda do mouse).
+      final botoesZoom = MediaQuery.sizeOf(context).width >= 600;
       return AppBar(
         title: Text(widget.obra.titulo, overflow: TextOverflow.ellipsis),
         actions: [
+          if (botoesZoom) ...[
+            IconButton(
+              tooltip: 'Diminuir',
+              icon: const Icon(Icons.zoom_out),
+              onPressed: _pronto ? () => _controle.zoomDown() : null,
+            ),
+            IconButton(
+              tooltip: 'Página inteira',
+              icon: const Icon(Icons.fit_screen_outlined),
+              onPressed: _pronto ? _paginaInteira : null,
+            ),
+            IconButton(
+              tooltip: 'Aumentar',
+              icon: const Icon(Icons.zoom_in),
+              onPressed: _pronto ? () => _controle.zoomUp() : null,
+            ),
+          ],
           IconButton(
             tooltip: 'Procurar no livro',
             icon: const Icon(Icons.search),
@@ -642,9 +721,20 @@ class _TelaPdfState extends State<TelaPdf> {
 
   /// Os mesmos parâmetros a cada desenho, para o leitor não achar que mudaram.
   late final _parametros = PdfViewerParams(
+    // O livro abre com a página inteira na tela, não na largura da tela: num
+    // monitor largo, a largura deixava a letra enorme.
+    sizeDelegateProvider: PdfViewerSizeDelegateProviderLegacy(
+      calculateInitialZoom: _zoomInicial,
+    ),
+    // Zoom em passos pequenos (botões e Ctrl + / Ctrl -), e o Ctrl com a
+    // roda do mouse pela metade. (A pinça, no celular e no touchpad do PC,
+    // segue os dedos e não passa por aqui.)
+    zoomStepsDelegateProvider: const _PassosDeZoom(),
+    scaleByPointerScale: 0.5,
     pagePaintCallbacks: [_pintarRealces, _pintarBusca],
     customizeContextMenuItems: _itensDoMenu,
     onViewerReady: _livroPronto,
+    onViewSizeChanged: _telaMudou,
     onDocumentLoadFinished: (_, carregou) {
       if (carregou) _criarBusca();
     },
@@ -693,6 +783,82 @@ class _TelaPdfState extends State<TelaPdf> {
       ),
     );
   }
+}
+
+/// O zoom com que o livro abre: a página inteira na tela. Só quando a tela
+/// é baixa demais para isso (celular deitado, janela achatada), a letra
+/// ficaria miúda: aí abre no tamanho real da página (zoom 1), sem passar da
+/// largura da tela, que era o zoom com que os livros abriam até a 1.4.
+@visibleForTesting
+double zoomInicial({
+  required double paginaInteira,
+  required double larguraDaTela,
+}) {
+  final menor = math.min(paginaInteira, larguraDaTela);
+  final maior = math.max(paginaInteira, larguraDaTela);
+  return math
+      .max(paginaInteira, math.min(1.0, larguraDaTela))
+      .clamp(menor, maior);
+}
+
+/// Os passos do zoom dos botões e do teclado: de 15% em 15%, passando pela
+/// página inteira e pela largura da tela. O padrão do leitor dobrava o zoom a
+/// cada passo.
+@visibleForTesting
+List<double> passosDeZoom(PdfViewerLayoutMetrics m) {
+  const passo = 1.15;
+  final marcos = <double>[
+    m.coverScale,
+    ?m.alternativeFitScale,
+  ].where((z) => z >= m.minScale && z <= m.maxScale).toList()..sort();
+  final base = marcos.isEmpty ? m.minScale : marcos.first;
+  final passos = <double>[m.minScale, ...marcos, m.maxScale];
+  for (var z = base / passo; z > m.minScale; z /= passo) {
+    passos.add(z);
+  }
+  for (var z = base * passo; z < m.maxScale; z *= passo) {
+    passos.add(z);
+  }
+  passos.sort();
+  // Sem passos quase iguais: o leitor os trataria como o mesmo zoom. Dos
+  // parecidos fica o mínimo ou o máximo, depois a página inteira ou a
+  // largura, e só então um passo comum.
+  int peso(double z) => z == m.minScale || z == m.maxScale
+      ? 2
+      : marcos.contains(z)
+      ? 1
+      : 0;
+  final saida = <double>[];
+  for (final z in passos) {
+    if (saida.isEmpty || z - saida.last >= 0.02) {
+      saida.add(z);
+    } else if (peso(z) > peso(saida.last)) {
+      saida.last = z;
+    }
+  }
+  return saida;
+}
+
+class _PassosDeZoom extends PdfViewerZoomStepsDelegateProvider {
+  const _PassosDeZoom();
+
+  @override
+  PdfViewerZoomStepsDelegate create() => _DelegadoPassosDeZoom();
+
+  @override
+  bool operator ==(Object other) => other is _PassosDeZoom;
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+}
+
+class _DelegadoPassosDeZoom implements PdfViewerZoomStepsDelegate {
+  @override
+  void dispose() {}
+
+  @override
+  List<double> generateZoomStops(PdfViewerLayoutMetrics metrics) =>
+      passosDeZoom(metrics);
 }
 
 /// O texto procurado como expressão que aceita quebra de linha entre as

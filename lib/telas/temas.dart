@@ -6,6 +6,7 @@ import '../dados/modelos.dart';
 import '../dados/referencias.dart';
 import '../dados/temas.dart';
 import 'cartao_trecho.dart';
+import 'largura_texto.dart';
 import 'navegacao.dart';
 import 'tema.dart';
 import 'texto_biblico.dart';
@@ -194,90 +195,87 @@ class _TelaTemaState extends State<TelaTema> {
     final tema = widget.tema;
     return Scaffold(
       appBar: AppBar(title: Text(tema.titulo)),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
+      body: LarguraDoTexto(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text(
+              tema.categoria,
+              style: t.textTheme.labelLarge?.copyWith(
+                color: t.colorScheme.primary,
+              ),
+            ),
+            if (tema.resumo != null) ...[
+              const SizedBox(height: 6),
               Text(
-                tema.categoria,
-                style: t.textTheme.labelLarge?.copyWith(
-                  color: t.colorScheme.primary,
-                ),
-              ),
-              if (tema.resumo != null) ...[
-                const SizedBox(height: 6),
-                Text(
-                  tema.resumo!,
-                  style: t.textTheme.bodyLarge?.copyWith(height: 1.5),
-                ),
-              ],
-              const SizedBox(height: 16),
-              FutureBuilder<List<Passagem>>(
-                future: _passagens,
-                builder: (context, snap) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (final p in snap.data ?? const <Passagem>[])
-                      CartaoPassagem(passagem: p, versao: widget.versao),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              FutureBuilder<List<LeituraEgw>>(
-                future: _leituras,
-                builder: (context, snap) {
-                  final lista = snap.data ?? const <LeituraEgw>[];
-                  if (lista.isEmpty) return const SizedBox.shrink();
-                  return Card(
-                    color: corEgw(context).withValues(alpha: 0.07),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.menu_book_outlined,
-                                color: corEgw(context),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Para ler em Ellen G. White',
-                                style: t.textTheme.titleSmall?.copyWith(
-                                  color: corEgw(context),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Capítulos que citam mais versículos deste tema.',
-                            style: t.textTheme.bodySmall,
-                          ),
-                          for (final l in lista)
-                            ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              dense: true,
-                              title: Text(
-                                '${l.obra.titulo}, ${tituloCurto(l.capitulo)}',
-                              ),
-                              subtitle: Text(
-                                'cita ${l.versiculos} versículos do tema',
-                              ),
-                              trailing: const Icon(Icons.open_in_new, size: 18),
-                              onTap: () => abrirObra(context, l.obra, l.pagina),
-                            ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+                tema.resumo!,
+                style: t.textTheme.bodyLarge?.copyWith(height: 1.5),
               ),
             ],
-          ),
+            const SizedBox(height: 16),
+            FutureBuilder<List<Passagem>>(
+              future: _passagens,
+              builder: (context, snap) => Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final p in snap.data ?? const <Passagem>[])
+                    CartaoPassagem(passagem: p, versao: widget.versao),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            FutureBuilder<List<LeituraEgw>>(
+              future: _leituras,
+              builder: (context, snap) {
+                final lista = snap.data ?? const <LeituraEgw>[];
+                if (lista.isEmpty) return const SizedBox.shrink();
+                return Card(
+                  color: corEgw(context).withValues(alpha: 0.07),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.menu_book_outlined,
+                              color: corEgw(context),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Para ler em Ellen G. White',
+                              style: t.textTheme.titleSmall?.copyWith(
+                                color: corEgw(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Capítulos que citam mais versículos deste tema.',
+                          style: t.textTheme.bodySmall,
+                        ),
+                        for (final l in lista)
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            dense: true,
+                            title: Text(
+                              '${l.obra.titulo}, ${tituloCurto(l.capitulo)}',
+                            ),
+                            subtitle: Text(
+                              'cita ${l.versiculos} versículos do tema',
+                            ),
+                            trailing: const Icon(Icons.open_in_new, size: 18),
+                            onTap: () => abrirObra(context, l.obra, l.pagina),
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -434,43 +432,40 @@ class _TelaEstudoBiblicoState extends State<TelaEstudoBiblico> {
           if (lista == null) {
             return const Center(child: CircularProgressIndicator());
           }
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 760),
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: lista.length + 1,
-                itemBuilder: (context, i) {
-                  if (i == 0) {
-                    return widget.estudo.introducao == null
-                        ? const SizedBox.shrink()
-                        : Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Text(
-                              widget.estudo.introducao!,
-                              style: t.textTheme.bodyLarge,
-                            ),
-                          );
-                  }
-                  final q = lista[i - 1];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text('$i. ${q.texto}', style: t.textTheme.titleSmall),
-                        const SizedBox(height: 4),
-                        CartaoPassagem(
-                          key: ValueKey('$i:$_respostasVisiveis'),
-                          passagem: q.passagem,
-                          versao: widget.versao,
-                          oculto: !_respostasVisiveis,
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+          return LarguraDoTexto(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: lista.length + 1,
+              itemBuilder: (context, i) {
+                if (i == 0) {
+                  return widget.estudo.introducao == null
+                      ? const SizedBox.shrink()
+                      : Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            widget.estudo.introducao!,
+                            style: t.textTheme.bodyLarge,
+                          ),
+                        );
+                }
+                final q = lista[i - 1];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text('$i. ${q.texto}', style: t.textTheme.titleSmall),
+                      const SizedBox(height: 4),
+                      CartaoPassagem(
+                        key: ValueKey('$i:$_respostasVisiveis'),
+                        passagem: q.passagem,
+                        versao: widget.versao,
+                        oculto: !_respostasVisiveis,
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           );
         },

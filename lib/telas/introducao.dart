@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../dados/estudo.dart';
 import '../dados/modelos.dart';
 import '../dados/referencias.dart';
+import 'largura_texto.dart';
 import 'tema.dart';
 
 /// Introdução ao livro: autor, data, local, tema, esboço, mensagem, Cristo no
@@ -72,115 +73,109 @@ class _TelaIntroducaoState extends State<TelaIntroducao> {
               .split('\n')
               .where((l) => l.trim().isNotEmpty)
               .toList();
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 760),
-              child: ListView(
-                padding: const EdgeInsets.all(20),
-                children: [
-                  Text(
-                    Referencias.nome(widget.livro),
-                    style: t.textTheme.headlineMedium,
-                  ),
-                  const SizedBox(height: 16),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        children: [
-                          _linha(context, 'Autor', i['autor']),
-                          _linha(context, 'Data', i['data']),
-                          _linha(context, 'Local', i['local']),
-                          _linha(context, 'Para', i['destinatarios']),
-                          _linha(
-                            context,
-                            'Versículo-chave',
-                            i['versiculo_chave'],
-                          ),
-                        ],
-                      ),
+          return LarguraDoTexto(
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                Text(
+                  Referencias.nome(widget.livro),
+                  style: t.textTheme.headlineMedium,
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      children: [
+                        _linha(context, 'Autor', i['autor']),
+                        _linha(context, 'Data', i['data']),
+                        _linha(context, 'Local', i['local']),
+                        _linha(context, 'Para', i['destinatarios']),
+                        _linha(
+                          context,
+                          'Versículo-chave',
+                          i['versiculo_chave'],
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  campo('Tema', i['tema'], icone: Icons.lightbulb_outline),
-                  campo(
-                    'Mensagem',
-                    i['mensagem'],
-                    icone: Icons.campaign_outlined,
-                  ),
-                  if (esboco.isNotEmpty) ...[
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.list_alt,
-                          size: 18,
+                ),
+                const SizedBox(height: 16),
+                campo('Tema', i['tema'], icone: Icons.lightbulb_outline),
+                campo(
+                  'Mensagem',
+                  i['mensagem'],
+                  icone: Icons.campaign_outlined,
+                ),
+                if (esboco.isNotEmpty) ...[
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.list_alt,
+                        size: 18,
+                        color: t.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Esboço',
+                        style: t.textTheme.labelLarge?.copyWith(
                           color: t.colorScheme.primary,
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Esboço',
-                          style: t.textTheme.labelLarge?.copyWith(
-                            color: t.colorScheme.primary,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  for (final l in esboco)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Text('•  $l', style: t.textTheme.bodyLarge),
+                    ),
+                  const SizedBox(height: 14),
+                ],
+                campo(
+                  'Cristo no livro',
+                  i['cristo'],
+                  icone: Icons.favorite_border,
+                ),
+                Card(
+                  color: corEgw(context).withValues(alpha: 0.08),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.menu_book_outlined, color: corEgw(context)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Em Ellen G. White',
+                                style: t.textTheme.labelLarge?.copyWith(
+                                  color: corEgw(context),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                i['egw'] ?? '',
+                                style: t.textTheme.bodyMedium,
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    for (final l in esboco)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: Text('•  $l', style: t.textTheme.bodyLarge),
-                      ),
-                    const SizedBox(height: 14),
-                  ],
-                  campo(
-                    'Cristo no livro',
-                    i['cristo'],
-                    icone: Icons.favorite_border,
                   ),
-                  Card(
-                    color: corEgw(context).withValues(alpha: 0.08),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.menu_book_outlined,
-                            color: corEgw(context),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Em Ellen G. White',
-                                  style: t.textTheme.labelLarge?.copyWith(
-                                    color: corEgw(context),
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  i['egw'] ?? '',
-                                  style: t.textTheme.bodyMedium,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton.tonalIcon(
-                    onPressed: () =>
-                        Navigator.pop(context, Posicao(widget.livro, 1)),
-                    icon: const Icon(Icons.chrome_reader_mode_outlined),
-                    label: const Text('Ler o livro'),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton.tonalIcon(
+                  onPressed: () =>
+                      Navigator.pop(context, Posicao(widget.livro, 1)),
+                  icon: const Icon(Icons.chrome_reader_mode_outlined),
+                  label: const Text('Ler o livro'),
+                ),
+              ],
             ),
           );
         },

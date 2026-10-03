@@ -63,6 +63,49 @@ class Ajustes extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- tamanho das áreas da tela ---
+
+  /// Quanto da largura do leitor o texto da Bíblia ocupa (1 = tudo). Menos
+  /// que isso, o texto fica centralizado, com linhas mais curtas.
+  double get larguraTexto =>
+      (_p.getDouble('larguraTexto') ?? 1.0).clamp(minLarguraTexto, 1.0);
+  set larguraTexto(double v) {
+    _p.setDouble('larguraTexto', v.clamp(minLarguraTexto, 1.0));
+    notifyListeners();
+  }
+
+  static const minLarguraTexto = 0.4;
+
+  /// Em tela larga (PC, tablet deitado), o painel de estudo aberto ao lado do
+  /// texto. Fechado, o texto ocupa a tela toda.
+  bool get painelEstudo => _p.getBool('painelEstudo') ?? true;
+  set painelEstudo(bool v) {
+    _p.setBool('painelEstudo', v);
+    notifyListeners();
+  }
+
+  /// Com o painel fechado, tocar num versículo abre o painel.
+  bool get abrirPainelAoTocar => _p.getBool('abrirPainelAoTocar') ?? true;
+  set abrirPainelAoTocar(bool v) {
+    _p.setBool('abrirPainelAoTocar', v);
+    notifyListeners();
+  }
+
+  /// Parte da largura da tela que o painel de estudo ocupa.
+  double get larguraPainel =>
+      (_p.getDouble('larguraPainel') ?? larguraPainelPadrao).clamp(
+        minLarguraPainel,
+        maxLarguraPainel,
+      );
+  set larguraPainel(double v) {
+    _p.setDouble('larguraPainel', v.clamp(minLarguraPainel, maxLarguraPainel));
+    notifyListeners();
+  }
+
+  static const larguraPainelPadrao = 0.4;
+  static const minLarguraPainel = 0.2;
+  static const maxLarguraPainel = 0.7;
+
   Posicao get ultimaPosicao {
     final l = _p.getInt('ultLivro') ?? 43;
     final c = _p.getInt('ultCapitulo') ?? 1;
