@@ -209,6 +209,118 @@ Teste 'notas de outra versao: recusa' {
     Deve-Falhar { Conferir-Notas $f '1.2.0' } 'nao fala da versao 1.2.0'
 }
 
+# --- compilacao Windows ---
+# Uma pasta como a que o Flutter deixa em build\windows\x64: o cache do CMake
+# e o app compilado. Criada com .NET e caminho absoluto, para os colchetes de
+# um nome nao virarem curinga.
+function PastaCompilacao([string]$nome = 'x64', [string]$gerador = 'Visual Studio 18 2026') {
+    $p = [System.IO.Path]::Combine($tmp, $nome)
+    if (Test-Path -LiteralPath $p) { Remove-Item -LiteralPath $p -Recurse -Force }
+    $ids = [System.IO.Path]::Combine($p, 'CMakeFiles', '4.2.0')
+    $release = [System.IO.Path]::Combine($p, 'runner', 'Release')
+    [void][System.IO.Directory]::CreateDirectory($ids)
+    [void][System.IO.Directory]::CreateDirectory($release)
+    # A linha da instancia vem antes de proposito: a leitura nao pode pega-la.
+    [System.IO.File]::WriteAllText([System.IO.Path]::Combine($p, 'CMakeCache.txt'),
+        ("CMAKE_GENERATOR_INSTANCE:INTERNAL=C:/Program Files/Microsoft Visual Studio/18/Community`n" +
+         "CMAKE_GENERATOR:INTERNAL=$gerador`n" +
+         "CMAKE_GENERATOR_PLATFORM:INTERNAL=x64`n"))
+    [System.IO.File]::WriteAllText([System.IO.Path]::Combine($ids, 'CMakeCXXCompiler.cmake'), 'x')
+    [System.IO.File]::WriteAllText([System.IO.Path]::Combine($release, 'biblia_estudo.exe'), 'x')
+    return $p
+}
+function Sumiu([string]$p) { if (Test-Path -LiteralPath $p) { throw "ficou $p" } }
+function Ficou([string]$p) { if (-not (Test-Path -LiteralPath $p)) { throw "apagou $p" } }
+
+Teste 'gerador do CMake: le o da pasta' {
+    Igual 'Visual Studio 18 2026' (Ler-GeradorCMake (PastaCompilacao))
+}
+Teste 'gerador do CMake sem compilacao anterior: nada' {
+    if ($null -ne (Ler-GeradorCMake (Join-Path $tmp 'nao-existe'))) { throw 'leu algo' }
+}
+Teste 'gerador do CMake sem a linha do gerador: nada' {
+    $p = PastaCompilacao 'semgerador'
+    [System.IO.File]::WriteAllText((Join-Path $p 'CMakeCache.txt'), "CMAKE_GENERATOR_INSTANCE:INTERNAL=x`n")
+    if ($null -ne (Ler-GeradorCMake $p)) { throw 'leu algo' }
+}
+Teste 'compilacao Windows anterior: apaga a pasta inteira e so ela' {
+    $vizinha = PastaCompilacao 'arm64'
+    $p = PastaCompilacao
+    Limpar-CompilacaoWindows $p -pausa 0
+    Sumiu $p
+    Ficou (Join-Path $vizinha 'CMakeCache.txt')
+}
+Teste 'sem compilacao anterior: nao faz nada' {
+    Limpar-CompilacaoWindows (Join-Path $tmp 'nao-existe') -pausa 0
+}
+Teste 'arquivos somente leitura: apaga mesmo assim' {
+    $p = PastaCompilacao
+    Set-ItemProperty -LiteralPath (Join-Path $p 'CMakeCache.txt') -Name IsReadOnly -Value $true
+    Set-ItemProperty -LiteralPath (Join-Path $p 'runner\Release\biblia_estudo.exe') -Name IsReadOnly -Value $true
+    Limpar-CompilacaoWindows $p -pausa 0
+    Sumiu $p
+}
+Teste 'pasta com colchetes no nome: apaga a certa e so ela' {
+    $vizinha = PastaCompilacao 'x1'
+    $p = PastaCompilacao 'x[1]'
+    Limpar-CompilacaoWindows $p -pausa 0
+    Sumiu $p
+    Ficou (Join-Path $vizinha 'CMakeCache.txt')
+    $p = PastaCompilacao 'w[1]'
+    Limpar-CompilacaoWindows $p -pausa 0
+    Sumiu $p
+}
+Teste 'arquivo preso por um instante: tenta de novo e apaga' {
+    $p = PastaCompilacao
+    $script:vezes = 0
+    $apagar = {
+        param($caminho)
+        $script:vezes++
+        if ($script:vezes -eq 1) { throw 'The process cannot access the file' }
+        Remove-Item -LiteralPath $caminho -Recurse -Force -ErrorAction Stop
+    }
+    Limpar-CompilacaoWindows $p -apagar $apagar -pausa 0
+    Sumiu $p
+    Igual 2 $script:vezes
+}
+Teste 'arquivo sempre preso: recusa dizendo o que fechar, sem compilar' {
+    $p = PastaCompilacao
+    $script:vezes = 0
+    $apagar = { param($caminho) $script:vezes++; throw 'The process cannot access the file' }
+    Deve-Falhar { Limpar-CompilacaoWindows $p -apagar $apagar -pausa 0 } 'Feche o app'
+    Igual 3 $script:vezes
+    # A mensagem traz o erro do Windows, que diz qual arquivo esta preso.
+    Deve-Falhar { Limpar-CompilacaoWindows $p -apagar $apagar -pausa 0 } 'cannot access the file'
+    Ficou $p
+}
+Teste 'app aberto da pasta (so no Windows): recusa dizendo o que fechar' {
+    if ([System.Environment]::OSVersion.Platform -ne 'Win32NT') { return }   # no Linux, arquivo aberto se apaga
+    $p = PastaCompilacao
+    $exe = Join-Path $p 'runner\Release\biblia_estudo.exe'
+    $aberto = [System.IO.File]::Open($exe, 'Open', 'Read', 'None')
+    try {
+        Deve-Falhar { Limpar-CompilacaoWindows $p -pausa 0 } 'Feche o app'
+    } finally {
+        $aberto.Close()
+    }
+}
+Teste 'mesmo Visual Studio: sem aviso' {
+    if ($null -ne (Descrever-TrocaVisualStudio 'Visual Studio 18 2026' 'Visual Studio 18 2026')) { throw 'avisou' }
+}
+Teste 'primeira compilacao: sem aviso' {
+    if ($null -ne (Descrever-TrocaVisualStudio $null 'Visual Studio 18 2026')) { throw 'avisou' }
+}
+Teste 'Visual Studio mais antigo que o anterior: avisa e manda ver o Installer' {
+    $aviso = Descrever-TrocaVisualStudio 'Visual Studio 18 2026' 'Visual Studio 17 2022'
+    if ($aviso -notlike '*compilado com Visual Studio 17 2022*usou Visual Studio 18 2026*') { throw "aviso: $aviso" }
+    if ($aviso -notlike '*Visual Studio Installer*') { throw "sem o Installer: $aviso" }
+}
+Teste 'Visual Studio mais novo que o anterior: so informa' {
+    $aviso = Descrever-TrocaVisualStudio 'Visual Studio 17 2022' 'Visual Studio 18 2026'
+    if ($aviso -notlike '*compilado com Visual Studio 18 2026*') { throw "aviso: $aviso" }
+    if ($aviso -like '*Installer*') { throw "mandou ver o Installer: $aviso" }
+}
+
 Remove-Item $tmp -Recurse -Force
 if ($script:falhas -gt 0) {
     Write-Host "$script:falhas teste(s) falharam."
