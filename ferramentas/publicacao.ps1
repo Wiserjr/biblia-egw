@@ -10,7 +10,8 @@
 #   4. Versao nova = pubspec com versao maior E as novidades dela em
 #      NOTAS_DA_VERSAO.md. Republicar a mesma versao so com -Republicar.
 #   5. Compilar o Windows do zero, com o Visual Studio que o Flutter escolher
-#      na hora, e avisar quando ele mudar.
+#      na hora, e avisar quando ele mudar; se a compilacao falhar por falta do
+#      ATL do C++ nesse Visual Studio, dizer o que instalar.
 
 # Deixa o main desta pasta igual ao do GitHub, mesclando antes os PRs abertos
 # que a pessoa aprovar. $perguntar recebe o texto da pergunta e devolve a
@@ -195,4 +196,35 @@ function Descrever-TrocaVisualStudio([string]$antes, [string]$agora) {
             'metade, pedindo reparo ou reinicio do PC. (flutter doctor -v mostra qual ele usa.)')
     }
     return $texto
+}
+
+# Depois de uma compilacao Windows que falhou: se o Visual Studio que o CMake
+# usou (CMAKE_GENERATOR_INSTANCE, a pasta dele) nao tem o ATL do C++, devolve
+# o que instalar; senao, $null. O plugin das notificacoes (o lembrete diario)
+# inclui atlbase.h, e sem o ATL o erro do compilador (C1083) nao diz o que
+# falta. Confere o conjunto de ferramentas padrao do Visual Studio, que e o
+# que o MSBuild usa; sem o arquivo que o indica, aceita qualquer um.
+function Descrever-FaltaAtl([string]$pasta = 'build\windows\x64') {
+    $cache = Join-Path $pasta 'CMakeCache.txt'
+    if (-not (Test-Path -LiteralPath $cache)) { return $null }
+    $linha = Select-String -LiteralPath $cache -Pattern '^CMAKE_GENERATOR_INSTANCE:INTERNAL=(.+)$' |
+        Select-Object -First 1
+    if (-not $linha) { return $null }
+    # Pode vir como "C:/caminho,version=17.14.1".
+    $vs = $linha.Matches[0].Groups[1].Value.Split(',')[0].Trim()
+    $msvc = Join-Path $vs 'VC\Tools\MSVC'
+    if (-not (Test-Path -LiteralPath $msvc)) { return $null }
+    $versoes = @(Get-ChildItem -LiteralPath $msvc -Directory | ForEach-Object { $_.Name })
+    $padrao = Join-Path $vs 'VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt'
+    if (Test-Path -LiteralPath $padrao) {
+        $texto = Get-Content -LiteralPath $padrao -TotalCount 1
+        if ($texto) { $versoes = @("$texto".Trim()) }
+    }
+    foreach ($v in $versoes) {
+        if (Test-Path -LiteralPath (Join-Path $msvc "$v\atlmfc\include\atlbase.h")) { return $null }
+    }
+    return ("Falta o ATL do C++ no Visual Studio usado ($vs); o lembrete diario precisa " +
+        "dele (atlbase.h). Abra o Visual Studio Installer, clique em Modificar nesse " +
+        "Visual Studio e, em Componentes individuais, marque 'ATL do C++ para as " +
+        "Ferramentas de Build ... mais recentes (x86 e x64)'. Depois rode de novo.")
 }
