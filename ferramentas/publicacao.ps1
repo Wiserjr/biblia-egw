@@ -9,6 +9,8 @@
 #   3. Trazer o main do GitHub (git pull) antes de compilar.
 #   4. Versao nova = pubspec com versao maior E as novidades dela em
 #      NOTAS_DA_VERSAO.md. Republicar a mesma versao so com -Republicar.
+#   5. Compilar o Windows do zero, com o Visual Studio que o Flutter escolher
+#      na hora, e avisar quando ele mudar.
 
 # Deixa o main desta pasta igual ao do GitHub, mesclando antes os PRs abertos
 # que a pessoa aprovar. $perguntar recebe o texto da pergunta e devolve a
@@ -132,4 +134,65 @@ function Conferir-Notas([string]$arquivo, [string]$versao) {
         throw ("$arquivo nao fala da versao $versao. Escreva no topo dele o que ha " +
             'de novo nesta versao e rode de novo.')
     }
+}
+
+# O gerador do CMake (o Visual Studio) com que a pasta de compilacao Windows
+# foi configurada, como "Visual Studio 18 2026"; $null se ela nao foi.
+function Ler-GeradorCMake([string]$pasta = 'build\windows\x64') {
+    $cache = Join-Path $pasta 'CMakeCache.txt'
+    if (-not (Test-Path -LiteralPath $cache)) { return $null }
+    $linha = Select-String -LiteralPath $cache -Pattern '^CMAKE_GENERATOR:INTERNAL=(.+)$' |
+        Select-Object -First 1
+    if (-not $linha) { return $null }
+    return $linha.Matches[0].Groups[1].Value.Trim()
+}
+
+# Apaga a pasta da compilacao Windows anterior (build\windows\x64), para o
+# Flutter compilar do zero. A cada compilacao o Flutter escolhe o Visual
+# Studio de novo (o mais novo que esteja completo e com C++) e passa ao CMake
+# o gerador dele; se a escolha muda de um dia para o outro (uma atualizacao
+# do Visual Studio pela metade, um reinicio pendente), o CMake recusa a pasta
+# configurada com o outro: "Does not match the generator used previously".
+# Apagar a pasta inteira, e nao so o CMakeCache.txt, tambem garante que o zip
+# (runner\Release) leve so arquivos desta compilacao, de um Visual Studio so.
+# $apagar recebe o caminho e apaga (Remove-Item no uso normal; outra coisa
+# nos testes). O antivirus ou o indexador as vezes seguram um arquivo por um
+# instante; por isso tenta mais de uma vez.
+function Limpar-CompilacaoWindows {
+    param(
+        [string]$pasta = 'build\windows\x64',
+        [scriptblock]$apagar = { param($p) Remove-Item -LiteralPath $p -Recurse -Force -ErrorAction Stop },
+        [int]$tentativas = 3,
+        [int]$pausa = 2
+    )
+    $erro = ''
+    for ($i = 1; $i -le $tentativas; $i++) {
+        if (-not (Test-Path -LiteralPath $pasta)) { return }
+        try {
+            & $apagar $pasta
+        } catch {
+            $erro = $_.Exception.Message
+            if ($i -lt $tentativas -and $pausa -gt 0) { Start-Sleep -Seconds $pausa }
+        }
+    }
+    if (Test-Path -LiteralPath $pasta) {
+        throw ("Nao consegui apagar ${pasta}: $erro`n" +
+            'Feche o app (biblia_estudo.exe) e o Visual Studio, se estiverem abertos ' +
+            'dessa pasta, e rode de novo.')
+    }
+}
+
+# Texto do aviso quando o Windows saiu compilado com outro Visual Studio que o
+# da compilacao anterior, ou $null. Se o de agora e mais antigo, o mais novo
+# deixou de servir ao Flutter (ver Limpar-CompilacaoWindows).
+function Descrever-TrocaVisualStudio([string]$antes, [string]$agora) {
+    if (-not $antes -or -not $agora -or $antes -eq $agora) { return $null }
+    $texto = "O Windows saiu compilado com $agora; a compilacao anterior usou $antes."
+    $numero = { param($g) if ($g -match '^Visual Studio (\d+) ') { [int]$Matches[1] } else { 0 } }
+    if ((& $numero $agora) -lt (& $numero $antes)) {
+        $texto += (' O Flutter usa o Visual Studio mais novo que esteja completo e com C++. ' +
+            'Abra o Visual Studio Installer: o mais novo pode estar com atualizacao pela ' +
+            'metade, pedindo reparo ou reinicio do PC. (flutter doctor -v mostra qual ele usa.)')
+    }
+    return $texto
 }

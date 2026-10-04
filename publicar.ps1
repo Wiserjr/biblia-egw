@@ -13,7 +13,8 @@
 #   3. Traz o main do GitHub (git pull).
 #   4. Recusa publicar de novo uma versao ja publicada (a menos que se use
 #      -Republicar) e recusa notas que nao falem da versao.
-#   5. Testa, compila, publica a release e, por ultimo, avisa os apps.
+#   5. Testa, compila (o Windows do zero), publica a release e, por ultimo,
+#      avisa os apps.
 #
 # Pre-requisitos, uma vez:
 #     & "C:\Program Files\GitHub CLI\gh.exe" auth login
@@ -49,7 +50,8 @@ $ErrorActionPreference = 'Stop'
 $gh = 'C:\Program Files\GitHub CLI\gh.exe'
 $flutter = Join-Path $env:USERPROFILE 'flutter\bin\flutter.bat'
 $apk = 'build\app\outputs\flutter-apk'
-$windows = 'build\windows\x64\runner\Release'
+$compilacaoWindows = 'build\windows\x64'
+$windows = "$compilacaoWindows\runner\Release"
 $saida = 'build\publicar'
 $repo = 'Wiserjr/biblia-egw'
 $id = 'br.com.wisejr.bibliaestudo'
@@ -132,6 +134,14 @@ if (-not (Test-Path 'android\key.properties')) {
 if (-not $SemCompilar) {
     if (Test-Path $saida) { Remove-Item $saida -Recurse -Force }
     New-Item -ItemType Directory -Path $saida | Out-Null
+    if (-not $SoAndroid) {
+        # O Windows compila do zero: o Flutter escolhe o Visual Studio a cada
+        # compilacao, e o CMake recusa a pasta configurada com outro (ver
+        # Limpar-CompilacaoWindows). Apaga ja, antes do Android, para que um
+        # arquivo preso pare o script logo no comeco.
+        $geradorAntes = Ler-GeradorCMake $compilacaoWindows
+        Limpar-CompilacaoWindows $compilacaoWindows
+    }
 
     Write-Output ''
     Write-Output 'Compilando Android...'
@@ -143,9 +153,11 @@ if (-not $SemCompilar) {
 
     if (-not $SoAndroid) {
         Write-Output ''
-        Write-Output 'Compilando Windows...'
+        Write-Output 'Compilando Windows (do zero)...'
         & $flutter build windows --release
         if ($LASTEXITCODE -ne 0) { throw 'A compilacao Windows falhou.' }
+        $aviso = Descrever-TrocaVisualStudio $geradorAntes (Ler-GeradorCMake $compilacaoWindows)
+        if ($aviso) { Write-Warning $aviso }
         # versao.json no zip: o app confere, antes de trocar os arquivos, que
         # o zip baixado e deste app e da versao anunciada.
         $v = [ordered]@{ applicationId = $id; versionCode = $codigo; versionName = $versao }
