@@ -6,6 +6,8 @@ import 'dados/ajustes.dart';
 import 'dados/banco.dart';
 import 'dados/biblioteca.dart';
 import 'dados/estudo.dart';
+import 'dados/lembrete.dart';
+import 'dados/nuvem.dart';
 import 'telas/inicio.dart';
 import 'telas/tema.dart';
 
@@ -15,6 +17,10 @@ Future<void> main() async {
   // O texto dos trechos é lido do PDF antes de qualquer visualizador abrir.
   await pdfrxFlutterInitialize();
   await Ajustes.instancia.carregar();
+  await Nuvem.instancia.carregar();
+  Nuvem.instancia
+    ..aoMudarPlano = Lembrete.instancia.atualizar
+    ..iniciarAutomatica();
   runApp(const AppBiblia());
 }
 

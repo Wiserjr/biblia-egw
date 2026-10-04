@@ -4,8 +4,10 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../dados/ajustes.dart';
 import '../dados/atualizacao.dart';
 import '../dados/biblioteca.dart';
+import '../dados/nuvem.dart';
 import 'atualizacao_app.dart';
 import 'backup.dart';
+import 'conta.dart';
 import 'inicio.dart' show TelaInicio;
 import 'largura_texto.dart' show larguraMinimaParaAjuste;
 import 'texto_biblico.dart';
@@ -160,6 +162,32 @@ class _TelaAjustesState extends State<TelaAjustes> {
               ),
             ),
             _titulo(context, 'Seus dados'),
+            ListenableBuilder(
+              listenable: Nuvem.instancia,
+              builder: (context, _) {
+                final n = Nuvem.instancia;
+                return ListTile(
+                  leading: Icon(
+                    n.conectada
+                        ? Icons.cloud_done_outlined
+                        : Icons.cloud_outlined,
+                  ),
+                  title: Text(
+                    n.conectada ? 'Conta: ${n.email}' : 'Entrar ou criar conta',
+                  ),
+                  subtitle: Text(
+                    n.conectada
+                        ? situacaoDaNuvem(n)
+                        : 'Guarde marcações, anotações e o plano na nuvem e '
+                              'use no celular e no PC',
+                  ),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TelaConta()),
+                  ),
+                );
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.save_alt),
               title: const Text('Salvar cópia'),

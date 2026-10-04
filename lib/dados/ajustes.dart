@@ -150,6 +150,7 @@ class Ajustes extends ChangeNotifier {
     _p.setStringList('marcacoes', m);
     _marcas = null;
     notifyListeners();
+    _avisar({chaveMarcacao(livro, cap, ver)});
   }
 
   /// Todas as marcações: ((livro, capítulo, versículo), cor).
@@ -178,6 +179,7 @@ class Ajustes extends ChangeNotifier {
       _p.setString(k, texto.trim());
     }
     notifyListeners();
+    _avisar({chaveAnotacao(livro, cap, ver)});
   }
 
   List<((int, int, int), String)> todasAnotacoes() {
@@ -231,6 +233,7 @@ class Ajustes extends ChangeNotifier {
         if (!fora.any(x.mesmoTrecho)) x,
       ...adicionar,
     ]);
+    _avisar({for (final r in fora) r.chave});
   }
 
   void _gravarRealces(List<Realce> lista) {
@@ -280,6 +283,7 @@ class Ajustes extends ChangeNotifier {
     }
     _gravarLidos(lidosAntes.toSet());
     notifyListeners();
+    _avisar({chavePlano});
   }
 
   void encerrarPlano() {
@@ -288,6 +292,7 @@ class Ajustes extends ChangeNotifier {
     _p.remove('planoComecou');
     _p.remove('planoLeuEm');
     notifyListeners();
+    _avisar({chavePlano});
   }
 
   void marcarDia(int dia, bool lido) => marcarDias([dia], lido);
@@ -298,6 +303,7 @@ class Ajustes extends ChangeNotifier {
     _gravarLidos(d);
     if (lido) _p.setString('planoLeuEm', _diaDeHoje(DateTime.now()));
     notifyListeners();
+    _avisar({chavePlano});
   }
 
   static String _diaDeHoje(DateTime d) => '${d.year}-${d.month}-${d.day}';
@@ -383,12 +389,18 @@ class Ajustes extends ChangeNotifier {
         '${k.$1}:${k.$2}:${k.$3}': texto,
     },
     'realces': [for (final r in todosRealces()) r.paraMapa()],
-    if (plano != null)
-      'plano': {
-        'id': plano,
-        'lidos': diasLidos.toList()..sort(),
-        'comecou': ?planoComecou,
-      },
+    'plano': ?_planoItem,
+  };
+
+  /// O plano em andamento como vai na cópia e na nuvem, ou null.
+  Map<String, Object>? get _planoItem => switch (plano) {
+    null => null,
+    final id => {
+      'id': id,
+      'lidos': diasLidos.toList()..sort(),
+      'comecou': ?planoComecou,
+      'leuEm': ?_p.getString('planoLeuEm'),
+    },
   };
 
   /// Junta uma cópia de [exportar] ao que já está no aparelho, sem apagar
@@ -404,6 +416,7 @@ class Ajustes extends ChangeNotifier {
         'Este arquivo não é uma cópia da Bíblia de Estudo.',
       );
     }
+    final antes = aoMudarItens == null ? null : itens();
     (int, int, int)? chave(Object? k) {
       if (k is! String) return null;
       final p = k.split(':').map(int.tryParse).toList();
@@ -478,6 +491,7 @@ class Ajustes extends ChangeNotifier {
     if (pl is Map && PlanoLeitura.porId(pl['id'] as String?) != null) {
       final id = pl['id'] as String;
       if (plano == null || plano == id) {
+        final novo = plano == null;
         final lidos = {
           if (plano == id) ...diasLidos,
           for (final d in (pl['lidos'] as List?) ?? const [])
@@ -492,10 +506,160 @@ class Ajustes extends ChangeNotifier {
         _p.setString('plano', id);
         _gravarLidos(lidos);
         if (comecou != null) _p.setInt('planoComecou', comecou);
+        // "Já leu hoje" (nos planos sem data) vem junto quando o plano é
+        // novo aqui, ou quando este aparelho não sabia.
+        final leu = pl['leuEm'];
+        if (leu is String && (novo || _p.getString('planoLeuEm') == null)) {
+          _p.setString('planoLeuEm', leu);
+        }
       }
     }
     notifyListeners();
+    if (antes != null) _avisar(itensDiferentes(antes, itens()));
     return (marcacoes: nMarcas, anotacoes: nNotas, realces: nRealces);
+  }
+
+  // --- itens da nuvem (ver nuvem.dart) ---
+
+  /// Avisado com as chaves dos itens (ver [itens]) que a pessoa mudou neste
+  /// aparelho, para irem à nuvem.
+  void Function(Set<String> chaves)? aoMudarItens;
+
+  void _avisar(Set<String> chaves) {
+    if (chaves.isNotEmpty) aoMudarItens?.call(chaves);
+  }
+
+  static String chaveMarcacao(int livro, int cap, int ver) =>
+      'm_${livro}_${cap}_$ver';
+  static String chaveAnotacao(int livro, int cap, int ver) =>
+      'a_${livro}_${cap}_$ver';
+  static const chavePlano = 'plano';
+
+  /// Tudo o que vai para a nuvem, um item por marcação, anotação e realce,
+  /// mais o plano de leitura: chave ([chaveMarcacao], [chaveAnotacao],
+  /// [Realce.chave], [chavePlano]) e valor em JSON.
+  Map<String, Object> itens() => {
+    for (final (k, cor) in todasMarcacoes())
+      chaveMarcacao(k.$1, k.$2, k.$3): cor,
+    for (final (k, texto) in todasAnotacoes())
+      chaveAnotacao(k.$1, k.$2, k.$3): texto,
+    for (final r in todosRealces()) r.chave: r.paraMapa(),
+    chavePlano: ?_planoItem,
+  };
+
+  /// Grava, como estão, itens vindos da nuvem (null apaga o item), sem avisar
+  /// [aoMudarItens]. Item de chave ou valor inválido fica de fora.
+  void aplicarItens(Map<String, Object?> itens) {
+    if (itens.isEmpty) return;
+    Map<String, int>? marcas;
+    List<Realce>? realces;
+    for (final MapEntry(key: chave, value: valor) in itens.entries) {
+      final partes = chave.split('_');
+      final numeros = partes.skip(1).map(int.tryParse).toList();
+      if (numeros.contains(null)) continue;
+      final n = numeros.cast<int>();
+      switch (partes.first) {
+        case 'm' when n.length == 3 && _posicaoValida(n):
+          marcas ??= _lerMarcas();
+          final k = _k(n[0], n[1], n[2]);
+          if (valor == null) {
+            marcas.remove(k);
+          } else if (valor is int && valor >= 0) {
+            marcas[k] = valor;
+          }
+        case 'a' when n.length == 3 && _posicaoValida(n):
+          final k = 'nota:${_k(n[0], n[1], n[2])}';
+          if (valor == null) {
+            _p.remove(k);
+          } else if (valor is String && valor.trim().isNotEmpty) {
+            _p.setString(k, valor.trim());
+          }
+        case 'r' when n.length == 4:
+          realces ??= todosRealces();
+          final r = Realce.deMapa(valor);
+          if (valor == null || r?.chave == chave) {
+            realces.removeWhere((x) => x.chave == chave);
+            if (r != null) realces.add(r);
+          }
+        case chavePlano when n.isEmpty:
+          _aplicarPlano(valor);
+      }
+    }
+    if (marcas != null) {
+      _p.setStringList('marcacoes', [
+        for (final e in marcas.entries) '${e.key}=${e.value}',
+      ]);
+      _marcas = null;
+    }
+    if (realces != null) {
+      _p.setStringList('realces', [
+        for (final r in realces) jsonEncode(r.paraMapa()),
+      ]);
+    }
+    notifyListeners();
+  }
+
+  static bool _posicaoValida(List<int> n) =>
+      n[0] >= 1 && n[0] <= 66 && n[1] >= 1 && n[2] >= 1;
+
+  void _aplicarPlano(Object? valor) {
+    if (valor == null) {
+      for (final k in ['plano', 'planoLidos', 'planoComecou', 'planoLeuEm']) {
+        _p.remove(k);
+      }
+      return;
+    }
+    if (valor is! Map) return;
+    final id = valor['id'];
+    if (id is! String || PlanoLeitura.porId(id) == null) return;
+    _p.setString('plano', id);
+    _gravarLidos({
+      for (final d in (valor['lidos'] as List?) ?? const [])
+        if (d is int && d >= 0) d,
+    });
+    final comecou = valor['comecou'];
+    if (comecou is int && comecou >= 0) {
+      _p.setInt('planoComecou', comecou);
+    } else {
+      _p.remove('planoComecou');
+    }
+    final leu = valor['leuEm'];
+    if (leu is String) {
+      _p.setString('planoLeuEm', leu);
+    } else {
+      _p.remove('planoLeuEm');
+    }
+  }
+
+  /// Junta ao aparelho os [itens] que estão na nuvem, na primeira vez que a
+  /// pessoa entra na conta neste aparelho: as mesmas regras de [importar],
+  /// sem apagar nada.
+  void juntar(Map<String, Object?> itens) {
+    final marcacoes = <String, Object?>{};
+    final anotacoes = <String, Object?>{};
+    final realces = <Object?>[];
+    Object? plano;
+    for (final MapEntry(key: chave, value: valor) in itens.entries) {
+      final partes = chave.split('_');
+      final posicao = partes.skip(1).join(':');
+      switch (partes.first) {
+        case 'm':
+          marcacoes[posicao] = valor;
+        case 'a':
+          anotacoes[posicao] = valor;
+        case 'r':
+          realces.add(valor);
+        case chavePlano:
+          plano = valor;
+      }
+    }
+    importar({
+      'app': 'br.com.wisejr.bibliaestudo',
+      'marcacoes': marcacoes,
+      'anotacoes': anotacoes,
+      'realces': realces,
+      'plano': ?plano,
+    });
   }
 
   static int _comparar((int, int, int) x, (int, int, int) y) => x.$1 != y.$1
@@ -538,6 +702,9 @@ class Realce {
   final int cor;
   final String texto;
   final String? nota;
+
+  /// Chave do realce na nuvem: o trecho, sem a cor nem a nota.
+  String get chave => 'r_${obra}_${pagina}_${inicio}_$fim';
 
   bool mesmoTrecho(Realce o) =>
       o.obra == obra &&
@@ -613,3 +780,22 @@ class Realce {
       ? a.pagina.compareTo(b.pagina)
       : a.inicio.compareTo(b.inicio);
 }
+
+/// JSON com as chaves dos mapas em ordem, para comparar valores que vieram de
+/// lugares diferentes.
+String jsonCanonico(Object? valor) => jsonEncode(_ordenado(valor));
+
+Object? _ordenado(Object? v) => switch (v) {
+  Map() => {
+    for (final k in (v.keys.map((k) => '$k').toList()..sort()))
+      k: _ordenado(v[k]),
+  },
+  List() => [for (final x in v) _ordenado(x)],
+  _ => v,
+};
+
+/// Chaves cujo valor difere entre [a] e [b] (ou que só estão num deles).
+Set<String> itensDiferentes(Map<String, Object?> a, Map<String, Object?> b) => {
+  for (final k in {...a.keys, ...b.keys})
+    if (jsonCanonico(a[k]) != jsonCanonico(b[k])) k,
+};
