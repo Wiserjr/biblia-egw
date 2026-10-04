@@ -238,6 +238,11 @@ Teste 'gerador do CMake: le o da pasta' {
 Teste 'gerador do CMake sem compilacao anterior: nada' {
     if ($null -ne (Ler-GeradorCMake (Join-Path $tmp 'nao-existe'))) { throw 'leu algo' }
 }
+Teste 'gerador do CMake sem a linha do gerador: nada' {
+    $p = PastaCompilacao 'semgerador'
+    [System.IO.File]::WriteAllText((Join-Path $p 'CMakeCache.txt'), "CMAKE_GENERATOR_INSTANCE:INTERNAL=x`n")
+    if ($null -ne (Ler-GeradorCMake $p)) { throw 'leu algo' }
+}
 Teste 'compilacao Windows anterior: apaga a pasta inteira e so ela' {
     $vizinha = PastaCompilacao 'arm64'
     $p = PastaCompilacao
@@ -261,6 +266,9 @@ Teste 'pasta com colchetes no nome: apaga a certa e so ela' {
     Limpar-CompilacaoWindows $p -pausa 0
     Sumiu $p
     Ficou (Join-Path $vizinha 'CMakeCache.txt')
+    $p = PastaCompilacao 'w[1]'
+    Limpar-CompilacaoWindows $p -pausa 0
+    Sumiu $p
 }
 Teste 'arquivo preso por um instante: tenta de novo e apaga' {
     $p = PastaCompilacao
@@ -281,6 +289,8 @@ Teste 'arquivo sempre preso: recusa dizendo o que fechar, sem compilar' {
     $apagar = { param($caminho) $script:vezes++; throw 'The process cannot access the file' }
     Deve-Falhar { Limpar-CompilacaoWindows $p -apagar $apagar -pausa 0 } 'Feche o app'
     Igual 3 $script:vezes
+    # A mensagem traz o erro do Windows, que diz qual arquivo esta preso.
+    Deve-Falhar { Limpar-CompilacaoWindows $p -apagar $apagar -pausa 0 } 'cannot access the file'
     Ficou $p
 }
 Teste 'app aberto da pasta (so no Windows): recusa dizendo o que fechar' {

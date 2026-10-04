@@ -190,7 +190,7 @@ function Descrever-TrocaVisualStudio([string]$antes, [string]$agora) {
     $texto = "O Windows saiu compilado com $agora; a compilacao anterior usou $antes."
     $numero = { param($g) if ($g -match '^Visual Studio (\d+) ') { [int]$Matches[1] } else { 0 } }
     if ((& $numero $agora) -lt (& $numero $antes)) {
-        $texto += (' O Flutter usa o Visual Studio mais novo que esteja completo e com C++. ' +
+        $texto += (' O Flutter usa o Visual Studio estavel mais novo que esteja completo e com C++. ' +
             'Abra o Visual Studio Installer: o mais novo pode estar com atualizacao pela ' +
             'metade, pedindo reparo ou reinicio do PC. (flutter doctor -v mostra qual ele usa.)')
     }
