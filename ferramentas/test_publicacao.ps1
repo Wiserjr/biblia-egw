@@ -321,6 +321,73 @@ Teste 'Visual Studio mais novo que o anterior: so informa' {
     if ($aviso -like '*Installer*') { throw "mandou ver o Installer: $aviso" }
 }
 
+# Um Visual Studio de mentira, com os conjuntos de ferramentas do C++ em
+# VC\Tools\MSVC; os de $comAtl com o atlbase.h. $padrao e o conteudo de
+# Microsoft.VCToolsVersion.default.txt ($null: sem o arquivo).
+function VisualStudio([string]$nome, [string[]]$versoes, [string[]]$comAtl = @(), $padrao = $null) {
+    $vs = [System.IO.Path]::Combine($tmp, 'vs', $nome)
+    if (Test-Path -LiteralPath $vs) { Remove-Item -LiteralPath $vs -Recurse -Force }
+    foreach ($v in $versoes) {
+        $inc = [System.IO.Path]::Combine($vs, 'VC', 'Tools', 'MSVC', $v, 'include')
+        [void][System.IO.Directory]::CreateDirectory($inc)
+        if ($comAtl -contains $v) {
+            $atl = [System.IO.Path]::Combine($vs, 'VC', 'Tools', 'MSVC', $v, 'atlmfc', 'include')
+            [void][System.IO.Directory]::CreateDirectory($atl)
+            [System.IO.File]::WriteAllText([System.IO.Path]::Combine($atl, 'atlbase.h'), 'x')
+        }
+    }
+    if ($null -ne $padrao) {
+        $aux = [System.IO.Path]::Combine($vs, 'VC', 'Auxiliary', 'Build')
+        [void][System.IO.Directory]::CreateDirectory($aux)
+        [System.IO.File]::WriteAllText([System.IO.Path]::Combine($aux, 'Microsoft.VCToolsVersion.default.txt'), $padrao)
+    }
+    return $vs
+}
+# A pasta de compilacao configurada com o Visual Studio em $vs ($instancia: a
+# linha como o CMake grava, se for outra).
+function CompiladoCom([string]$vs, [string]$instancia = $vs) {
+    $p = PastaCompilacao
+    [System.IO.File]::WriteAllText([System.IO.Path]::Combine($p, 'CMakeCache.txt'),
+        ("CMAKE_GENERATOR:INTERNAL=Visual Studio 17 2022`n" +
+         "CMAKE_GENERATOR_INSTANCE:INTERNAL=$instancia`n"))
+    return $p
+}
+
+Teste 'falha no Windows, Visual Studio sem ATL: diz o que instalar' {
+    $vs = VisualStudio 'sem' @('14.44.35207') @() "14.44.35207`r`n"
+    $texto = Descrever-FaltaAtl (CompiladoCom $vs)
+    if ($texto -notlike "*ATL do C++*$vs*Visual Studio Installer*Componentes individuais*") { throw "texto: $texto" }
+}
+Teste 'falha no Windows, Visual Studio com ATL: nada a dizer' {
+    $vs = VisualStudio 'com' @('14.44.35207') @('14.44.35207') "14.44.35207`r`n"
+    if ($null -ne (Descrever-FaltaAtl (CompiladoCom $vs))) { throw 'disse que falta' }
+}
+Teste 'ATL so num conjunto de ferramentas antigo: o padrao e que vale' {
+    $vs = VisualStudio 'antigo' @('14.38.33130', '14.44.35207') @('14.38.33130') '14.44.35207'
+    if ($null -eq (Descrever-FaltaAtl (CompiladoCom $vs))) { throw 'nao disse que falta' }
+}
+Teste 'sem o arquivo do conjunto padrao: qualquer um com ATL serve' {
+    $vs = VisualStudio 'semPadrao' @('14.38.33130', '14.44.35207') @('14.38.33130')
+    if ($null -ne (Descrever-FaltaAtl (CompiladoCom $vs))) { throw 'disse que falta' }
+    $vs = VisualStudio 'semPadrao2' @('14.44.35207')
+    if ($null -eq (Descrever-FaltaAtl (CompiladoCom $vs))) { throw 'nao disse que falta' }
+}
+Teste 'arquivo do conjunto padrao vazio: qualquer um serve' {
+    $vs = VisualStudio 'vazio' @('14.44.35207') @('14.44.35207') ''
+    if ($null -ne (Descrever-FaltaAtl (CompiladoCom $vs))) { throw 'disse que falta' }
+}
+Teste 'instancia gravada com a versao junto: usa so o caminho' {
+    $vs = VisualStudio 'comVersao' @('14.44.35207') @() '14.44.35207'
+    if ($null -eq (Descrever-FaltaAtl (CompiladoCom $vs "$vs,version=17.14.36414.22"))) { throw 'nao disse que falta' }
+}
+Teste 'falha sem cache, sem instancia ou com o Visual Studio sumido: nada a dizer' {
+    if ($null -ne (Descrever-FaltaAtl (Join-Path $tmp 'nao-existe'))) { throw 'sem cache' }
+    $p = PastaCompilacao
+    [System.IO.File]::WriteAllText((Join-Path $p 'CMakeCache.txt'), "CMAKE_GENERATOR:INTERNAL=Visual Studio 17 2022`n")
+    if ($null -ne (Descrever-FaltaAtl $p)) { throw 'sem instancia' }
+    if ($null -ne (Descrever-FaltaAtl (CompiladoCom (Join-Path $tmp 'vs-sumiu')))) { throw 'sumido' }
+}
+
 Remove-Item $tmp -Recurse -Force
 if ($script:falhas -gt 0) {
     Write-Host "$script:falhas teste(s) falharam."

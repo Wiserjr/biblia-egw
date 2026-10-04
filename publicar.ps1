@@ -18,7 +18,8 @@
 #
 # Pre-requisitos, uma vez:
 #     & "C:\Program Files\GitHub CLI\gh.exe" auth login
-#     Visual Studio com "Desenvolvimento para desktop com C++" (build Windows)
+#     Visual Studio com "Desenvolvimento para desktop com C++" e, em
+#     Componentes individuais, o "ATL do C++" (build Windows)
 #
 # Depois, na raiz deste repositorio:
 #     powershell -ExecutionPolicy Bypass -File publicar.ps1
@@ -155,7 +156,13 @@ if (-not $SemCompilar) {
         Write-Output ''
         Write-Output 'Compilando Windows (do zero)...'
         & $flutter build windows --release
-        if ($LASTEXITCODE -ne 0) { throw 'A compilacao Windows falhou.' }
+        if ($LASTEXITCODE -ne 0) {
+            # So uma explicacao: se ela mesma falhar, fica o erro de sempre.
+            $falta = $null
+            try { $falta = Descrever-FaltaAtl $compilacaoWindows } catch { }
+            if ($falta) { throw "A compilacao Windows falhou. $falta" }
+            throw 'A compilacao Windows falhou.'
+        }
         $aviso = Descrever-TrocaVisualStudio $geradorAntes (Ler-GeradorCMake $compilacaoWindows)
         if ($aviso) { Write-Warning $aviso }
         # versao.json no zip: o app confere, antes de trocar os arquivos, que
