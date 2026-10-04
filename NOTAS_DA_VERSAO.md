@@ -1,4 +1,15 @@
-## Bíblia de Estudo 1.5.0
+## Bíblia de Estudo 1.6.0
+
+### Novidades da 1.6.0
+
+- **Conta na nuvem.** Em *Ajustes → Seus dados → Entrar ou criar conta*, com
+  e-mail e senha. Com a conta, marcações, anotações, realces nos livros e o
+  plano de leitura vão para a nuvem sozinhos e aparecem no celular e no PC em
+  que você entrar. Na primeira vez em cada aparelho, o que já estava nele se
+  junta ao que está na nuvem, sem apagar nada.
+- Sem internet, as mudanças esperam no aparelho e vão quando a conexão voltar.
+- Dá para sair da conta (tudo continua no aparelho) e excluir a conta com os
+  dados na nuvem. Sem conta, o app funciona como antes.
 
 ### Novidades da 1.5.0
 

@@ -194,6 +194,46 @@ exemplo o do pypdfium2:
 PDFIUM_PATH=$(python -c "import pypdfium2_raw,os;print(os.path.join(os.path.dirname(pypdfium2_raw.__file__),'libpdfium.so'))") flutter test
 ```
 
+## Contas na nuvem
+
+Com uma conta (Ajustes → Seus dados), marcações, anotações, realces nos livros
+e o plano de leitura vão para o Firebase e aparecem nos outros aparelhos. Sem
+conta, nada sai do aparelho. Código em `lib/dados/nuvem.dart` e
+`lib/telas/conta.dart`; política em [PRIVACIDADE.md](PRIVACIDADE.md).
+
+- Projeto Firebase `biblia-de-estudo-d2ce1`, do dono do app (login por e-mail
+  e senha; Firestore em `southamerica-east1`). A chave da API em `nuvem.dart`
+  não é senha: só diz qual é o projeto.
+- O app fala com o Firebase pela API web (REST), igual no Android e no
+  Windows, sem os kits nativos (o do Windows é beta).
+- Cada marcação, anotação, realce e o plano são um documento em
+  `usuarios/{uid}/itens/{chave}`, com o valor em JSON, `apagado` quando a
+  pessoa apaga e `atualizado` (hora do servidor). O app traz só o que mudou
+  desde a última vez e manda o que mudou no aparelho alguns segundos depois de
+  cada mudança.
+- Na primeira vez que a pessoa entra num aparelho, o que está nele se junta ao
+  que está na nuvem, sem apagar nada (as regras do Restaurar cópia).
+- As regras do Firestore (no console, Firestore → Regras) deixam cada conta
+  ler e gravar só os próprios dados:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /usuarios/{uid}/{documento=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
+```
+
+O teste com o Firebase de verdade cria uma conta, sincroniza dois "aparelhos"
+e exclui a conta no fim; só roda quando pedido:
+
+```bash
+FIREBASE_TESTE=1 flutter test test/nuvem_firebase_test.dart
+```
+
 ## Atualização automática
 
 Mesma regra dos outros apps: o app consulta um manifesto ao abrir e, havendo
