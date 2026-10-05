@@ -1,4 +1,19 @@
-## Bíblia de Estudo 1.6.0
+## Bíblia de Estudo 1.7.0
+
+### Novidades da 1.7.0
+
+- **Piloto por lição:** ao importar a edição conferida de *Jesus Restaurador
+  da Vida*, a primeira lição oferece oito perguntas, quatro com alternativas,
+  referências para abrir na Bíblia, respostas salvas e conclusão da lição.
+  Os enunciados são lidos do PDF pessoal; não acompanham a distribuição.
+- Em *Temas e estudos → Estudos bíblicos → Meus estudos em PDF*, importe
+  materiais baixados para seu uso pessoal. O aplicativo guarda uma cópia
+  local, retoma a última página, permite registrar respostas por página e
+  marcar páginas estudadas. As respostas podem ser exportadas em JSON.
+- Nesta primeira integração, PDFs, respostas e progresso ficam somente no
+  aparelho; não entram na sincronização da conta nem na cópia dos dados da
+  Bíblia. Os materiais de terceiros não são incluídos na distribuição.
+
 
 ### Novidades da 1.6.0
 
