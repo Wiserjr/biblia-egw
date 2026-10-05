@@ -146,7 +146,7 @@ class _TelaTemasState extends State<TelaTemas> {
                 leading: const Icon(Icons.picture_as_pdf_outlined),
                 title: const Text('Estudos selecionados'),
                 subtitle: const Text(
-                  'Os cinco materiais preparados para o aplicativo',
+                  'Materiais selecionados com download das fontes oficiais',
                 ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.push(

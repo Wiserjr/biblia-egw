@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 
 import 'estudo_piloto.dart';
+import '../dados/download_estudos.dart';
 
 /// PDFs escolhidos pela pessoa. Os originais não fazem parte da distribuição.
 class TelaEstudosImportados extends StatefulWidget {
@@ -24,6 +25,49 @@ class _TelaEstudosImportadosState extends State<TelaEstudosImportados> {
   bool _importando = false;
   String? _erro;
   List<Map<String, dynamic>> _catalogo = [];
+  String? _baixandoId;
+  double? _progresso;
+  bool _cancelarDownload = false;
+  final _errosDownload = <String, String>{};
+
+  @override
+  void dispose() {
+    _cancelarDownload = true;
+    super.dispose();
+  }
+
+  Future<void> _baixar(Map<String, dynamic> item) async {
+    final id = item['sha256'] as String;
+    setState(() {
+      _baixandoId = id;
+      _progresso = 0;
+      _cancelarDownload = false;
+      _errosDownload.remove(id);
+    });
+    try {
+      await DownloadEstudos().baixar(
+        item,
+        await _pasta(),
+        progresso: (valor) {
+          if (mounted) setState(() => _progresso = valor);
+        },
+        cancelado: () => _cancelarDownload,
+      );
+      if (mounted) await _carregar();
+    } on EstudoDownloadCancelado {
+      // Um cancelamento deixa o estudo disponível para tentar novamente.
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () => _errosDownload[id] = e is FormatException
+              ? e.message
+              : 'Não foi possível baixar. Confira a conexão e tente novamente.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _baixandoId = null);
+    }
+  }
 
   Future<Directory> _pasta() async {
     final base = await getApplicationDocumentsDirectory();
@@ -80,7 +124,7 @@ class _TelaEstudosImportadosState extends State<TelaEstudosImportados> {
       final id = sha256.convert(bytes).toString();
       if (!_catalogo.any((e) => e['sha256'] == id)) {
         throw const FormatException(
-          'Este PDF não corresponde a uma edição do catálogo. Selecione um dos cinco arquivos preparados.',
+          'Este PDF não corresponde a uma edição do catálogo. Selecione um dos estudos preparados.',
         );
       }
       final pasta = await _pasta();
@@ -156,13 +200,42 @@ class _TelaEstudosImportadosState extends State<TelaEstudosImportados> {
                 icon: const Icon(Icons.menu_book),
                 label: const Text('Abrir estudo'),
               )
+            else if (_baixandoId == id) ...[
+              LinearProgressIndicator(value: _progresso),
+              const SizedBox(height: 8),
+              Text(
+                _progresso == null
+                    ? 'Preparando estudo…'
+                    : 'Baixando estudo… ${(_progresso! * 100).round()}%',
+              ),
+              TextButton(
+                onPressed: () => setState(() => _cancelarDownload = true),
+                child: const Text('Cancelar download'),
+              ),
+            ] else if (item['url'] != null)
+              FilledButton.icon(
+                onPressed: _baixandoId != null || _importando
+                    ? null
+                    : () => _baixar(item),
+                icon: const Icon(Icons.download),
+                label: Text(
+                  _errosDownload.containsKey(id)
+                      ? 'Tentar novamente'
+                      : 'Baixar estudo',
+                ),
+              )
             else
               const Row(
                 children: [
                   Icon(Icons.cloud_download_outlined, size: 18),
                   SizedBox(width: 8),
-                  Expanded(child: Text('Download em preparação')),
+                  Expanded(child: Text('Link oficial ainda não configurado')),
                 ],
+              ),
+            if (_errosDownload.containsKey(id))
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(_errosDownload[id]!),
               ),
           ],
         ),
@@ -186,13 +259,15 @@ class _TelaEstudosImportadosState extends State<TelaEstudosImportados> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Cinco materiais escolhidos para este aplicativo. Os downloads serão ativados quando a hospedagem estiver definida. Arquivos já adicionados podem ser abertos sem internet.',
+                'Baixe os estudos diretamente das fontes oficiais. O aplicativo prepara os arquivos automaticamente, inclusive os ZIPs. Depois de baixar, você pode abrir sem internet.',
               ),
               const SizedBox(height: 16),
               for (final item in _catalogo) _cartaoCatalogo(item),
               const SizedBox(height: 20),
               OutlinedButton.icon(
-                onPressed: _importando ? null : _importar,
+                onPressed: _importando || _baixandoId != null
+                    ? null
+                    : _importar,
                 icon: const Icon(Icons.file_open_outlined),
                 label: Text(
                   _importando ? 'Adicionando…' : 'Adicionar PDF deste catálogo',
@@ -201,7 +276,7 @@ class _TelaEstudosImportadosState extends State<TelaEstudosImportados> {
               const Padding(
                 padding: EdgeInsets.only(top: 8),
                 child: Text(
-                  'Opção provisória para os arquivos já baixados. São aceitas somente as edições preparadas dos cinco estudos. Respostas e arquivos ficam neste aparelho.',
+                  'Você também pode adicionar um PDF já baixado, desde que corresponda a uma edição deste catálogo. Respostas e arquivos ficam neste aparelho.',
                 ),
               ),
             ],

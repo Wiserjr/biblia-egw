@@ -2,10 +2,12 @@
 
 ### Novidades da 1.7.0
 
-- **Catálogo de cinco estudos selecionados.** Somente as edições escolhidas
-  pelo responsável são aceitas, com conferência da identidade do PDF. Inclui
-  Apocalipse — Revelações de Esperança. A hospedagem será definida depois;
-  a tela informa Download em preparação e permite adicionar os PDFs locais.
+- **Downloads oficiais dentro do aplicativo.** Catálogo de sete estudos,
+  com seis links oficiais, progresso, cancelamento e nova tentativa. Os ZIPs
+  de Apocalipse e Calebe são preparados automaticamente. PDFs baixados ficam
+  disponíveis sem internet e são conferidos por SHA-256. Em Paz com Deus
+  permanece com importação local até seu link ser configurado. O Segredo —
+  quarta temporada foi retirado da lista, preservando arquivos e respostas.
 - **Versículos sobre o estudo.** Tocar numa referência da lição abre uma
   janela com o texto bíblico, na tradução escolhida, sem sair da página.
   Referências separadas, como João 1:1–4 e 14, aparecem juntas mantendo seus
@@ -20,7 +22,7 @@
   referências para abrir na Bíblia, respostas salvas e conclusão da lição.
   Os enunciados são lidos do PDF pessoal; não acompanham a distribuição.
 - Em *Temas e estudos → Estudos bíblicos → Estudos selecionados*, importe
-  uma das cinco edições preparadas para seu uso pessoal. O aplicativo guarda uma cópia
+  uma das sete edições preparadas para seu uso pessoal. O aplicativo guarda uma cópia
   local, retoma a última página, permite registrar respostas por página e
   marcar páginas estudadas. As respostas podem ser exportadas em JSON.
 - Nesta primeira integração, PDFs, respostas e progresso ficam somente no

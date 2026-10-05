@@ -1,47 +1,48 @@
 # Integração inicial de estudos bíblicos
 
-O aplicativo mostra um catálogo fechado com os cinco materiais escolhidos pelo
-usuário. A edição é identificada pelo SHA-256; PDFs fora do catálogo são
-recusados. Arquivos e respostas já existentes não são apagados.
+O aplicativo mostra sete estudos selecionados. Seis têm download direto das
+fontes oficiais enviadas pelo usuário; Em Paz com Deus permanece sem link
+configurado e aceita a edição local. O Segredo — quarta temporada foi retirado
+do catálogo, preservando arquivos e respostas já existentes.
 
-A hospedagem será definida depois. Os endereços em
-`assets/catalogo_estudos.json` estão vazios e a tela informa **Download em
-preparação**. Enquanto isso, **Adicionar PDF deste catálogo** permite testar
-as cinco edições locais. Ainda não há download automático.
+O botão **Baixar estudo** guarda o material no diretório de documentos do app.
+Quando a fonte é ZIP, o aplicativo seleciona o PDF pela identidade SHA-256,
+ignora arquivos extras e não extrai caminhos do pacote no disco. Há progresso,
+cancelamento e nova tentativa. Ao terminar, aparece **Abrir estudo**; a leitura
+posterior funciona sem internet. A preparação do ZIP acontece fora da thread
+da interface. Os downloads usam HTTPS e conferem tamanho e SHA-256 tanto do
+arquivo recebido quanto do PDF extraído antes de disponibilizar o estudo.
+Se a edição oficial mudar, o aplicativo informa que precisa de atualização.
 
-O pacote local `C:\Users\WiseJr\Downloads\Estudos-Biblicos-Hospedagem`
-contém cinco PDFs, `catalogo.json` e instruções. O PDF do Apocalipse foi
-separado do ZIP sem modificar seu conteúdo. Cada entrada registra nome,
-tamanho, páginas e SHA-256 para conferir os futuros downloads diretos.
-Os originais fornecidos foram preservados; nada foi enviado à nuvem.
+## Catálogo conferido em 05/10/2026
 
-Avaliação em 05/10/2026, a partir dos quatro PDFs e do ZIP fornecidos pelo usuário.
-Origem: https://downloads.adventistas.org/pt/kits/estudos-biblicos/
-
-| Material | Páginas do PDF | Estrutura observada |
+| Material | Páginas | Download |
 |---|---:|---|
-| Em Paz com Deus | 50 | Série de oito estudos; perguntas abertas e comentários |
-| Jesus Restaurador da Vida, versão para mulheres | 128 | Vinte estudos; perguntas, atividades e QR Codes |
-| Jesus Restaurador da Vida | 128 | Vinte estudos; perguntas abertas e alternativas, atividades e links |
-| O Segredo, quarta temporada | 30 | Reflexões sobre Daniel e pausas para discussão |
-| Apocalipse — Revelações de Esperança | 113 | Curso com 21 lições; PDF extraído do ZIP |
+| Em Paz com Deus | 50 | Link pendente; importação local |
+| Jesus Restaurador da Vida — Mulheres | 128 | PDF oficial |
+| Jesus Restaurador da Vida | 128 | PDF oficial; primeira lição interativa |
+| Apocalipse — Revelações de Esperança | 113 | ZIP oficial; preparação automática |
+| Deus Revela Seu Amor | 37 | PDF oficial |
+| Esperança para a Família | 41 | PDF oficial |
+| Guia de Estudos Calebe | 40 | ZIP oficial; preparação automática |
 
-A extração de texto funcionou nos quatro documentos. Algumas páginas têm
-elementos sem texto extraível. A ordem de leitura e a divisão das perguntas
-precisam de conferência visual antes de uma conversão em questionários.
-As duas edições de Jesus Restaurador têm o mesmo conjunto de títulos no
-sumário, mas não devem ser tratadas como arquivos idênticos.
+Os arquivos de Jesus Restaurador, Mulheres e Apocalipse correspondem às cópias
+fornecidas anteriormente. O endereço HTTP do Calebe foi substituído pelo
+endpoint HTTPS equivalente do mesmo bucket S3:
+`https://s3.amazonaws.com/missaocalebe.org.br/GuiadeEstudosCalebe.zip`.
+A forma de subdomínio contendo pontos não passa na validação do certificado;
+o endpoint adotado foi baixado e conferido com validação TLS habilitada.
 
-O PDF Em Paz com Deus declara proibição de reprodução total ou parcial sem
-autorização escrita do autor e da editora (página 3 do arquivo). As duas
-edições de Jesus Restaurador declaram direitos reservados à DSA (página 2).
-Disponibilidade para download não foi tratada como licença de redistribuição.
+Os PDFs continuam fora dos assets e do Git; não são redistribuídos pelo
+projeto. Textos, imagens e leitura vêm dos documentos oficiais guardados no
+aparelho. O pacote local de hospedagem preparado anteriormente é histórico e
+não é utilizado para os downloads.
 
 ## O que foi implementado
 
 Em Temas e estudos → Estudos bíblicos → Estudos selecionados:
 
-- Catálogo de cinco edições aprovadas; importação validada pelo PDFium e SHA-256.
+- Catálogo de sete edições aprovadas; importação validada pelo PDFium e SHA-256.
 - Cópia no diretório de documentos do app; identidade pelo SHA-256 do conteúdo.
 - Reimportar o mesmo conteúdo reutiliza o arquivo e suas respostas.
 - Leitura do original pelo pdfrx, com retomada da última página.
@@ -52,7 +53,7 @@ Há um piloto com perguntas individualizadas da primeira lição de Jesus
 Restaurador da Vida, descrito abaixo. Não há correção automática, integração das
 respostas com a nuvem ou restauração do JSON exportado nesta etapa. A
 exportação permite guardar e consultar as respostas fora do aplicativo.
-Os cinco PDFs não foram copiados para os assets nem para arquivos versionados.
+Os PDFs não foram copiados para os assets nem para arquivos versionados.
 Não há alteração no banco dos dezesseis estudos existentes.
 
 ## Próxima etapa editorial
@@ -75,7 +76,7 @@ teste de interação com o leitor nativo e o seletor de arquivos.
 A versão 1.7.0+9 está preparada no código; isso não é uma versão publicada.
 
 Validação realizada: `flutter analyze --no-pub` sem ocorrências;
-`flutter test` com 146 testes aprovados e seis ignorados pela suíte;
+`flutter test` com 153 testes aprovados e seis ignorados pela suíte;
 `git diff --check` nos arquivos da alteração sem problemas. O fluxo nativo
 de importação/leitura não foi exercitado em um app compilado nesta sessão.
 Compilação Windows de teste (`flutter build windows --debug`) concluída.
@@ -88,7 +89,7 @@ Importar `jesus_restaurador-da-vida.pdf` fornecido em 05/10/2026. A edição
 conferida tem SHA-256
 `1bacb247dcdce6348ce491573a050b543f5bab2a236498799170419b4269fbd7`.
 Ao abrir esse PDF, tocar em **Lição 1 — Jesus e as Escrituras Sagradas**.
-Os outros quatro materiais do catálogo estão disponíveis no leitor; suas
+Os outros seis materiais do catálogo estão disponíveis no leitor; suas
 lições interativas ainda precisam ser preparadas.
 
 O arquivo `assets/estudo_piloto.json` guarda apenas posições de caracteres

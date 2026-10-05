@@ -29,8 +29,9 @@ App para **Android e Windows** que junta, em cada versículo:
   White que mais os citam;
 - **estudos bíblicos**: 16 estudos em perguntas e respostas, com a resposta
   escondida até tocar;
-- **cinco estudos em PDF selecionados**: catálogo fechado das edições aprovadas,
-  com leitura do original, primeira lição interativa de Jesus Restaurador,
+- **sete estudos em PDF selecionados**: catálogo fechado das edições aprovadas,
+  com seis downloads oficiais, preparação automática de ZIPs, leitura offline
+  e primeira lição interativa de Jesus Restaurador,
   respostas e páginas estudadas salvas no aparelho, retomada da última página
   e exportação das respostas. Veja [ESTUDOS_IMPORTADOS.md](ESTUDOS_IMPORTADOS.md);
 - marcações com cores, anotações, busca por referência ou por palavras;

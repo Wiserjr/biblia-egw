@@ -1,5 +1,5 @@
 {
-  "versao": 1,
+  "versao": 2,
   "estudos": [
     {
       "id": "em-paz-com-deus",
@@ -18,8 +18,11 @@
       "bytes": 24573499,
       "sha256": "ccac2bdfccab640807e1f666a634fd72ba582434463cdf1e5e9ef69a79139018",
       "paginas": 128,
-      "url": null,
-      "pilotoInterativo": false
+      "url": "https://deptos.adventistas.org/ministeriopessoal/jesus-restaurador-vida/estudo-mulher-qrcode-impressao.pdf",
+      "pilotoInterativo": false,
+      "formato": "pdf",
+      "downloadBytes": 24573499,
+      "downloadSha256": "ccac2bdfccab640807e1f666a634fd72ba582434463cdf1e5e9ef69a79139018"
     },
     {
       "id": "jesus-restaurador",
@@ -28,18 +31,11 @@
       "bytes": 7318726,
       "sha256": "1bacb247dcdce6348ce491573a050b543f5bab2a236498799170419b4269fbd7",
       "paginas": 128,
-      "url": null,
-      "pilotoInterativo": true
-    },
-    {
-      "id": "o-segredo-4",
-      "titulo": "O Segredo — 4ª temporada",
-      "arquivo": "o-segredo-4.pdf",
-      "bytes": 20358938,
-      "sha256": "6e288c44655ce5028304e7a9890898a8d17b31acecbf5fa16ee7955778c335aa",
-      "paginas": 30,
-      "url": null,
-      "pilotoInterativo": false
+      "url": "https://deptos.adventistas.org/ministeriopessoal/jesus-restaurador-vida/jesus_restaurador-da-vida.pdf",
+      "pilotoInterativo": true,
+      "formato": "pdf",
+      "downloadBytes": 7318726,
+      "downloadSha256": "1bacb247dcdce6348ce491573a050b543f5bab2a236498799170419b4269fbd7"
     },
     {
       "id": "apocalipse-revelacoes-esperanca",
@@ -48,8 +44,50 @@
       "bytes": 33289628,
       "sha256": "f293e9e5fbec37d3e833c7ef94716d82a4448564885474f9d115c93c5f0db150",
       "paginas": 113,
-      "url": null,
-      "pilotoInterativo": false
+      "url": "https://deptos.adventistas.org/ministeriopessoal/revelacoes-esperanca/curso-biblico-apocalipse-revelacoes-esperanca.zip",
+      "pilotoInterativo": false,
+      "formato": "zip",
+      "downloadBytes": 31884073,
+      "downloadSha256": "3714dfdc61f117100f86520b574c09fada3bdadb9f189dc3fced7dbd6edbd22f"
+    },
+    {
+      "id": "deus-revela-seu-amor",
+      "titulo": "Deus Revela Seu Amor",
+      "arquivo": "deus-revela-seu-amor.pdf",
+      "bytes": 7696227,
+      "sha256": "4fc5d198c2fd9a0dfe077e439b7558efd0ea06d3550d8dc8feab5b05735ab1f2",
+      "paginas": 37,
+      "url": "https://deptos.adventistas.org/ministeriopessoal/estudos-biblicos/estudo-deus-revela-seu-amor.pdf",
+      "pilotoInterativo": false,
+      "formato": "pdf",
+      "downloadBytes": 7696227,
+      "downloadSha256": "4fc5d198c2fd9a0dfe077e439b7558efd0ea06d3550d8dc8feab5b05735ab1f2"
+    },
+    {
+      "id": "esperanca-para-a-familia",
+      "titulo": "Esperança para a Família",
+      "arquivo": "esperanca-para-a-familia.pdf",
+      "bytes": 4307071,
+      "sha256": "a933ca6202e7013ea8535841062accbea2321ad8a89f4d1acaa063634677da6e",
+      "paginas": 41,
+      "url": "https://deptos.adventistas.org/familia/estudo-biblico/Estudo-biblico_Esperanca-Para-a-Familia.pdf",
+      "pilotoInterativo": false,
+      "formato": "pdf",
+      "downloadBytes": 4307071,
+      "downloadSha256": "a933ca6202e7013ea8535841062accbea2321ad8a89f4d1acaa063634677da6e"
+    },
+    {
+      "id": "guia-estudos-calebe",
+      "titulo": "Guia de Estudos Calebe",
+      "arquivo": "guia-estudos-calebe.pdf",
+      "bytes": 34930063,
+      "sha256": "c1e0393fc7342b82852491534756a66f413a0397b39e607c22317655274b004c",
+      "paginas": 40,
+      "url": "https://s3.amazonaws.com/missaocalebe.org.br/GuiadeEstudosCalebe.zip",
+      "pilotoInterativo": false,
+      "formato": "zip",
+      "downloadBytes": 32246610,
+      "downloadSha256": "5cd57f20bef8e872b2ef6ee2eb8a5ee1a858475e5d0d4a5e2070b37c905317ee"
     }
   ]
 }
