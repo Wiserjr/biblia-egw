@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'estudo_piloto.dart';
 
@@ -22,6 +23,26 @@ class _TelaEstudosImportadosState extends State<TelaEstudosImportados> {
   List<File>? _arquivos;
   bool _importando = false;
   String? _erro;
+
+  Future<void> _baixarEstudos() async {
+    try {
+      final abriu = await launchUrl(
+        Uri.parse(
+          'https://downloads.adventistas.org/pt/kits/estudos-biblicos/',
+        ),
+        mode: LaunchMode.externalApplication,
+      );
+      if (!abriu) throw StateError('Não foi possível abrir o navegador');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Não foi possível abrir o site de estudos: $e'),
+          ),
+        );
+      }
+    }
+  }
 
   Future<Directory> _pasta() async {
     final base = await getApplicationDocumentsDirectory();
@@ -100,6 +121,37 @@ class _TelaEstudosImportadosState extends State<TelaEstudosImportados> {
             children: [
               const Text(
                 'Importe o PDF que você baixou. Leia o material original, registre suas respostas por página e marque as páginas estudadas. Os arquivos e as respostas ficam neste aparelho, fora da sincronização e da cópia dos dados da Bíblia.',
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _arquivos!.isEmpty
+                            ? 'Ainda não tem um estudo neste aparelho?'
+                            : 'Encontre novos estudos',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '1. Abra o catálogo oficial e baixe o estudo em PDF.\n2. Volte ao aplicativo e toque em “Importar estudo em PDF”.\n3. Selecione o arquivo na pasta Downloads do celular ou computador. Depois de importar, a leitura funciona sem internet.',
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: _baixarEstudos,
+                        icon: const Icon(Icons.download_outlined),
+                        label: const Text('Baixar estudos no site oficial'),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Para a lição interativa, use a edição digital completa de Jesus Restaurador da Vida. Outras edições podem ser lidas como PDF; a interação aparece nas edições já conferidas.',
+                      ),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
               FilledButton.icon(

@@ -1,5 +1,12 @@
 # Integração inicial de estudos bíblicos
 
+Quando ainda não há PDFs no aparelho, a tela orienta baixar pelo botão
+**Baixar estudos no site oficial**, voltar ao aplicativo e importar o PDF
+da pasta Downloads. O botão também fica disponível depois da primeira
+importação. O download é feito pelo navegador, diretamente no site oficial;
+não é automático nem sincroniza o arquivo do PC para o celular. Após importar,
+a leitura é local; vídeos e sites externos continuam exigindo internet.
+
 Avaliação em 05/10/2026, a partir dos quatro PDFs fornecidos pelo usuário.
 Origem: https://downloads.adventistas.org/pt/kits/estudos-biblicos/
 

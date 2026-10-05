@@ -2,6 +2,9 @@
 
 ### Novidades da 1.7.0
 
+- **Acesso ao catálogo oficial de estudos.** A biblioteca de PDFs oferece
+  o botão para baixar materiais no Downloads Adventistas e explica como
+  importar o arquivo da pasta Downloads no celular ou computador.
 - **Versículos sobre o estudo.** Tocar numa referência da lição abre uma
   janela com o texto bíblico, na tradução escolhida, sem sair da página.
   Referências separadas, como João 1:1–4 e 14, aparecem juntas mantendo seus
