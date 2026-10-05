@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +8,7 @@ import 'package:biblia_estudo/dados/ajustes.dart';
 import 'package:biblia_estudo/dados/banco.dart';
 import 'package:biblia_estudo/dados/temas.dart';
 import 'package:biblia_estudo/telas/versiculos_flutuantes.dart';
+import 'package:biblia_estudo/telas/estudo_piloto.dart';
 
 void main() {
   setUpAll(() async {
@@ -110,6 +113,50 @@ void main() {
       campo.dispose();
     },
   );
+
+  testWidgets('referência da pergunta 5 abre João 1:1-4 e 14 sobre a lição', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: TelaEstudoPiloto(
+          arquivo: File('unused.pdf'),
+          prefs: prefs,
+          carregarTexto: () async => 'x' * 6000,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Resposta preservada');
+    final referencia = find.bySemanticsLabel('Abrir referência da pergunta 5');
+    await tester.ensureVisible(referencia);
+    await tester.tap(referencia);
+    await tester.pump();
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    await tester.pumpAndSettle();
+    expect(find.byType(VersiculosFlutuantes), findsOneWidget);
+    expect(find.text('João 1:1-4'), findsOneWidget);
+    expect(find.text('João 1:14'), findsOneWidget);
+    expect(find.text('Ler na Bíblia'), findsNothing);
+    expect(
+      find.textContaining('Texto NAA do verso 14.', findRichText: true),
+      findsOneWidget,
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Voltar ao estudo'));
+    await tester.pumpAndSettle();
+    expect(find.byType(TelaEstudoPiloto), findsOneWidget);
+    expect(
+      (tester.widget<TextField>(find.byType(TextField).first)).controller!.text,
+      'Resposta preservada',
+    );
+    expect(
+      prefs.getString('piloto_${hashEstudoPiloto}_licao1_resposta_4'),
+      'Resposta preservada',
+    );
+  });
 
   testWidgets('referência ausente explica o resultado sem fechar o estudo', (
     tester,
