@@ -2,9 +2,10 @@
 
 ### Novidades da 1.7.0
 
-- **Acesso ao catálogo oficial de estudos.** A biblioteca de PDFs oferece
-  o botão para baixar materiais no Downloads Adventistas e explica como
-  importar o arquivo da pasta Downloads no celular ou computador.
+- **Catálogo de cinco estudos selecionados.** Somente as edições escolhidas
+  pelo responsável são aceitas, com conferência da identidade do PDF. Inclui
+  Apocalipse — Revelações de Esperança. A hospedagem será definida depois;
+  a tela informa Download em preparação e permite adicionar os PDFs locais.
 - **Versículos sobre o estudo.** Tocar numa referência da lição abre uma
   janela com o texto bíblico, na tradução escolhida, sem sair da página.
   Referências separadas, como João 1:1–4 e 14, aparecem juntas mantendo seus
@@ -18,8 +19,8 @@
   da Vida*, a primeira lição oferece oito perguntas, quatro com alternativas,
   referências para abrir na Bíblia, respostas salvas e conclusão da lição.
   Os enunciados são lidos do PDF pessoal; não acompanham a distribuição.
-- Em *Temas e estudos → Estudos bíblicos → Meus estudos em PDF*, importe
-  materiais baixados para seu uso pessoal. O aplicativo guarda uma cópia
+- Em *Temas e estudos → Estudos bíblicos → Estudos selecionados*, importe
+  uma das cinco edições preparadas para seu uso pessoal. O aplicativo guarda uma cópia
   local, retoma a última página, permite registrar respostas por página e
   marcar páginas estudadas. As respostas podem ser exportadas em JSON.
 - Nesta primeira integração, PDFs, respostas e progresso ficam somente no

@@ -1,13 +1,21 @@
 # Integração inicial de estudos bíblicos
 
-Quando ainda não há PDFs no aparelho, a tela orienta baixar pelo botão
-**Baixar estudos no site oficial**, voltar ao aplicativo e importar o PDF
-da pasta Downloads. O botão também fica disponível depois da primeira
-importação. O download é feito pelo navegador, diretamente no site oficial;
-não é automático nem sincroniza o arquivo do PC para o celular. Após importar,
-a leitura é local; vídeos e sites externos continuam exigindo internet.
+O aplicativo mostra um catálogo fechado com os cinco materiais escolhidos pelo
+usuário. A edição é identificada pelo SHA-256; PDFs fora do catálogo são
+recusados. Arquivos e respostas já existentes não são apagados.
 
-Avaliação em 05/10/2026, a partir dos quatro PDFs fornecidos pelo usuário.
+A hospedagem será definida depois. Os endereços em
+`assets/catalogo_estudos.json` estão vazios e a tela informa **Download em
+preparação**. Enquanto isso, **Adicionar PDF deste catálogo** permite testar
+as cinco edições locais. Ainda não há download automático.
+
+O pacote local `C:\Users\WiseJr\Downloads\Estudos-Biblicos-Hospedagem`
+contém cinco PDFs, `catalogo.json` e instruções. O PDF do Apocalipse foi
+separado do ZIP sem modificar seu conteúdo. Cada entrada registra nome,
+tamanho, páginas e SHA-256 para conferir os futuros downloads diretos.
+Os originais fornecidos foram preservados; nada foi enviado à nuvem.
+
+Avaliação em 05/10/2026, a partir dos quatro PDFs e do ZIP fornecidos pelo usuário.
 Origem: https://downloads.adventistas.org/pt/kits/estudos-biblicos/
 
 | Material | Páginas do PDF | Estrutura observada |
@@ -16,6 +24,7 @@ Origem: https://downloads.adventistas.org/pt/kits/estudos-biblicos/
 | Jesus Restaurador da Vida, versão para mulheres | 128 | Vinte estudos; perguntas, atividades e QR Codes |
 | Jesus Restaurador da Vida | 128 | Vinte estudos; perguntas abertas e alternativas, atividades e links |
 | O Segredo, quarta temporada | 30 | Reflexões sobre Daniel e pausas para discussão |
+| Apocalipse — Revelações de Esperança | 113 | Curso com 21 lições; PDF extraído do ZIP |
 
 A extração de texto funcionou nos quatro documentos. Algumas páginas têm
 elementos sem texto extraível. A ordem de leitura e a divisão das perguntas
@@ -30,9 +39,9 @@ Disponibilidade para download não foi tratada como licença de redistribuição
 
 ## O que foi implementado
 
-Em Temas e estudos → Estudos bíblicos → Meus estudos em PDF:
+Em Temas e estudos → Estudos bíblicos → Estudos selecionados:
 
-- Importação de PDF escolhido pelo usuário, validado pelo PDFium.
+- Catálogo de cinco edições aprovadas; importação validada pelo PDFium e SHA-256.
 - Cópia no diretório de documentos do app; identidade pelo SHA-256 do conteúdo.
 - Reimportar o mesmo conteúdo reutiliza o arquivo e suas respostas.
 - Leitura do original pelo pdfrx, com retomada da última página.
@@ -43,7 +52,7 @@ Há um piloto com perguntas individualizadas da primeira lição de Jesus
 Restaurador da Vida, descrito abaixo. Não há correção automática, integração das
 respostas com a nuvem ou restauração do JSON exportado nesta etapa. A
 exportação permite guardar e consultar as respostas fora do aplicativo.
-Os quatro PDFs não foram copiados para os assets nem para arquivos versionados.
+Os cinco PDFs não foram copiados para os assets nem para arquivos versionados.
 Não há alteração no banco dos dezesseis estudos existentes.
 
 ## Próxima etapa editorial
@@ -79,7 +88,8 @@ Importar `jesus_restaurador-da-vida.pdf` fornecido em 05/10/2026. A edição
 conferida tem SHA-256
 `1bacb247dcdce6348ce491573a050b543f5bab2a236498799170419b4269fbd7`.
 Ao abrir esse PDF, tocar em **Lição 1 — Jesus e as Escrituras Sagradas**.
-Outras edições continuam disponíveis no leitor, sem aplicar este índice.
+Os outros quatro materiais do catálogo estão disponíveis no leitor; suas
+lições interativas ainda precisam ser preparadas.
 
 O arquivo `assets/estudo_piloto.json` guarda apenas posições de caracteres
 na página 6 e referências bíblicas. O texto é extraído e normalizado no

@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
 
 import 'estudo_piloto.dart';
 
@@ -23,26 +23,7 @@ class _TelaEstudosImportadosState extends State<TelaEstudosImportados> {
   List<File>? _arquivos;
   bool _importando = false;
   String? _erro;
-
-  Future<void> _baixarEstudos() async {
-    try {
-      final abriu = await launchUrl(
-        Uri.parse(
-          'https://downloads.adventistas.org/pt/kits/estudos-biblicos/',
-        ),
-        mode: LaunchMode.externalApplication,
-      );
-      if (!abriu) throw StateError('Não foi possível abrir o navegador');
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Não foi possível abrir o site de estudos: $e'),
-          ),
-        );
-      }
-    }
-  }
+  List<Map<String, dynamic>> _catalogo = [];
 
   Future<Directory> _pasta() async {
     final base = await getApplicationDocumentsDirectory();
@@ -57,6 +38,13 @@ class _TelaEstudosImportadosState extends State<TelaEstudosImportados> {
 
   Future<void> _carregar() async {
     try {
+      final dados = jsonDecode(
+        await rootBundle.loadString('assets/catalogo_estudos.json'),
+      ) as Map;
+      _catalogo = [
+        for (final item in dados['estudos'] as List)
+          Map<String, dynamic>.from(item as Map),
+      ];
       final pasta = await _pasta();
       final lista = await pasta
           .list()
@@ -90,6 +78,11 @@ class _TelaEstudosImportadosState extends State<TelaEstudosImportados> {
       final documento = await PdfDocument.openData(bytes);
       await documento.dispose();
       final id = sha256.convert(bytes).toString();
+      if (!_catalogo.any((e) => e['sha256'] == id)) {
+        throw const FormatException(
+          'Este PDF não corresponde a uma edição do catálogo. Selecione um dos cinco arquivos preparados.',
+        );
+      }
       final pasta = await _pasta();
       final destino = File('${pasta.path}/$id.pdf');
       if (!await destino.exists()) {
@@ -109,9 +102,77 @@ class _TelaEstudosImportadosState extends State<TelaEstudosImportados> {
     }
   }
 
+  Widget _cartaoCatalogo(Map<String, dynamic> item) {
+    final id = item['sha256'] as String;
+    final arquivos = _arquivos!.where(
+      (f) => f.uri.pathSegments.last == '$id.pdf',
+    );
+    final arquivo = arquivos.isEmpty ? null : arquivos.first;
+    final titulo = item['titulo'] as String;
+    final tamanho = ((item['bytes'] as int) / 1024 / 1024).toStringAsFixed(1);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.menu_book_outlined),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    titulo,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text('${item['paginas']} páginas • $tamanho MB'),
+            Text(
+              item['pilotoInterativo'] == true
+                  ? 'Leitura do PDF e primeira lição interativa'
+                  : 'Leitura do PDF • interação por lição ainda em preparação',
+            ),
+            const SizedBox(height: 12),
+            if (arquivo != null)
+              FilledButton.icon(
+                onPressed: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  if (!mounted) return;
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TelaEstudoImportado(
+                        arquivo: arquivo,
+                        id: id,
+                        nome: titulo,
+                        prefs: prefs,
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.menu_book),
+                label: const Text('Abrir estudo'),
+              )
+            else
+              const Row(
+                children: [
+                  Icon(Icons.cloud_download_outlined, size: 18),
+                  SizedBox(width: 8),
+                  Expanded(child: Text('Download em preparação')),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Meus estudos em PDF')),
+    appBar: AppBar(title: const Text('Estudos bíblicos selecionados')),
     body: _erro != null
         ? Center(child: Text(_erro!))
         : _arquivos == null
@@ -120,80 +181,29 @@ class _TelaEstudosImportadosState extends State<TelaEstudosImportados> {
             padding: const EdgeInsets.all(16),
             children: [
               const Text(
-                'Importe o PDF que você baixou. Leia o material original, registre suas respostas por página e marque as páginas estudadas. Os arquivos e as respostas ficam neste aparelho, fora da sincronização e da cópia dos dados da Bíblia.',
+                'Estudos selecionados',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 12),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _arquivos!.isEmpty
-                            ? 'Ainda não tem um estudo neste aparelho?'
-                            : 'Encontre novos estudos',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        '1. Abra o catálogo oficial e baixe o estudo em PDF.\n2. Volte ao aplicativo e toque em “Importar estudo em PDF”.\n3. Selecione o arquivo na pasta Downloads do celular ou computador. Depois de importar, a leitura funciona sem internet.',
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: _baixarEstudos,
-                        icon: const Icon(Icons.download_outlined),
-                        label: const Text('Baixar estudos no site oficial'),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Para a lição interativa, use a edição digital completa de Jesus Restaurador da Vida. Outras edições podem ser lidas como PDF; a interação aparece nas edições já conferidas.',
-                      ),
-                    ],
-                  ),
-                ),
+              const SizedBox(height: 8),
+              const Text(
+                'Cinco materiais escolhidos para este aplicativo. Os downloads serão ativados quando a hospedagem estiver definida. Arquivos já adicionados podem ser abertos sem internet.',
               ),
-              const SizedBox(height: 12),
-              FilledButton.icon(
+              const SizedBox(height: 16),
+              for (final item in _catalogo) _cartaoCatalogo(item),
+              const SizedBox(height: 20),
+              OutlinedButton.icon(
                 onPressed: _importando ? null : _importar,
                 icon: const Icon(Icons.file_open_outlined),
                 label: Text(
-                  _importando ? 'Importando…' : 'Importar estudo em PDF',
+                  _importando ? 'Adicionando…' : 'Adicionar PDF deste catálogo',
                 ),
               ),
-              for (final arquivo in _arquivos!)
-                FutureBuilder<SharedPreferences>(
-                  future: SharedPreferences.getInstance(),
-                  builder: (context, snap) {
-                    final id = arquivo.uri.pathSegments.last.replaceAll(
-                      '.pdf',
-                      '',
-                    );
-                    final nome =
-                        snap.data?.getString('estudo_pdf_nome_$id') ??
-                        'Estudo em PDF';
-                    return Card(
-                      child: ListTile(
-                        leading: const Icon(Icons.menu_book_outlined),
-                        title: Text(nome),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: snap.data == null
-                            ? null
-                            : () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => TelaEstudoImportado(
-                                    arquivo: arquivo,
-                                    id: id,
-                                    nome: nome,
-                                    prefs: snap.data!,
-                                  ),
-                                ),
-                              ),
-                      ),
-                    );
-                  },
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'Opção provisória para os arquivos já baixados. São aceitas somente as edições preparadas dos cinco estudos. Respostas e arquivos ficam neste aparelho.',
                 ),
+              ),
             ],
           ),
   );

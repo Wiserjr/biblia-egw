@@ -144,9 +144,9 @@ class _TelaTemasState extends State<TelaTemas> {
             Card(
               child: ListTile(
                 leading: const Icon(Icons.picture_as_pdf_outlined),
-                title: const Text('Meus estudos em PDF'),
+                title: const Text('Estudos selecionados'),
                 subtitle: const Text(
-                  'Importar materiais, responder e continuar de onde parou',
+                  'Os cinco materiais preparados para o aplicativo',
                 ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.push(

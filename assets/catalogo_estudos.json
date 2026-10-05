@@ -1,0 +1,55 @@
+{
+  "versao": 1,
+  "estudos": [
+    {
+      "id": "em-paz-com-deus",
+      "titulo": "Em Paz com Deus",
+      "arquivo": "em-paz-com-deus.pdf",
+      "bytes": 2712017,
+      "sha256": "25ae8101882394b45a246c13f4dd3dbd3af19750c6ce514c5f09c2138e0aa418",
+      "paginas": 50,
+      "url": null,
+      "pilotoInterativo": false
+    },
+    {
+      "id": "jesus-restaurador-mulheres",
+      "titulo": "Jesus Restaurador da Vida — Mulheres",
+      "arquivo": "jesus-restaurador-mulheres.pdf",
+      "bytes": 24573499,
+      "sha256": "ccac2bdfccab640807e1f666a634fd72ba582434463cdf1e5e9ef69a79139018",
+      "paginas": 128,
+      "url": null,
+      "pilotoInterativo": false
+    },
+    {
+      "id": "jesus-restaurador",
+      "titulo": "Jesus Restaurador da Vida",
+      "arquivo": "jesus-restaurador.pdf",
+      "bytes": 7318726,
+      "sha256": "1bacb247dcdce6348ce491573a050b543f5bab2a236498799170419b4269fbd7",
+      "paginas": 128,
+      "url": null,
+      "pilotoInterativo": true
+    },
+    {
+      "id": "o-segredo-4",
+      "titulo": "O Segredo — 4ª temporada",
+      "arquivo": "o-segredo-4.pdf",
+      "bytes": 20358938,
+      "sha256": "6e288c44655ce5028304e7a9890898a8d17b31acecbf5fa16ee7955778c335aa",
+      "paginas": 30,
+      "url": null,
+      "pilotoInterativo": false
+    },
+    {
+      "id": "apocalipse-revelacoes-esperanca",
+      "titulo": "Apocalipse — Revelações de Esperança",
+      "arquivo": "apocalipse-revelacoes-esperanca.pdf",
+      "bytes": 33289628,
+      "sha256": "f293e9e5fbec37d3e833c7ef94716d82a4448564885474f9d115c93c5f0db150",
+      "paginas": 113,
+      "url": null,
+      "pilotoInterativo": false
+    }
+  ]
+}
