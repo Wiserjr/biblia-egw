@@ -59,7 +59,7 @@ teste de interação com o leitor nativo e o seletor de arquivos.
 A versão 1.7.0+9 está preparada no código; isso não é uma versão publicada.
 
 Validação realizada: `flutter analyze --no-pub` sem ocorrências;
-`flutter test` com 144 testes aprovados e seis ignorados pela suíte;
+`flutter test` com 146 testes aprovados e seis ignorados pela suíte;
 `git diff --check` nos arquivos da alteração sem problemas. O fluxo nativo
 de importação/leitura não foi exercitado em um app compilado nesta sessão.
 Compilação Windows de teste (`flutter build windows --debug`) concluída.
@@ -82,7 +82,7 @@ aparecem como duas referências. As oito perguntas e doze alternativas
 foram conferidas no texto extraído e na imagem da página original.
 
 Respostas, escolhas e conclusão são locais. Há salvamento explícito e ao
-voltar; abrir uma referência salva primeiro e retorna ao leitor da Bíblia.
+voltar; abrir uma referência salva primeiro e mostra uma janela sobre a lição.
 Para continuar, reabrir o PDF e a lição. A exportação do leitor inclui os
 dados da lição em `licao1`. Não existe correção ou pontuação automática.
 A introdução, as perguntas e a atividade adicional agora aparecem na mesma
@@ -112,3 +112,15 @@ A interface foi renderizada em teste visual com as imagens locais das páginas
 originais, incluindo escolhas selecionadas e uma resposta de exemplo. Isso
 confere a composição e a sobreposição, mas não substitui o teste manual no
 Windows e Android. Há teste de abertura do endereço WhatsApp após salvamento.
+
+## Leitura bíblica flutuante
+
+A janela mantém o estudo montado e sua rolagem. Exibe a tradução selecionada
+no aplicativo, os números dos versículos e a formatação das palavras de Jesus.
+Cada intervalo é consultado separadamente; João 1:1–4 e 1:14 aparecem em duas
+seções na mesma janela, sem incluir 5–13. O texto longo tem rolagem própria.
+Pode ser fechada pelo X, por Voltar ao estudo, pelo retorno do aparelho ou
+tocando fora da janela. Falhas de consulta permitem tentar novamente.
+
+Testes com banco SQLite verificam a tradução selecionada, os intervalos
+descontínuos, a passagem ausente e a permanência do estudo ao fechar.

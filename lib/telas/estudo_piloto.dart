@@ -7,9 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../dados/modelos.dart';
-import '../dados/referencias.dart';
-import 'navegacao.dart';
+import 'versiculos_flutuantes.dart';
 import 'licao_original.dart';
 
 const hashEstudoPiloto =
@@ -184,42 +182,7 @@ class _TelaEstudoPilotoState extends State<TelaEstudoPiloto> {
             aoConcluir: () => _salvar(concluir: true),
             aoReferencia: (refs) async {
               if (!await _salvar() || !context.mounted) return;
-              final List? ref;
-              if (refs.length > 1) {
-                ref = await showDialog<List>(
-                  context: context,
-                  builder: (context) => SimpleDialog(
-                    title: const Text('Ler na Bíblia'),
-                    children: [
-                      for (final r in refs)
-                        SimpleDialogOption(
-                          onPressed: () => Navigator.pop(context, r),
-                          child: Text(
-                            Referencias.formatar(
-                              r[0] as int,
-                              r[1] as int,
-                              r[2] as int,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                );
-              } else {
-                ref = refs.first as List;
-              }
-              if (ref == null || !context.mounted) return;
-              setState(() => _permitirSaida = true);
-              await WidgetsBinding.instance.endOfFrame;
-              if (!context.mounted) return;
-              irParaVersiculo(
-                context,
-                Posicao(
-                  ref[0] as int,
-                  (ref[1] as int) ~/ 1000,
-                  (ref[1] as int) % 1000,
-                ),
-              );
+              await mostrarVersiculosFlutuantes(context, refs);
             },
           );
         },

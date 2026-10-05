@@ -2,6 +2,10 @@
 
 ### Novidades da 1.7.0
 
+- **Versículos sobre o estudo.** Tocar numa referência da lição abre uma
+  janela com o texto bíblico, na tradução escolhida, sem sair da página.
+  Referências separadas, como João 1:1–4 e 14, aparecem juntas mantendo seus
+  intervalos. Fechar a janela volta imediatamente à mesma posição do estudo.
 - **Lição com o visual original.** As três páginas da primeira lição são
   desenhadas a partir do PDF pessoal, conservando imagens, cores, tipografia,
   introdução e estudo adicional. Alternativas e respostas ficam nas áreas do
