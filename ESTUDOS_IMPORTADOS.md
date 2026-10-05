@@ -67,7 +67,9 @@ Conteúdo incorporado à distribuição requer uma licença aplicável ou autori
 
 ## Conferência manual antes da publicação
 
-No Windows e no Android, importar cada PDF, registrar duas respostas em
+No Windows e no Android, baixar os seis materiais pelo catálogo, testar
+cancelamento e nova tentativa, conferir abertura offline e importar Em Paz
+com Deus. Registrar duas respostas em
 páginas distintas, fechar e reabrir, conferir página retomada e respostas,
 reimportar o mesmo arquivo e exportar JSON. Conferir também cancelamento do
 seletor e PDF inválido. A análise e a suíte existente não substituem esse
@@ -77,10 +79,12 @@ A versão 1.7.0+9 está preparada no código; isso não é uma versão publicada
 
 Validação realizada: `flutter analyze --no-pub` sem ocorrências;
 `flutter test` com 153 testes aprovados e seis ignorados pela suíte;
-`git diff --check` nos arquivos da alteração sem problemas. O fluxo nativo
+`git diff --check` nos arquivos da alteração sem problemas. Também foi
+exercitada a transferência real dos seis endereços com o downloader do app,
+incluindo preparação dos dois ZIPs. O fluxo nativo
 de importação/leitura não foi exercitado em um app compilado nesta sessão.
-Compilação Windows de teste (`flutter build windows --debug`) concluída.
-Executável em `build/windows/x64/runner/Debug/biblia_estudo.exe`; manter
+Compilação Windows de teste (`flutter build windows --release`) concluída.
+Executável em `build/windows/x64/runner/Release/biblia_estudo.exe`; manter
 os demais arquivos dessa pasta junto dele. Não é uma release publicada.
 
 ## Piloto da primeira lição
