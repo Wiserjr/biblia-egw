@@ -62,6 +62,9 @@ Validação realizada: `flutter analyze --no-pub` sem ocorrências;
 `flutter test` com 143 testes aprovados e seis ignorados pela suíte;
 `git diff --check` nos arquivos da alteração sem problemas. O fluxo nativo
 de importação/leitura não foi exercitado em um app compilado nesta sessão.
+Compilação Windows de teste (`flutter build windows --debug`) concluída.
+Executável em `build/windows/x64/runner/Debug/biblia_estudo.exe`; manter
+os demais arquivos dessa pasta junto dele. Não é uma release publicada.
 
 ## Piloto da primeira lição
 
