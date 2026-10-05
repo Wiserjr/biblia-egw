@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../dados/modelos.dart';
 import '../dados/referencias.dart';
 import 'navegacao.dart';
+import 'licao_original.dart';
 
 const hashEstudoPiloto =
     '1bacb247dcdce6348ce491573a050b543f5bab2a236498799170419b4269fbd7';
@@ -33,6 +34,7 @@ class _TelaEstudoPilotoState extends State<TelaEstudoPiloto> {
   late final _dados = _carregar();
   final _campos = <TextEditingController>[];
   final _escolhas = <int, int>{};
+  Map? _indice;
   bool _salvando = false;
   bool _permitirSaida = false;
   String get _prefixo => 'piloto_${hashEstudoPiloto}_licao1';
@@ -46,6 +48,7 @@ class _TelaEstudoPilotoState extends State<TelaEstudoPiloto> {
         .split(RegExp(r'\s+'))
         .where((s) => s.isNotEmpty)
         .join(' ');
+    _indice = indice;
     final perguntas = indice['perguntas'] as List;
     if (!mounted) return (texto, perguntas);
     for (var i = 0; i < perguntas.length; i++) {
@@ -58,6 +61,13 @@ class _TelaEstudoPilotoState extends State<TelaEstudoPiloto> {
       );
       final escolha = widget.prefs.getInt('${_prefixo}_escolha_$i');
       if (escolha != null) _escolhas[i] = escolha;
+    }
+    for (var i = 8; i < 12; i++) {
+      _campos.add(
+        TextEditingController(
+          text: widget.prefs.getString('${_prefixo}_resposta_$i') ?? '',
+        ),
+      );
     }
     return (texto, perguntas);
   }
@@ -144,7 +154,12 @@ class _TelaEstudoPilotoState extends State<TelaEstudoPiloto> {
       }
     },
     child: Scaffold(
-      appBar: AppBar(title: const Text('Jesus e as Escrituras Sagradas')),
+      backgroundColor: const Color(0xFFEAEFF2),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF263238),
+        title: const Text('Jesus e as Escrituras Sagradas'),
+      ),
       body: FutureBuilder<(String, List<dynamic>)>(
         future: _dados,
         builder: (context, snap) {
@@ -156,97 +171,56 @@ class _TelaEstudoPilotoState extends State<TelaEstudoPiloto> {
           if (!snap.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-          final (texto, perguntas) = snap.data!;
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              const Text(
-                'Lição 1 • Jesus Restaurador da Vida\nPerguntas extraídas do seu PDF, página 6. Leia também as páginas 5 e 7 no original. As respostas são salvas ao voltar e antes de abrir a Bíblia. Ficam neste aparelho.',
-              ),
-              if (widget.prefs.getBool('${_prefixo}_concluida') ?? false)
-                const Text('✓ Lição concluída'),
-              for (var i = 0; i < perguntas.length; i++)
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          '${i + 1}. ${texto.substring(perguntas[i]['inicio'] as int, perguntas[i]['fim'] as int)}',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        for (final ref in perguntas[i]['referencias'] as List)
-                          TextButton(
-                            onPressed: _salvando
-                                ? null
-                                : () async {
-                                    final salvo = await _salvar();
-                                    if (salvo && context.mounted) {
-                                      setState(() => _permitirSaida = true);
-                                      await WidgetsBinding.instance.endOfFrame;
-                                      if (!context.mounted) return;
-                                      irParaVersiculo(
-                                        context,
-                                        Posicao(
-                                          ref[0] as int,
-                                          (ref[1] as int) ~/ 1000,
-                                          (ref[1] as int) % 1000,
-                                        ),
-                                      );
-                                    }
-                                  },
-                            child: Text(
-                              Referencias.formatar(
-                                ref[0] as int,
-                                ref[1] as int,
-                                ref[2] as int,
-                              ),
+          return LicaoOriginal(
+            arquivo: widget.arquivo,
+            indice: _indice!,
+            campos: _campos,
+            escolhas: _escolhas,
+            salvando: _salvando,
+            concluida: widget.prefs.getBool('${_prefixo}_concluida') ?? false,
+            semImagem: widget.carregarTexto != null,
+            aoEscolher: (i, j) => setState(() => _escolhas[i] = j),
+            aoSalvar: _salvar,
+            aoConcluir: () => _salvar(concluir: true),
+            aoReferencia: (refs) async {
+              if (!await _salvar() || !context.mounted) return;
+              final List? ref;
+              if (refs.length > 1) {
+                ref = await showDialog<List>(
+                  context: context,
+                  builder: (context) => SimpleDialog(
+                    title: const Text('Ler na Bíblia'),
+                    children: [
+                      for (final r in refs)
+                        SimpleDialogOption(
+                          onPressed: () => Navigator.pop(context, r),
+                          child: Text(
+                            Referencias.formatar(
+                              r[0] as int,
+                              r[1] as int,
+                              r[2] as int,
                             ),
                           ),
-                        for (
-                          var j = 0;
-                          j < (perguntas[i]['alternativas'] as List).length;
-                          j++
-                        )
-                          ChoiceChip(
-                            label: Text(
-                              texto.substring(
-                                perguntas[i]['alternativas'][j][0] as int,
-                                perguntas[i]['alternativas'][j][1] as int,
-                              ),
-                            ),
-                            selected: _escolhas[i] == j,
-                            onSelected: _salvando
-                                ? null
-                                : (_) => setState(() => _escolhas[i] = j),
-                          ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _campos[i],
-                          enabled: !_salvando,
-                          minLines: 2,
-                          maxLines: 6,
-                          decoration: InputDecoration(
-                            labelText: i < 4
-                                ? 'Sua reflexão (opcional)'
-                                : 'Sua resposta',
-                            border: const OutlineInputBorder(),
-                          ),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
+                );
+              } else {
+                ref = refs.first as List;
+              }
+              if (ref == null || !context.mounted) return;
+              setState(() => _permitirSaida = true);
+              await WidgetsBinding.instance.endOfFrame;
+              if (!context.mounted) return;
+              irParaVersiculo(
+                context,
+                Posicao(
+                  ref[0] as int,
+                  (ref[1] as int) ~/ 1000,
+                  (ref[1] as int) % 1000,
                 ),
-              FilledButton(
-                onPressed: _salvando ? null : _salvar,
-                child: const Text('Salvar e continuar depois'),
-              ),
-              TextButton(
-                onPressed: _salvando ? null : () => _salvar(concluir: true),
-                child: const Text('Marcar lição como concluída'),
-              ),
-            ],
+              );
+            },
           );
         },
       ),

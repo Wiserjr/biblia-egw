@@ -2,6 +2,11 @@
 
 ### Novidades da 1.7.0
 
+- **Lição com o visual original.** As três páginas da primeira lição são
+  desenhadas a partir do PDF pessoal, conservando imagens, cores, tipografia,
+  introdução e estudo adicional. Alternativas e respostas ficam nas áreas do
+  documento. Inclui zoom e acesso aos vídeos, Evidências e WhatsApp presentes
+  no PDF. Abrir um recurso salva as respostas antes de sair para o navegador.
 - **Piloto por lição:** ao importar a edição conferida de *Jesus Restaurador
   da Vida*, a primeira lição oferece oito perguntas, quatro com alternativas,
   referências para abrir na Bíblia, respostas salvas e conclusão da lição.

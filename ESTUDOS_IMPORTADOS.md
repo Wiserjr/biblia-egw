@@ -59,7 +59,7 @@ teste de interação com o leitor nativo e o seletor de arquivos.
 A versão 1.7.0+9 está preparada no código; isso não é uma versão publicada.
 
 Validação realizada: `flutter analyze --no-pub` sem ocorrências;
-`flutter test` com 143 testes aprovados e seis ignorados pela suíte;
+`flutter test` com 144 testes aprovados e seis ignorados pela suíte;
 `git diff --check` nos arquivos da alteração sem problemas. O fluxo nativo
 de importação/leitura não foi exercitado em um app compilado nesta sessão.
 Compilação Windows de teste (`flutter build windows --debug`) concluída.
@@ -85,4 +85,30 @@ Respostas, escolhas e conclusão são locais. Há salvamento explícito e ao
 voltar; abrir uma referência salva primeiro e retorna ao leitor da Bíblia.
 Para continuar, reabrir o PDF e a lição. A exportação do leitor inclui os
 dados da lição em `licao1`. Não existe correção ou pontuação automática.
-A introdução e a atividade adicional continuam nas páginas 5 e 7 do PDF.
+A introdução, as perguntas e a atividade adicional agora aparecem na mesma
+tela: páginas 5, 6 e 7 renderizadas do PDF importado. Os controles são
+sobrepostos nas coordenadas conferidas do original. O papel permanece claro
+mesmo quando o aplicativo usa tema escuro. Há zoom e rolagem horizontal em
+telas pequenas para preservar a composição e a leitura.
+
+Também são editáveis as duas reflexões, nome e data da página 6. As respostas
+anteriores continuam com suas mesmas chaves. As anotações opcionais antigas
+das perguntas de alternativas permanecem guardadas e exportáveis.
+
+Links extraídos das anotações do PDF, com áreas clicáveis sobre o original e
+botões de acesso ao fim da lição:
+
+- Introdução: https://vimeo.com/520686211
+- Recapitulação: https://vimeo.com/520686319
+- Evidências: https://ntplay.com/evidencias
+- WhatsApp: https://api.whatsapp.com/send?phone=5561981690215&text=sua%20mensagem
+
+Em 05/10/2026, os dois endereços do Vimeo foram identificados nos títulos
+das páginas consultadas. Evidências não pôde ser verificado pela ferramenta
+web; permanece o endereço do original. O botão WhatsApp apenas abre o
+endereço; não envia mensagens. Entidades HTML do endereço foram decodificadas.
+
+A interface foi renderizada em teste visual com as imagens locais das páginas
+originais, incluindo escolhas selecionadas e uma resposta de exemplo. Isso
+confere a composição e a sobreposição, mas não substitui o teste manual no
+Windows e Android. Há teste de abertura do endereço WhatsApp após salvamento.
