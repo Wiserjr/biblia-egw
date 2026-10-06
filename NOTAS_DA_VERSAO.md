@@ -2,33 +2,13 @@
 
 ### Novidades da 1.7.0
 
-- **Downloads oficiais dentro do aplicativo.** Catálogo de sete estudos,
-  com seis links oficiais, progresso, cancelamento e nova tentativa. Os ZIPs
-  de Apocalipse e Calebe são preparados automaticamente. PDFs baixados ficam
-  disponíveis sem internet e são conferidos por SHA-256. Em Paz com Deus
-  permanece com importação local até seu link ser configurado. O Segredo —
-  quarta temporada foi retirado da lista, preservando arquivos e respostas.
-- **Versículos sobre o estudo.** Tocar numa referência da lição abre uma
-  janela com o texto bíblico, na tradução escolhida, sem sair da página.
-  Referências separadas, como João 1:1–4 e 14, aparecem juntas mantendo seus
-  intervalos. Fechar a janela volta imediatamente à mesma posição do estudo.
-- **Lição com o visual original.** As três páginas da primeira lição são
-  desenhadas a partir do PDF pessoal, conservando imagens, cores, tipografia,
-  introdução e estudo adicional. Alternativas e respostas ficam nas áreas do
-  documento. Inclui zoom e acesso aos vídeos, Evidências e WhatsApp presentes
-  no PDF. Abrir um recurso salva as respostas antes de sair para o navegador.
-- **Piloto por lição:** ao importar a edição conferida de *Jesus Restaurador
-  da Vida*, a primeira lição oferece oito perguntas, quatro com alternativas,
-  referências para abrir na Bíblia, respostas salvas e conclusão da lição.
-  Os enunciados são lidos do PDF pessoal; não acompanham a distribuição.
-- Em *Temas e estudos → Estudos bíblicos → Estudos selecionados*, importe
-  uma das sete edições preparadas para seu uso pessoal. O aplicativo guarda uma cópia
-  local, retoma a última página, permite registrar respostas por página e
-  marcar páginas estudadas. As respostas podem ser exportadas em JSON.
-- Nesta primeira integração, PDFs, respostas e progresso ficam somente no
-  aparelho; não entram na sincronização da conta nem na cópia dos dados da
-  Bíblia. Os materiais de terceiros não são incluídos na distribuição.
-
+- **Sete estudos interativos completos.** Em Paz com Deus; Jesus Restaurador da Vida; Jesus Restaurador da Vida para Mulheres; Apocalipse — Revelações de Esperança; Deus Revela Seu Amor; Esperança para a Família; Guia de Estudos Calebe. São 119 lições e mais 14 semanas complementares de Crescendo em Cristo nas duas edições de Jesus Restaurador.
+- **Respostas por pergunta no visual original.** Toque nos espaços do PDF ou em *Responder* para escrever, selecionar alternativas e registrar reflexões. Escolha a lição no alto da tela e marque sua conclusão. Respostas, escolhas e última página ficam salvas no aparelho; as respostas anteriores do piloto continuam disponíveis. Não há correção automática ou pontuação.
+- **Versículos flutuantes.** As referências abrem sobre o estudo, na tradução escolhida. Intervalos separados como João 1:1–4 e 14 permanecem separados; fechar a janela mantém a página e o rascunho da resposta.
+- **Downloads oficiais.** Os sete materiais têm download dentro do app, com progresso, cancelamento e nova tentativa. Os ZIPs de Apocalipse e Calebe são preparados automaticamente. Os arquivos são conferidos e ficam disponíveis sem internet. O Segredo — quarta temporada foi retirado do catálogo, sem apagar dados anteriores.
+- **Recursos do original.** Links do PDF e QR Codes identificados são clicáveis, incluindo os 40 códigos da edição para mulheres. Recursos externos abrem no navegador. Os documentos e seus textos não são incluídos na distribuição: vêm dos PDFs oficiais baixados no aparelho.
+- **Exportação das respostas.** JSON por estudo inclui as respostas atuais e os registros anteriores. PDFs e respostas permanecem locais e não entram na sincronização da conta; a importação desse JSON ainda não está disponível.
+- **Observação sobre a fonte:** a página 17 de Deus Revela Seu Amor tem o enunciado 4 incompleto e os enunciados 5–8 ausentes no PDF oficial. O app preserva esses espaços e identifica a limitação, sem inventar perguntas.
 
 ### Novidades da 1.6.0
 

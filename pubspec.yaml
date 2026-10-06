@@ -76,6 +76,7 @@ flutter:
   #   estudo.db.gz  índice de Ellen G. White e pioneiros, referências
   #                 cruzadas, introduções, notas (ferramentas/construir_estudo.py)
   assets:
+    - assets/estudos_interativos.json
     - assets/catalogo_estudos.json
     - assets/estudo_piloto.json
     - assets/biblia.db.gz

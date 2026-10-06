@@ -1,148 +1,78 @@
-# Integração inicial de estudos bíblicos
+# Estudos bíblicos interativos — versão 1.7.0
 
-O aplicativo mostra sete estudos selecionados. Seis têm download direto das
-fontes oficiais enviadas pelo usuário; Em Paz com Deus permanece sem link
-configurado e aceita a edição local. O Segredo — quarta temporada foi retirado
-do catálogo, preservando arquivos e respostas já existentes.
+## Catálogo preparado
 
-O botão **Baixar estudo** guarda o material no diretório de documentos do app.
-Quando a fonte é ZIP, o aplicativo seleciona o PDF pela identidade SHA-256,
-ignora arquivos extras e não extrai caminhos do pacote no disco. Há progresso,
-cancelamento e nova tentativa. Ao terminar, aparece **Abrir estudo**; a leitura
-posterior funciona sem internet. A preparação do ZIP acontece fora da thread
-da interface. Os downloads usam HTTPS e conferem tamanho e SHA-256 tanto do
-arquivo recebido quanto do PDF extraído antes de disponibilizar o estudo.
-Se a edição oficial mudar, o aplicativo informa que precisa de atualização.
+| Estudo | Páginas | Lições | Fonte |
+|---|---:|---:|---|
+| Em Paz com Deus | 50 | 8 | PDF oficial |
+| Jesus Restaurador da Vida — Mulheres | 128 | 20 + 7 semanas complementares | PDF oficial |
+| Jesus Restaurador da Vida | 128 | 20 + 7 semanas complementares | PDF oficial |
+| Apocalipse — Revelações de Esperança | 113 | 21 | ZIP oficial |
+| Deus Revela Seu Amor | 37 | 18 | PDF oficial |
+| Esperança para a Família | 41 | 14 | PDF oficial |
+| Guia de Estudos Calebe | 40 | 18 | ZIP oficial |
 
-## Catálogo conferido em 05/10/2026
+Os sete endereços oficiais estão em `assets/catalogo_estudos.json`. O catálogo
+é fechado: PDFs de outras edições precisam de preparação e atualização do app.
+O Segredo — quarta temporada saiu do catálogo; arquivos e respostas anteriores
+não são apagados. O Calebe usa o endpoint HTTPS equivalente do mesmo bucket S3,
+com validação normal de certificado.
 
-| Material | Páginas | Download |
-|---|---:|---|
-| Em Paz com Deus | 50 | Link pendente; importação local |
-| Jesus Restaurador da Vida — Mulheres | 128 | PDF oficial |
-| Jesus Restaurador da Vida | 128 | PDF oficial; primeira lição interativa |
-| Apocalipse — Revelações de Esperança | 113 | ZIP oficial; preparação automática |
-| Deus Revela Seu Amor | 37 | PDF oficial |
-| Esperança para a Família | 41 | PDF oficial |
-| Guia de Estudos Calebe | 40 | ZIP oficial; preparação automática |
+## Uso
 
-Os arquivos de Jesus Restaurador, Mulheres e Apocalipse correspondem às cópias
-fornecidas anteriormente. O endereço HTTP do Calebe foi substituído pelo
-endpoint HTTPS equivalente do mesmo bucket S3:
-`https://s3.amazonaws.com/missaocalebe.org.br/GuiadeEstudosCalebe.zip`.
-A forma de subdomínio contendo pontos não passa na validação do certificado;
-o endpoint adotado foi baixado e conferido com validação TLS habilitada.
+Em **Temas e estudos → Estudos bíblicos → Estudos selecionados**, tocar em
+**Baixar estudo**. O app mostra progresso, permite cancelar e tentar novamente.
+Os ZIPs são preparados automaticamente, escolhendo o PDF pelo SHA-256, sem
+extrair caminhos arbitrários. Tamanho e SHA-256 do download e do PDF são
+conferidos. Os documentos ficam na pasta de documentos do app e podem ser
+abertos sem internet. Também é possível importar uma edição local conferida.
 
-Os PDFs continuam fora dos assets e do Git; não são redistribuídos pelo
-projeto. Textos, imagens e leitura vêm dos documentos oficiais guardados no
-aparelho. O pacote local de hospedagem preparado anteriormente é histórico e
-não é utilizado para os downloads.
+Ao abrir, escolher uma lição no menu superior. As páginas do PDF mantêm seu
+visual original. Tocar num espaço para responder ou numa alternativa para
+marcar. O botão **Responder** lista as perguntas e atividades da página, com
+edição confortável no celular. Há respostas abertas, lacunas, alternativas,
+reflexões, decisões e atividades complementares. A conclusão é indicada pelo
+usuário; não há gabarito, correção automática ou pontuação.
 
-## O que foi implementado
+As referências bíblicas abrem em uma janela sobre o estudo e sobre o editor
+da pergunta. A tradução escolhida na Bíblia é respeitada. Intervalos separados
+como João 1:1–4 e 14 são consultados separadamente e aparecem juntos, sem incluir
+5–13. Fechar a janela mantém a página e o rascunho. Links do PDF e áreas de QR
+Codes identificados abrem no navegador; os 40 códigos da edição para mulheres
+têm áreas clicáveis. Abrir WhatsApp apenas abre o endereço; não envia mensagens.
 
-Em Temas e estudos → Estudos bíblicos → Estudos selecionados:
+## Dados e fidelidade ao original
 
-- Catálogo de sete edições aprovadas; importação validada pelo PDFium e SHA-256.
-- Cópia no diretório de documentos do app; identidade pelo SHA-256 do conteúdo.
-- Reimportar o mesmo conteúdo reutiliza o arquivo e suas respostas.
-- Leitura do original pelo pdfrx, com retomada da última página.
-- Respostas abertas e indicação de página estudada, persistidas localmente.
-- Exportação das respostas e marcações em JSON, separada do PDF.
+`assets/estudos_interativos.json` contém somente posições dos campos,
+referências, links e intervalos de páginas. Os textos das perguntas e
+alternativas são extraídos do PDF no aparelho. Os PDFs, imagens e textos não
+são incorporados aos assets nem redistribuídos no GitHub.
 
-Há um piloto com perguntas individualizadas da primeira lição de Jesus
-Restaurador da Vida, descrito abaixo. Não há correção automática, integração das
-respostas com a nuvem ou restauração do JSON exportado nesta etapa. A
-exportação permite guardar e consultar as respostas fora do aplicativo.
-Os PDFs não foram copiados para os assets nem para arquivos versionados.
-Não há alteração no banco dos dezesseis estudos existentes.
+Respostas são separadas pelo SHA-256 da edição e pela identidade do campo.
+Salvar e voltar pelo botão do aparelho gravam a resposta; Cancelar descarta a
+edição em andamento. As respostas e escolhas da primeira lição do piloto são
+recuperadas. Perguntas que continuam na página seguinte de Em Paz com Deus
+compartilham a mesma resposta. Última página e conclusão das lições são locais.
 
-## Próxima etapa editorial
+A exportação JSON reúne respostas atuais e registros anteriores do PDF/piloto.
+A importação do JSON e a sincronização desses estudos com a conta ainda não
+estão implementadas. A exportação permite guardar e consultar as respostas.
 
-Para uma experiência por lição, preparar um índice de títulos e páginas,
-conferido com cada edição. Para perguntas individualizadas, conferir a
-extração de enunciados e alternativas, ligar referências à Bíblia instalada
-e distinguir perguntas objetivas de reflexão pessoal. Não inferir um gabarito
-para perguntas abertas. Links de vídeos e QR Codes precisam ser verificados.
-Conteúdo incorporado à distribuição requer uma licença aplicável ou autorização.
+**Defeito do documento oficial:** na página 17 de Deus Revela Seu Amor, o
+enunciado 4 está incompleto e os enunciados 5–8 estão ausentes. Os campos são
+mantidos e identificados; o aplicativo não inventa o conteúdo que falta.
 
-## Conferência manual antes da publicação
+## Preparação e validação
 
-No Windows e no Android, baixar os seis materiais pelo catálogo, testar
-cancelamento e nova tentativa, conferir abertura offline e importar Em Paz
-com Deus. Registrar duas respostas em
-páginas distintas, fechar e reabrir, conferir página retomada e respostas,
-reimportar o mesmo arquivo e exportar JSON. Conferir também cancelamento do
-seletor e PDF inválido. A análise e a suíte existente não substituem esse
-teste de interação com o leitor nativo e o seletor de arquivos.
+`ferramentas/indexar_estudos_interativos.py` gera o índice usando as sete
+cópias oficiais conferidas. `ferramentas/indexar_qr_estudos.py` complementa os
+endereços dos códigos, incluindo os códigos com cores invertidas. As originais
+ficam fora do Git, em `ferramentas/cache/estudos/oficiais`.
 
-A versão 1.7.0+9 está preparada no código; isso não é uma versão publicada.
-
-Validação realizada: `flutter analyze --no-pub` sem ocorrências;
-`flutter test` com 153 testes aprovados e seis ignorados pela suíte;
-`git diff --check` nos arquivos da alteração sem problemas. Também foi
-exercitada a transferência real dos seis endereços com o downloader do app,
-incluindo preparação dos dois ZIPs. O fluxo nativo
-de importação/leitura não foi exercitado em um app compilado nesta sessão.
-Compilação Windows de teste (`flutter build windows --release`) concluída.
-Executável em `build/windows/x64/runner/Release/biblia_estudo.exe`; manter
-os demais arquivos dessa pasta junto dele. Não é uma release publicada.
-
-## Piloto da primeira lição
-
-Importar `jesus_restaurador-da-vida.pdf` fornecido em 05/10/2026. A edição
-conferida tem SHA-256
-`1bacb247dcdce6348ce491573a050b543f5bab2a236498799170419b4269fbd7`.
-Ao abrir esse PDF, tocar em **Lição 1 — Jesus e as Escrituras Sagradas**.
-Os outros seis materiais do catálogo estão disponíveis no leitor; suas
-lições interativas ainda precisam ser preparadas.
-
-O arquivo `assets/estudo_piloto.json` guarda apenas posições de caracteres
-na página 6 e referências bíblicas. O texto é extraído e normalizado no
-aparelho pelo PDFium. Há quatro perguntas com três alternativas cada e
-quatro abertas. A pergunta 7 conserva suas duas partes. João 1:1–4 e 1:14
-aparecem como duas referências. As oito perguntas e doze alternativas
-foram conferidas no texto extraído e na imagem da página original.
-
-Respostas, escolhas e conclusão são locais. Há salvamento explícito e ao
-voltar; abrir uma referência salva primeiro e mostra uma janela sobre a lição.
-Para continuar, reabrir o PDF e a lição. A exportação do leitor inclui os
-dados da lição em `licao1`. Não existe correção ou pontuação automática.
-A introdução, as perguntas e a atividade adicional agora aparecem na mesma
-tela: páginas 5, 6 e 7 renderizadas do PDF importado. Os controles são
-sobrepostos nas coordenadas conferidas do original. O papel permanece claro
-mesmo quando o aplicativo usa tema escuro. Há zoom e rolagem horizontal em
-telas pequenas para preservar a composição e a leitura.
-
-Também são editáveis as duas reflexões, nome e data da página 6. As respostas
-anteriores continuam com suas mesmas chaves. As anotações opcionais antigas
-das perguntas de alternativas permanecem guardadas e exportáveis.
-
-Links extraídos das anotações do PDF, com áreas clicáveis sobre o original e
-botões de acesso ao fim da lição:
-
-- Introdução: https://vimeo.com/520686211
-- Recapitulação: https://vimeo.com/520686319
-- Evidências: https://ntplay.com/evidencias
-- WhatsApp: https://api.whatsapp.com/send?phone=5561981690215&text=sua%20mensagem
-
-Em 05/10/2026, os dois endereços do Vimeo foram identificados nos títulos
-das páginas consultadas. Evidências não pôde ser verificado pela ferramenta
-web; permanece o endereço do original. O botão WhatsApp apenas abre o
-endereço; não envia mensagens. Entidades HTML do endereço foram decodificadas.
-
-A interface foi renderizada em teste visual com as imagens locais das páginas
-originais, incluindo escolhas selecionadas e uma resposta de exemplo. Isso
-confere a composição e a sobreposição, mas não substitui o teste manual no
-Windows e Android. Há teste de abertura do endereço WhatsApp após salvamento.
-
-## Leitura bíblica flutuante
-
-A janela mantém o estudo montado e sua rolagem. Exibe a tradução selecionada
-no aplicativo, os números dos versículos e a formatação das palavras de Jesus.
-Cada intervalo é consultado separadamente; João 1:1–4 e 1:14 aparecem em duas
-seções na mesma janela, sem incluir 5–13. O texto longo tem rolagem própria.
-Pode ser fechada pelo X, por Voltar ao estudo, pelo retorno do aparelho ou
-tocando fora da janela. Falhas de consulta permitem tentar novamente.
-
-Testes com banco SQLite verificam a tradução selecionada, os intervalos
-descontínuos, a passagem ausente e a permanência do estudo ao fechar.
+A validação cobre persistência por edição, migração do piloto, consulta sem
+perder rascunhos, salvamento ao voltar, retomada de página, conclusão, intervalos
+descontínuos, limites dos campos e presença de atividades em todas as lições.
+A extração das áreas foi confrontada com PDFium, considerando as margens de
+recorte dos originais, e amostras dos sete projetos gráficos foram renderizadas
+com os campos marcados. Testes automatizados não substituem a conferência de
+uso em um celular físico.

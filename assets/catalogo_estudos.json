@@ -8,8 +8,12 @@
       "bytes": 2712017,
       "sha256": "25ae8101882394b45a246c13f4dd3dbd3af19750c6ce514c5f09c2138e0aa418",
       "paginas": 50,
-      "url": null,
-      "pilotoInterativo": false
+      "url": "https://deptos.adventistas.org/mordomiacrista/em-paz-com-Deus/estudo-empazcomdeus-corrigido.pdf",
+      "pilotoInterativo": false,
+      "formato": "pdf",
+      "downloadBytes": 2712017,
+      "downloadSha256": "25ae8101882394b45a246c13f4dd3dbd3af19750c6ce514c5f09c2138e0aa418",
+      "interativo": true
     },
     {
       "id": "jesus-restaurador-mulheres",
@@ -22,7 +26,8 @@
       "pilotoInterativo": false,
       "formato": "pdf",
       "downloadBytes": 24573499,
-      "downloadSha256": "ccac2bdfccab640807e1f666a634fd72ba582434463cdf1e5e9ef69a79139018"
+      "downloadSha256": "ccac2bdfccab640807e1f666a634fd72ba582434463cdf1e5e9ef69a79139018",
+      "interativo": true
     },
     {
       "id": "jesus-restaurador",
@@ -35,7 +40,8 @@
       "pilotoInterativo": true,
       "formato": "pdf",
       "downloadBytes": 7318726,
-      "downloadSha256": "1bacb247dcdce6348ce491573a050b543f5bab2a236498799170419b4269fbd7"
+      "downloadSha256": "1bacb247dcdce6348ce491573a050b543f5bab2a236498799170419b4269fbd7",
+      "interativo": true
     },
     {
       "id": "apocalipse-revelacoes-esperanca",
@@ -48,7 +54,8 @@
       "pilotoInterativo": false,
       "formato": "zip",
       "downloadBytes": 31884073,
-      "downloadSha256": "3714dfdc61f117100f86520b574c09fada3bdadb9f189dc3fced7dbd6edbd22f"
+      "downloadSha256": "3714dfdc61f117100f86520b574c09fada3bdadb9f189dc3fced7dbd6edbd22f",
+      "interativo": true
     },
     {
       "id": "deus-revela-seu-amor",
@@ -61,7 +68,8 @@
       "pilotoInterativo": false,
       "formato": "pdf",
       "downloadBytes": 7696227,
-      "downloadSha256": "4fc5d198c2fd9a0dfe077e439b7558efd0ea06d3550d8dc8feab5b05735ab1f2"
+      "downloadSha256": "4fc5d198c2fd9a0dfe077e439b7558efd0ea06d3550d8dc8feab5b05735ab1f2",
+      "interativo": true
     },
     {
       "id": "esperanca-para-a-familia",
@@ -74,7 +82,8 @@
       "pilotoInterativo": false,
       "formato": "pdf",
       "downloadBytes": 4307071,
-      "downloadSha256": "a933ca6202e7013ea8535841062accbea2321ad8a89f4d1acaa063634677da6e"
+      "downloadSha256": "a933ca6202e7013ea8535841062accbea2321ad8a89f4d1acaa063634677da6e",
+      "interativo": true
     },
     {
       "id": "guia-estudos-calebe",
@@ -87,7 +96,8 @@
       "pilotoInterativo": false,
       "formato": "zip",
       "downloadBytes": 32246610,
-      "downloadSha256": "5cd57f20bef8e872b2ef6ee2eb8a5ee1a858475e5d0d4a5e2070b37c905317ee"
+      "downloadSha256": "5cd57f20bef8e872b2ef6ee2eb8a5ee1a858475e5d0d4a5e2070b37c905317ee",
+      "interativo": true
     }
   ]
 }

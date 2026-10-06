@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 
 import 'estudo_piloto.dart';
+import 'estudo_interativo.dart';
 import '../dados/download_estudos.dart';
 
 /// PDFs escolhidos pela pessoa. Os originais não fazem parte da distribuição.
@@ -174,11 +175,7 @@ class _TelaEstudosImportadosState extends State<TelaEstudosImportados> {
             ),
             const SizedBox(height: 8),
             Text('${item['paginas']} páginas • $tamanho MB'),
-            Text(
-              item['pilotoInterativo'] == true
-                  ? 'Leitura do PDF e primeira lição interativa'
-                  : 'Leitura do PDF • interação por lição ainda em preparação',
-            ),
+            Text('Lições com respostas, alternativas e versículos flutuantes'),
             const SizedBox(height: 12),
             if (arquivo != null)
               FilledButton.icon(
@@ -188,7 +185,7 @@ class _TelaEstudosImportadosState extends State<TelaEstudosImportados> {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => TelaEstudoImportado(
+                      builder: (_) => TelaEstudoInterativo(
                         arquivo: arquivo,
                         id: id,
                         nome: titulo,
