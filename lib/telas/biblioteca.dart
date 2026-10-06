@@ -6,6 +6,7 @@ import '../dados/modelos.dart';
 import '../dados/trechos.dart';
 import 'leitor_pdf.dart';
 import 'tema.dart';
+import 'guia_biblioteca.dart';
 
 /// Os livros de Ellen G. White e dos pioneiros: baixar, abrir, apagar.
 class TelaBiblioteca extends StatefulWidget {
@@ -25,6 +26,16 @@ class _TelaBibliotecaState extends State<TelaBiblioteca> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Biblioteca'),
+          actions: [
+            IconButton(
+              tooltip: 'Guia de leitura EGW',
+              icon: const Icon(Icons.checklist),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TelaGuiaBiblioteca()),
+              ),
+            ),
+          ],
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Ellen G. White'),
@@ -70,6 +81,18 @@ class _TelaBibliotecaState extends State<TelaBiblioteca> {
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
       children: [
+        if (obras.any((o) => o.deEllenWhite))
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: FilledButton.tonalIcon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TelaGuiaBiblioteca()),
+              ),
+              icon: const Icon(Icons.checklist),
+              label: const Text('Guia e planos de leitura EGW'),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: Text(
@@ -198,11 +221,26 @@ class _ItemObra extends StatelessWidget {
         ].join(' · '),
         style: t.textTheme.bodySmall,
       ),
-      trailing: acao,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: 'Capítulos e progresso',
+            icon: const Icon(Icons.checklist),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => TelaGuiaBiblioteca(obra: obra)),
+            ),
+          ),
+          acao,
+        ],
+      ),
       onTap: bib.disponivel(obra)
           ? () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => TelaPdf(obra: obra, pagina: 0)),
+              MaterialPageRoute(
+                builder: (_) => TelaPdf(obra: obra, pagina: 0, retomar: true),
+              ),
             )
           : null,
     );

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:biblia_estudo/dados/ajustes.dart';
+import 'package:biblia_estudo/dados/guia_biblioteca.dart';
 import 'package:biblia_estudo/dados/modelos.dart';
 import 'package:biblia_estudo/telas/leitor_pdf.dart';
 import 'package:flutter/material.dart';
@@ -243,6 +244,92 @@ void main() {
       await _esperar(tester, () => false, vezes: 3);
       return tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
     }
+
+    testWidgets('retoma página, posição e zoom sem alterar links explícitos', (
+      tester,
+    ) async {
+      File('${pasta.path}/obras/retrato.pdf.sha256')
+          .writeAsStringSync('edicao-teste');
+      final guia = GuiaBiblioteca.instancia;
+      await guia.guardarLugar(
+        _retrato.id,
+        const LugarObra(2, 0.7, 'edicao-teste', 100, zoom: 2, horizontal: 0.5),
+      );
+      tester.view.physicalSize = const Size(1600, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: TelaPdf(obra: _retrato, pagina: 0, retomar: true),
+        ),
+      );
+      await _esperar(
+        tester,
+        () => botao(tester, Icons.zoom_in).onPressed != null,
+      );
+      await _esperar(tester, () => false, vezes: 4);
+      final c = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+      expect(c.pageNumber, 3);
+      expect(c.currentZoom / c.coverScale, closeTo(2, 0.03));
+      final r = c.layout.pageLayouts[2];
+      expect((c.centerPosition.dy - r.top) / r.height, closeTo(0.7, 0.03));
+      await c.setZoom(
+        Offset(r.center.dx, r.top + r.height * 0.8),
+        c.currentZoom,
+        duration: Duration.zero,
+      );
+      await tester.pump(const Duration(milliseconds: 700));
+      expect(guia.lugar(_retrato.id)!.fracao, closeTo(0.8, 0.03));
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+      await tester.pumpWidget(
+        const MaterialApp(home: TelaPdf(obra: _retrato, pagina: 1)),
+      );
+      await _esperar(
+        tester,
+        () => botao(tester, Icons.zoom_in).onPressed != null,
+      );
+      await _esperar(tester, () => false, vezes: 3);
+      final explicito = tester
+          .widget<PdfViewer>(find.byType(PdfViewer))
+          .controller!;
+      expect(explicito.pageNumber, 2);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    }, skip: !temPdfium);
+
+    testWidgets('edição diferente avisa e abre sem aplicar lugar antigo', (
+      tester,
+    ) async {
+      File('${pasta.path}/obras/retrato.pdf.sha256')
+          .writeAsStringSync('edicao-nova');
+      await GuiaBiblioteca.instancia.guardarLugar(
+        _retrato.id,
+        const LugarObra(3, 0.8, 'edicao-antiga', 100, zoom: 2),
+      );
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: TelaPdf(obra: _retrato, pagina: 0, retomar: true),
+        ),
+      );
+      await _esperar(
+        tester,
+        () => botao(tester, Icons.zoom_in).onPressed != null,
+      );
+      await _esperar(tester, () => false, vezes: 3);
+      final c = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+      expect(c.pageNumber, 1);
+      expect(
+        find.text(
+          'A edição do PDF mudou. Confira o capítulo antes de retomar a leitura.',
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    }, skip: !temPdfium);
 
     testWidgets('no PC, o livro abre com a página inteira na tela', (
       tester,

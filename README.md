@@ -14,6 +14,17 @@ App para **Android e Windows** que junta, em cada versículo:
   ordenadas por relevância;
 - **introdução a cada livro**: autor, data, local, tema, versículo-chave,
   esboço, mensagem, Cristo no livro e onde Ellen G. White trata dele;
+- **introduções Andrews em português**: contexto, orientação literária e
+  perguntas nos 39 livros do Antigo Testamento, com fonte e página. Isaías
+  recebe uma síntese ampliada a partir de dois PDFs fornecidos. São textos
+  editoriais, identificados como sínteses, com perguntas de aplicação próprias.
+  Dez introduções também recebem esboços e explicações adicionais a partir das
+  digitalizações em português da Bíblia de Estudo Andrews fornecidas pelo usuário;
+- **guia de leitura da biblioteca EGW**: plano por livro, seleção de livros
+  ou pelos 95 livros do catálogo, com metas por sessão. Conclusão de capítulos,
+  retomada de página, posição e zoom e progresso na cópia de segurança. Os
+  30 livros sem sumário indexado entram como leitura integral, explicitamente
+  indicada; o plano e os lugares são locais, sem sincronização pela conta;
 - **notas de estudo** em toda a Bíblia: 3.571 notas nos 1.189 capítulos (ver
   *Notas*, abaixo);
 - **mapas**: 18 mapas temáticos (Abraão, Êxodo, conquista, reinos, Elias e

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -10,7 +11,9 @@ import '../dados/ajustes.dart';
 import '../dados/biblioteca.dart';
 import '../dados/leitura_voz.dart';
 import '../dados/modelos.dart';
+import '../dados/guia_biblioteca.dart';
 import 'acoes_texto.dart';
+import 'guia_biblioteca.dart';
 
 /// O livro de Ellen G. White (ou do pioneiro) aberto na página do trecho, com
 /// a citação destacada quando dá para achá-la.
@@ -24,6 +27,7 @@ class TelaPdf extends StatefulWidget {
     required this.obra,
     required this.pagina,
     this.destaque,
+    this.retomar = false,
   });
 
   final Obra obra;
@@ -34,11 +38,14 @@ class TelaPdf extends StatefulWidget {
   /// Texto a destacar ("Mateus 4:4").
   final String? destaque;
 
+  /// Somente a biblioteca retoma; links de versículos respeitam sua página.
+  final bool retomar;
+
   @override
   State<TelaPdf> createState() => _TelaPdfState();
 }
 
-class _TelaPdfState extends State<TelaPdf> {
+class _TelaPdfState extends State<TelaPdf> with WidgetsBindingObserver {
   final _controle = PdfViewerController();
 
   /// A busca no livro. Só pode ser criada depois que o livro carregou: o
@@ -47,9 +54,82 @@ class _TelaPdfState extends State<TelaPdf> {
   PdfTextSearcher? _busca;
   final _campoBusca = TextEditingController();
   bool _procurando = false;
-  late final Future<String> _caminho = Biblioteca.instancia
-      .arquivo(widget.obra)
-      .then((f) => f.path);
+  late final Future<String> _caminho = _abrirCaminho();
+  String? _edicao;
+  LugarObra? _retomada;
+  LugarObra? _ultimoLugar;
+  Timer? _salvarLugar;
+
+  Future<String> _abrirCaminho() async {
+    final arquivo = await Biblioteca.instancia.arquivo(widget.obra);
+    final marca = File('${arquivo.path}.sha256');
+    _edicao = await marca.exists() ? (await marca.readAsString()).trim() : null;
+    final lugar = GuiaBiblioteca.instancia.lugar(widget.obra.id);
+    if (widget.retomar &&
+        lugar != null &&
+        _edicao != null &&
+        lugar.edicao == _edicao) {
+      _retomada = lugar;
+    } else if (widget.retomar && lugar != null && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'A edição do PDF mudou. Confira o capítulo antes de retomar a leitura.',
+              ),
+            ),
+          );
+        }
+      });
+    }
+    return arquivo.path;
+  }
+
+  void _lugarMudou() {
+    if (!_pronto || !_controle.isReady || _edicao == null) return;
+    final pagina = (_controle.pageNumber ?? 1) - 1;
+    final layouts = _controle.layout.pageLayouts;
+    if (pagina < 0 || pagina >= layouts.length) return;
+    final rect = layouts[pagina];
+    final centro = _controle.centerPosition;
+    _ultimoLugar = LugarObra(
+      pagina,
+      ((centro.dy - rect.top) / rect.height).clamp(0, 1),
+      _edicao!,
+      DateTime.now().millisecondsSinceEpoch,
+      zoom: (_controle.currentZoom / _controle.coverScale).clamp(0.01, 100),
+      horizontal: ((centro.dx - rect.left) / rect.width).clamp(0, 1),
+    );
+    _salvarLugar?.cancel();
+    _salvarLugar = Timer(const Duration(milliseconds: 600), _gravarLugar);
+  }
+
+  void _gravarLugar() {
+    final lugar = _ultimoLugar;
+    if (lugar == null) return;
+    unawaited(
+      GuiaBiblioteca.instancia.guardarLugar(widget.obra.id, lugar).catchError((
+        Object _,
+      ) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Não foi possível salvar o lugar da leitura.'),
+            ),
+          );
+        }
+      }),
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) {
+      _salvarLugar?.cancel();
+      _gravarLugar();
+    }
+  }
 
   /// Realces deste livro, e o texto das páginas que têm algum (para saber
   /// onde pintar).
@@ -73,6 +153,7 @@ class _TelaPdfState extends State<TelaPdf> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     Ajustes.instancia.addListener(_realcesMudaram);
   }
 
@@ -87,6 +168,11 @@ class _TelaPdfState extends State<TelaPdf> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _controle.removeListener(_lugarMudou);
+    _salvarLugar?.cancel();
+    // Notificar outras telas depois da desmontagem da árvore.
+    Future.microtask(_gravarLugar);
     Ajustes.instancia.removeListener(_realcesMudaram);
     // Fora do dispose: parar avisa outras telas, que não podem se refazer
     // enquanto a árvore de widgets está sendo desmontada.
@@ -521,6 +607,31 @@ class _TelaPdfState extends State<TelaPdf> {
     _pronto = true;
     _zoomDeAbertura = controle.currentZoom;
     _criarBusca();
+    final lugar = _retomada;
+    _retomada = null;
+    Future<void> restaurar() async {
+      if (lugar != null && lugar.pagina < controle.layout.pageLayouts.length) {
+        final rect = controle.layout.pageLayouts[lugar.pagina];
+        await controle.setZoom(
+          Offset(
+            rect.left + rect.width * lugar.horizontal,
+            rect.top + rect.height * lugar.fracao,
+          ),
+          (controle.coverScale * lugar.zoom).clamp(
+            controle.minScale,
+            controle.maxScale,
+          ),
+          duration: Duration.zero,
+        );
+        _zoomDeAbertura = null;
+      }
+      if (!mounted) return;
+      _controle.removeListener(_lugarMudou);
+      _controle.addListener(_lugarMudou);
+      _lugarMudou();
+    }
+
+    unawaited(restaurar());
     _atualizar();
   }
 
@@ -657,6 +768,16 @@ class _TelaPdfState extends State<TelaPdf> {
       return AppBar(
         title: Text(widget.obra.titulo, overflow: TextOverflow.ellipsis),
         actions: [
+          IconButton(
+            tooltip: 'Capítulos e progresso',
+            icon: const Icon(Icons.checklist),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => TelaGuiaBiblioteca(obra: widget.obra),
+              ),
+            ),
+          ),
           if (botoesZoom) ...[
             IconButton(
               tooltip: 'Diminuir',
@@ -776,7 +897,7 @@ class _TelaPdfState extends State<TelaPdf> {
           return PdfViewer.file(
             caminho,
             controller: _controle,
-            initialPageNumber: widget.pagina + 1,
+            initialPageNumber: (_retomada?.pagina ?? widget.pagina) + 1,
             params: _parametros,
           );
         },

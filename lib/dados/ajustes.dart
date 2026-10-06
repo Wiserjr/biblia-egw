@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'modelos.dart';
 import 'plano.dart';
+import 'guia_biblioteca.dart';
 
 /// Preferências e o que a pessoa cria: tradução, letra, tema, onde parou,
 /// marcações e anotações. Tudo nas preferências do app, fora dos bancos —
@@ -17,6 +18,7 @@ class Ajustes extends ChangeNotifier {
 
   Future<void> carregar() async {
     _p = await SharedPreferences.getInstance();
+    await GuiaBiblioteca.instancia.carregar();
   }
 
   int? get versao => _p.getInt('versao');
@@ -390,6 +392,7 @@ class Ajustes extends ChangeNotifier {
     },
     'realces': [for (final r in todosRealces()) r.paraMapa()],
     'plano': ?_planoItem,
+    'guiaBiblioteca': GuiaBiblioteca.instancia.exportar(),
   };
 
   /// O plano em andamento como vai na cópia e na nuvem, ou null.
@@ -514,6 +517,7 @@ class Ajustes extends ChangeNotifier {
         }
       }
     }
+    GuiaBiblioteca.instancia.importar(dados['guiaBiblioteca']);
     notifyListeners();
     if (antes != null) _avisar(itensDiferentes(antes, itens()));
     return (marcacoes: nMarcas, anotacoes: nNotas, realces: nRealces);
