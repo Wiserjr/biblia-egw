@@ -29,6 +29,11 @@ App para **Android e Windows** que junta, em cada versículo:
   White que mais os citam;
 - **estudos bíblicos**: 16 estudos em perguntas e respostas, com a resposta
   escondida até tocar;
+- **sete estudos em PDF selecionados**: catálogo fechado das edições aprovadas,
+  com sete downloads oficiais, preparação automática de ZIPs, leitura offline
+  e interação por pergunta em 119 lições e 14 semanas complementares,
+  respostas e conclusão de lições salvas no aparelho, retomada da última página
+  e exportação das respostas. Veja [ESTUDOS_IMPORTADOS.md](ESTUDOS_IMPORTADOS.md);
 - marcações com cores, anotações, busca por referência ou por palavras;
 - **planos de leitura**, entre eles o **Reavivados por Sua Palavra** no
   mesmo capítulo que a igreja (um capítulo por dia desde 17/04/2025; o app

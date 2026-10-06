@@ -1,4 +1,14 @@
-## Bíblia de Estudo 1.6.0
+## Bíblia de Estudo 1.7.0
+
+### Novidades da 1.7.0
+
+- **Sete estudos interativos completos.** Em Paz com Deus; Jesus Restaurador da Vida; Jesus Restaurador da Vida para Mulheres; Apocalipse — Revelações de Esperança; Deus Revela Seu Amor; Esperança para a Família; Guia de Estudos Calebe. São 119 lições e mais 14 semanas complementares de Crescendo em Cristo nas duas edições de Jesus Restaurador.
+- **Respostas por pergunta no visual original.** Toque nos espaços do PDF ou em *Responder* para escrever, selecionar alternativas e registrar reflexões. Escolha a lição no alto da tela e marque sua conclusão. Respostas, escolhas e última página ficam salvas no aparelho; as respostas anteriores do piloto continuam disponíveis. Não há correção automática ou pontuação.
+- **Versículos flutuantes.** As referências abrem sobre o estudo, na tradução escolhida. Intervalos separados como João 1:1–4 e 14 permanecem separados; fechar a janela mantém a página e o rascunho da resposta.
+- **Downloads oficiais.** Os sete materiais têm download dentro do app, com progresso, cancelamento e nova tentativa. Os ZIPs de Apocalipse e Calebe são preparados automaticamente. Os arquivos são conferidos e ficam disponíveis sem internet. O Segredo — quarta temporada foi retirado do catálogo, sem apagar dados anteriores.
+- **Recursos do original.** Links do PDF e QR Codes identificados são clicáveis, incluindo os 40 códigos da edição para mulheres. Recursos externos abrem no navegador. Os documentos e seus textos não são incluídos na distribuição: vêm dos PDFs oficiais baixados no aparelho.
+- **Exportação das respostas.** JSON por estudo inclui as respostas atuais e os registros anteriores. PDFs e respostas permanecem locais e não entram na sincronização da conta; a importação desse JSON ainda não está disponível.
+- **Observação sobre a fonte:** a página 17 de Deus Revela Seu Amor tem o enunciado 4 incompleto e os enunciados 5–8 ausentes no PDF oficial. O app preserva esses espaços e identifica a limitação, sem inventar perguntas.
 
 ### Novidades da 1.6.0
 

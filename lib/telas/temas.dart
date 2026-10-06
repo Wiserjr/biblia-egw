@@ -6,6 +6,7 @@ import '../dados/modelos.dart';
 import '../dados/referencias.dart';
 import '../dados/temas.dart';
 import 'cartao_trecho.dart';
+import 'estudos_importados.dart';
 import 'largura_texto.dart';
 import 'navegacao.dart';
 import 'tema.dart';
@@ -140,6 +141,22 @@ class _TelaTemasState extends State<TelaTemas> {
               style: t.textTheme.bodySmall?.copyWith(color: t.hintColor),
             ),
             const SizedBox(height: 8),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.picture_as_pdf_outlined),
+                title: const Text('Estudos selecionados'),
+                subtitle: const Text(
+                  'Materiais selecionados com download das fontes oficiais',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const TelaEstudosImportados(),
+                  ),
+                ),
+              ),
+            ),
             for (final e in estudos)
               Card(
                 child: ListTile(
