@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:archive/archive.dart';
 import 'package:biblia_estudo/dados/banco.dart';
@@ -8,15 +9,24 @@ import 'package:biblia_estudo/dados/sinotico.dart';
 import 'package:biblia_estudo/dados/temas.dart';
 import 'package:biblia_estudo/dados/modelos.dart';
 import 'package:biblia_estudo/dados/trechos.dart';
+import 'package:biblia_estudo/dados/ajustes.dart';
+import 'package:biblia_estudo/telas/guia_biblioteca.dart';
+import 'package:biblia_estudo/telas/introducao.dart';
+import 'package:biblia_estudo/telas/tema.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Confere o banco de estudo que vai no app (assets/estudo.db.gz) e, se os
 /// PDFs estiverem em ferramentas/cache/pdf (rode indexar_obras.py), que o
 /// pdfrx — o leitor de PDF do app — devolve exatamente o parágrafo que o
 /// indexador em Python registrou.
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late Directory tmp;
 
   setUpAll(() async {
@@ -35,6 +45,149 @@ void main() {
   tearDownAll(() async {
     await Banco.instancia.estudo.close();
     await tmp.delete(recursive: true);
+  });
+
+  test(
+    'as 66 introduções carregam com o complemento Andrews apenas no AT',
+    () async {
+      for (var livro = 1; livro <= 66; livro++) {
+        final intro = await Estudo.instancia.introducao(livro);
+        expect(intro, isNotNull);
+        expect(intro!['tema'], isNotEmpty);
+        if (livro <= 39) {
+          expect(intro['fontes'], contains('Andrews'));
+          expect(intro['contexto'], isNotEmpty);
+        } else {
+          expect(intro['fontes'], isNull);
+        }
+      }
+      final genesis = await Estudo.instancia.introducao(1);
+      expect(genesis!['local'], contains('Midiã'));
+      final isaias = await Estudo.instancia.introducao(23);
+      expect(isaias!['mensagem'], contains('49:6'));
+      expect(isaias['cristo'], contains('50:4-11'));
+    },
+  );
+
+  test(
+    'guia cobre todos os 95 livros EGW e preserva as páginas do índice',
+    () async {
+      final obras = await Estudo.instancia.obras();
+      final etapas = await Estudo.instancia.capitulosObras();
+      final egw = obras.values.where((o) => o.deEllenWhite).toList();
+      expect(egw, hasLength(95));
+      expect(egw.every((o) => etapas.any((c) => c.obra == o.id)), isTrue);
+      final integrais = etapas.where(
+        (c) => c.leituraIntegral && obras[c.obra]!.deEllenWhite,
+      );
+      expect(integrais, hasLength(30));
+      expect(
+        etapas.where((c) => !c.leituraIntegral && obras[c.obra]!.deEllenWhite),
+        hasLength(2685),
+      );
+      expect(
+        etapas.every((c) => c.pagina >= 0 && c.pagina < obras[c.obra]!.paginas),
+        isTrue,
+      );
+      final pp = await Estudo.instancia.capitulosObras(obra: 1);
+      expect(pp.every((c) => c.obra == 1), isTrue);
+      expect(pp.first.pagina, 10);
+    },
+  );
+
+  testWidgets('guia e introdução de Isaías cabem na tela de celular', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await Ajustes.instancia.carregar();
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final fonte = Platform.environment['BIBLIA_FONTE_QA'];
+    if (fonte != null) {
+      await (FontLoader('Roboto')..addFont(
+            Future.value(ByteData.sublistView(File(fonte).readAsBytesSync())),
+          ))
+          .load();
+      final icones = File(
+        '${File(fonte).parent.path}/materialicons-regular.otf',
+      );
+      if (icones.existsSync()) {
+        await (FontLoader('MaterialIcons')..addFont(
+              Future.value(ByteData.sublistView(icones.readAsBytesSync())),
+            ))
+            .load();
+      }
+    }
+    final chave = GlobalKey();
+    Future<void> esperarDados() async {
+      for (
+        var tentativa = 0;
+        tentativa < 100 &&
+            find.byType(CircularProgressIndicator).evaluate().isNotEmpty;
+        tentativa++
+      ) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 20)),
+        );
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> captura(String nome) async {
+      if (Platform.environment['BIBLIA_CAPTURAR_QA'] != '1') return;
+      final boundary =
+          chave.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+      await tester.runAsync(() async {
+        final imagem = await boundary.toImage(pixelRatio: 2);
+        final bytes = await imagem.toByteData(format: ui.ImageByteFormat.png);
+        final arquivo = File('build/qa/$nome.png');
+        await arquivo.parent.create(recursive: true);
+        await arquivo.writeAsBytes(bytes!.buffer.asUint8List());
+        imagem.dispose();
+      });
+    }
+
+    await tester.pumpWidget(
+      RepaintBoundary(
+        key: chave,
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: temaClaro(),
+          home: const TelaGuiaBiblioteca(),
+        ),
+      ),
+    );
+    await esperarDados();
+    expect(find.text('Guia de leitura EGW'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await captura('guia-egw-celular');
+    await tester.tap(find.text('Criar plano de leitura'));
+    await tester.pumpAndSettle();
+    expect(find.text('Etapas por sessão'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pumpAndSettle();
+    await captura('plano-egw-celular');
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      RepaintBoundary(
+        key: chave,
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: temaClaro(),
+          home: const TelaIntroducao(livro: 23),
+        ),
+      ),
+    );
+    await esperarDados();
+    expect(find.text('Contexto histórico e literário'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await captura('isaias-celular');
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump();
   });
 
   test('Mateus 4:4 leva ao capítulo "A tentação" de O Desejado', () async {

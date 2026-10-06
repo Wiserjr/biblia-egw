@@ -1,3 +1,13 @@
+## Bíblia de Estudo 1.8.0
+
+### Novidades da 1.8.0
+
+- **Introduções enriquecidas em português.** Os 39 livros do Antigo Testamento recebem contexto, orientação literária e perguntas de leitura, com páginas das fontes Andrews fornecidas. Isaías recebe uma síntese ampliada sobre confiança, justiça, remanescente, Servo e missão às nações. O conteúdo é uma síntese editorial identificada; as perguntas são aplicação editorial, não citações de Andrews ou EGW.
+- **Dez introduções aprofundadas com as fontes em português.** Gênesis, Levítico, Números, Deuteronômio, Josué, Juízes, 1 e 2 Samuel e 1 e 2 Reis recebem esboços de leitura e explicações adicionais sobre estrutura, aliança, culto, liderança e responsabilidade. As fontes e suas páginas aparecem na introdução de cada livro; atribuições tradicionais de autoria são identificadas como tais.
+- **Guia de leitura EGW.** Na Biblioteca, escolha um livro, vários livros ou os 95 livros EGW do catálogo e uma meta de 1 a 20 etapas por sessão, no seu ritmo. Marque e desmarque capítulos concluídos. Os 30 livros sem capítulos indexados aparecem como leitura integral, sem inventar divisões; uma etapa nesses livros significa concluir o livro inteiro.
+- **Continuar de onde parei.** A abertura pela Biblioteca retoma página, posição e zoom. Links de versículos e abertura de capítulos continuam dirigidos ao trecho solicitado. Se a edição do PDF mudar, o leitor avisa e não aplica automaticamente o lugar antigo.
+- **Progresso na cópia de segurança.** Conclusões, plano e lugares salvos entram no JSON de backup; restaurar combina conclusões e preserva os lugares mais recentes e um plano já ativo. Esses dados são locais e não entram na sincronização da conta.
+
 ## Bíblia de Estudo 1.7.0
 
 ### Novidades da 1.7.0

@@ -51,10 +51,12 @@ class _TelaIntroducaoState extends State<TelaIntroducao> {
                         Icon(icone, size: 18, color: t.colorScheme.primary),
                         const SizedBox(width: 6),
                       ],
-                      Text(
-                        rotulo,
-                        style: t.textTheme.labelLarge?.copyWith(
-                          color: t.colorScheme.primary,
+                      Flexible(
+                        child: Text(
+                          rotulo,
+                          style: t.textTheme.labelLarge?.copyWith(
+                            color: t.colorScheme.primary,
+                          ),
                         ),
                       ),
                     ],
@@ -101,6 +103,16 @@ class _TelaIntroducaoState extends State<TelaIntroducao> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                campo(
+                  'Contexto histórico e literário',
+                  i['contexto'],
+                  icone: Icons.history_edu,
+                ),
+                campo(
+                  'Como ler este livro',
+                  i['forma_literaria'],
+                  icone: Icons.auto_stories_outlined,
+                ),
                 campo('Tema', i['tema'], icone: Icons.lightbulb_outline),
                 campo(
                   'Mensagem',
@@ -169,6 +181,16 @@ class _TelaIntroducaoState extends State<TelaIntroducao> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                campo(
+                  'Perguntas para a leitura',
+                  i['para_refletir'],
+                  icone: Icons.help_outline,
+                ),
+                campo(
+                  'Fontes e natureza do conteúdo',
+                  i['fontes'],
+                  icone: Icons.source_outlined,
+                ),
                 FilledButton.tonalIcon(
                   onPressed: () =>
                       Navigator.pop(context, Posicao(widget.livro, 1)),

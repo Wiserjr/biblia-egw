@@ -1,7 +1,11 @@
+import 'dart:convert';
+
+import 'package:flutter/services.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'banco.dart';
 import 'modelos.dart';
+import 'guia_biblioteca.dart';
 
 /// Consultas ao material de estudo (banco `estudo.db`).
 class Estudo {
@@ -11,6 +15,38 @@ class Estudo {
   Database get _db => Banco.instancia.estudo;
 
   Map<int, Obra>? _obras;
+  Future<Map<String, dynamic>>? _introducoesAndrews;
+
+  Future<List<CapituloObra>> capitulosObras({int? obra}) async {
+    final rows = await _db.rawQuery(
+      'SELECT id, obra, titulo, pagina FROM capitulo '
+      '${obra == null ? '' : 'WHERE obra=? '}ORDER BY obra, pagina, id',
+      obra == null ? [] : [obra],
+    );
+    final lista = [
+      for (final r in rows)
+        CapituloObra(
+          r['id'] as int,
+          r['obra'] as int,
+          r['titulo'] as String,
+          r['pagina'] as int,
+        ),
+    ];
+    final indexadas = lista.map((c) => c.obra).toSet();
+    for (final o in (await obras()).values) {
+      if ((obra == null || obra == o.id) && !indexadas.contains(o.id)) {
+        lista.add(
+          CapituloObra(
+            0,
+            o.id,
+            'Leitura integral — sem sumário de capítulos indexado',
+            0,
+          ),
+        );
+      }
+    }
+    return lista;
+  }
 
   Future<Map<int, Obra>> obras() async => _obras ??= {
     for (final r in await _db.rawQuery('SELECT * FROM obra ORDER BY id'))
@@ -180,9 +216,16 @@ class Estudo {
       livro,
     ]);
     if (rows.isEmpty) return null;
+    final extras = await (_introducoesAndrews ??= rootBundle
+        .loadString('assets/introducoes_andrews.json')
+        .then((texto) => jsonDecode(texto) as Map<String, dynamic>));
+    final complemento = extras['$livro'];
     return Introducao({
       for (final e in rows.first.entries)
         if (e.key != 'livro') e.key: e.value as String?,
+      if (complemento is Map)
+        for (final e in complemento.entries)
+          if (e.value is String) e.key as String: e.value as String,
     });
   }
 
