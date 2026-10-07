@@ -1,4 +1,4 @@
-# Estudos bíblicos interativos — versão 1.7.0
+# Estudos bíblicos interativos — versão 1.9.0
 
 ## Catálogo preparado
 
@@ -11,12 +11,17 @@
 | Deus Revela Seu Amor | 37 | 18 | PDF oficial |
 | Esperança para a Família | 41 | 14 | PDF oficial |
 | Guia de Estudos Calebe | 40 | 18 | ZIP oficial |
+| Bíblia Fácil — Daniel | 81 | 16 | PDF oficial |
 
-Os sete endereços oficiais estão em `assets/catalogo_estudos.json`. O catálogo
+Os oito endereços oficiais estão em `assets/catalogo_estudos.json`. O catálogo
 é fechado: PDFs de outras edições precisam de preparação e atualização do app.
 O Segredo — quarta temporada saiu do catálogo; arquivos e respostas anteriores
 não são apagados. O Calebe usa o endpoint HTTPS equivalente do mesmo bucket S3,
 com validação normal de certificado.
+
+Daniel usa o endpoint HTTPS por caminho do mesmo bucket S3 do endereço HTTP
+fornecido. A edição de Apocalipse foi baixada e reconferida em 07/10/2026:
+o ZIP e seu PDF correspondem aos hashes já cadastrados.
 
 ## Uso
 
@@ -33,6 +38,15 @@ marcar. O botão **Responder** lista as perguntas e atividades da página, com
 edição confortável no celular. Há respostas abertas, lacunas, alternativas,
 reflexões, decisões e atividades complementares. A conclusão é indicada pelo
 usuário; não há gabarito, correção automática ou pontuação.
+
+No guia de Daniel, as 16 lições ficam nas páginas 4–59 e os questionários nas
+páginas 61–81. O botão de questionário alterna entre a leitura e os exercícios
+da lição. Algumas lições compartilham páginas de questionários; a lição
+escolhida é mantida. São 130 perguntas, incluindo três atividades de relacionar
+colunas, com um campo de texto por correspondência.
+As perguntas digitalizadas aparecem no editor como recortes renderizados do
+PDF baixado no aparelho, com alternativas numeradas para seleção. A antiga
+promoção impressa no documento não é executada pelo aplicativo.
 
 As referências bíblicas abrem em uma janela sobre o estudo e sobre o editor
 da pergunta. A tradução escolhida na Bíblia é respeitada. Intervalos separados
@@ -64,10 +78,18 @@ mantidos e identificados; o aplicativo não inventa o conteúdo que falta.
 
 ## Preparação e validação
 
-`ferramentas/indexar_estudos_interativos.py` gera o índice usando as sete
+`ferramentas/indexar_estudos_interativos.py` gera o índice usando as oito
 cópias oficiais conferidas. `ferramentas/indexar_qr_estudos.py` complementa os
 endereços dos códigos, incluindo os códigos com cores invertidas. As originais
 ficam fora do Git, em `ferramentas/cache/estudos/oficiais`.
+
+`ferramentas/indexar_daniel.py` prepara o guia digitalizado usando PyMuPDF,
+RapidOCR e numpy. O OCR localiza perguntas, alternativas e referências; seu
+texto e suas imagens ficam somente no cache ignorado pelo Git. O índice
+distribuído conserva posições e referências numéricas. O editor mostra a
+imagem original, sem depender da precisão do texto reconhecido.
+As referências reconhecidas nas perguntas de Daniel são consultadas pelo
+botão do editor; não se sobrepõem áreas de links aproximadas sobre as imagens.
 
 A validação cobre persistência por edição, migração do piloto, consulta sem
 perder rascunhos, salvamento ao voltar, retomada de página, conclusão, intervalos

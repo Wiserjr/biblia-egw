@@ -36,11 +36,11 @@ void main() {
       expect(a.exportar().keys.every((k) => !k.contains('_b_')), true);
     },
   );
-  test('sete edições: todas as lições têm campos e João mantém intervalos separados', () {
+  test('oito edições: todas as lições têm campos e João mantém intervalos separados', () {
     final j = jsonDecode(
       File('assets/estudos_interativos.json').readAsStringSync(),
     ) as Map;
-    expect((j['estudos'] as List).length, 7);
+    expect((j['estudos'] as List).length, 8);
     var principais = 0, complementares = 0;
     for (final e in j['estudos']) {
       final campos = <String>{};
@@ -52,8 +52,11 @@ void main() {
         }
         expect(
           (e['paginas'] as List)
-              .sublist(l['inicio'] - 1, l['fim'])
-              .any((p) => (p['perguntas'] as List).isNotEmpty),
+                  .sublist(l['inicio'] - 1, l['fim'])
+                  .any((p) => (p['perguntas'] as List).isNotEmpty) ||
+              (l['paginasQuestionario'] as List? ?? []).any(
+                (n) => (e['paginas'][n - 1]['perguntas'] as List).isNotEmpty,
+              ),
           true,
           reason: '${e['id']} ${l['numero']}',
         );
@@ -75,7 +78,7 @@ void main() {
         }
       }
     }
-    expect(principais, 119);
+    expect(principais, 135);
     expect(complementares, 14);
     final jesus = (j['estudos'] as List).firstWhere(
       (e) => e['id'] == 'jesus-restaurador',
@@ -295,4 +298,119 @@ void main() {
     expect(RespostasEstudos(prefs, 'teste').texto({'id': 'r0'}), 'Resposta 1');
     expect(t.takeException(), isNull);
   });
+  test(
+    'Daniel conserva todos os questionários e campos de correspondência',
+    () {
+      final j = jsonDecode(
+        File('assets/estudos_interativos.json').readAsStringSync(),
+      ) as Map;
+      final e = (j['estudos'] as List).firstWhere(
+        (e) => e['id'] == 'biblia-facil-daniel',
+      );
+      final totais = [9, 8, 6, 9, 7, 9, 9, 7, 4, 8, 10, 10, 8, 9, 10, 7];
+      final perguntas = [for (final p in e['paginas']) ...p['perguntas']];
+      expect(perguntas.length, 130);
+      for (var i = 0; i < totais.length; i++) {
+        final qs = perguntas.where((q) => q['licao'] == i + 1);
+        expect(
+          qs.map((q) => q['numeroOriginal']),
+          List.generate(totais[i], (n) => n + 1),
+        );
+        final l = e['licoes'][i];
+        expect(l['paginasQuestionario'], isNotEmpty);
+        for (final n in l['paginasQuestionario']) {
+          expect(
+            (e['paginas'][n - 1]['perguntas'] as List).any(
+              (q) => q['licao'] == i + 1,
+            ),
+            true,
+          );
+        }
+      }
+      expect(
+        perguntas
+            .where((q) => q['respostas'][0]['tipo'] == 'texto')
+            .map((q) => q['respostas'].length),
+        [4, 5, 5],
+      );
+      for (final p in e['paginas']) {
+        for (final q in p['perguntas']) {
+          final a = q['areaImagem'];
+          expect(a[0], greaterThanOrEqualTo(0));
+          expect(a[1], greaterThanOrEqualTo(0));
+          expect(a[2], lessThanOrEqualTo(p['largura']));
+          expect(a[3], lessThanOrEqualTo(p['altura']));
+          expect(a[3] - a[1], greaterThan(50));
+          for (final c in q['respostas']) {
+            if (c['tipo'] == 'alternativas') expect(c['opcoes'].length, 4);
+          }
+        }
+      }
+    },
+  );
+  testWidgets(
+    'questionário compartilhado mantém a lição escolhida ao retomar',
+    (t) async {
+      SharedPreferences.setMockInitialValues({'estudo_pdf_pagina_teste': 2});
+      final prefs = await SharedPreferences.getInstance();
+      final indice = {
+        'licoes': [
+          {
+            'numero': 1,
+            'inicio': 1,
+            'fim': 1,
+            'paginasQuestionario': [3],
+          },
+          {
+            'numero': 2,
+            'inicio': 2,
+            'fim': 2,
+            'paginasQuestionario': [3],
+          },
+        ],
+        'paginas': List.generate(
+          3,
+          (i) => {'pagina': i + 1, 'perguntas': [], 'referencias': []},
+        ),
+      };
+      Future<void> abrir() async {
+        await t.pumpWidget(
+          MaterialApp(
+            home: TelaEstudoInterativo(
+              arquivo: File('unused'),
+              id: 'teste',
+              nome: 'Estudo',
+              prefs: prefs,
+              carregarIndice: () async => indice,
+              construirLeitor: (_) => const Text('PDF original'),
+            ),
+          ),
+        );
+        await t.pumpAndSettle();
+      }
+
+      await abrir();
+      await t.tap(find.byTooltip('Abrir questionário da lição'));
+      await t.pumpAndSettle();
+      expect(prefs.getInt('estudo_pdf_pagina_teste'), 3);
+      expect(
+        t.widget<DropdownButton<int>>(find.byType(DropdownButton<int>)).value,
+        2,
+      );
+      await t.tap(find.byTooltip('Concluir lição'));
+      await t.pumpAndSettle();
+      expect(RespostasEstudos(prefs, 'teste').concluida(2), true);
+      expect(RespostasEstudos(prefs, 'teste').concluida(1), false);
+      await t.pumpWidget(const SizedBox());
+      await abrir();
+      expect(
+        t.widget<DropdownButton<int>>(find.byType(DropdownButton<int>)).value,
+        2,
+      );
+      await t.tap(find.byTooltip('Voltar à leitura da lição'));
+      await t.pumpAndSettle();
+      expect(prefs.getInt('estudo_pdf_pagina_teste'), 2);
+      expect(t.takeException(), isNull);
+    },
+  );
 }

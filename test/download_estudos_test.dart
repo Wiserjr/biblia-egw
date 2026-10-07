@@ -62,6 +62,28 @@ void main() {
       ),
       isTrue,
     );
+    expect(
+      urlEstudoPermitida(
+        Uri.parse(
+          'https://s3.amazonaws.com/ministeriopessoal.org/downloads/2016/bibliafacil_guiaestudo_daniel.pdf',
+        ),
+      ),
+      isTrue,
+    );
+    expect(
+      urlEstudoPermitida(
+        Uri.parse('https://s3.amazonaws.com/ministeriopessoal.org/outro.pdf'),
+      ),
+      isFalse,
+    );
+    expect(
+      urlEstudoPermitida(
+        Uri.parse(
+          'http://s3.amazonaws.com/ministeriopessoal.org/downloads/2016/bibliafacil_guiaestudo_daniel.pdf',
+        ),
+      ),
+      isFalse,
+    );
   });
 
   group('transferência', () {

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import '../dados/respostas_estudos.dart';
@@ -10,12 +12,14 @@ class EditorPerguntaEstudo extends StatefulWidget {
     required this.respostas,
     required this.textoOriginal,
     required this.textosOpcoes,
+    this.imagemOriginal,
     this.consultarVersiculos,
   });
   final Map pergunta;
   final RespostasEstudos respostas;
   final String textoOriginal;
   final Map<String, List<String>> textosOpcoes;
+  final Uint8List? imagemOriginal;
   final VoidCallback? consultarVersiculos;
   @override
   State<EditorPerguntaEstudo> createState() => _EditorPerguntaEstudoState();
@@ -88,6 +92,23 @@ class _EditorPerguntaEstudoState extends State<EditorPerguntaEstudo> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (widget.imagemOriginal != null)
+                InteractiveViewer(
+                  minScale: 1,
+                  maxScale: 4,
+                  child: Image.memory(
+                    widget.imagemOriginal!,
+                    semanticLabel:
+                        'Pergunta e alternativas no documento original',
+                  ),
+                ),
+              if (widget.imagemOriginal != null)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Amplie a imagem com dois dedos para ler os detalhes.',
+                  ),
+                ),
               if (widget.textoOriginal.isNotEmpty)
                 Text(
                   widget.textoOriginal,

@@ -98,6 +98,20 @@
       "downloadBytes": 32246610,
       "downloadSha256": "5cd57f20bef8e872b2ef6ee2eb8a5ee1a858475e5d0d4a5e2070b37c905317ee",
       "interativo": true
+    },
+    {
+      "id": "biblia-facil-daniel",
+      "titulo": "Bíblia Fácil — Daniel",
+      "arquivo": "biblia-facil-daniel.pdf",
+      "bytes": 21461780,
+      "sha256": "9a7391eb2cb16c467e88264f794b82bc2b57a31efa1df3034fb155c7edf0e53e",
+      "paginas": 81,
+      "url": "https://s3.amazonaws.com/ministeriopessoal.org/downloads/2016/bibliafacil_guiaestudo_daniel.pdf",
+      "pilotoInterativo": false,
+      "formato": "pdf",
+      "downloadBytes": 21461780,
+      "downloadSha256": "9a7391eb2cb16c467e88264f794b82bc2b57a31efa1df3034fb155c7edf0e53e",
+      "interativo": true
     }
   ]
 }
