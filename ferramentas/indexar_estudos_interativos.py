@@ -1,11 +1,11 @@
-"""Gera posições interativas das sete edições; não incorpora textos dos PDFs."""
+"""Gera posições interativas das edições; não incorpora textos dos PDFs."""
 import argparse,json,re,hashlib,sys
 from pathlib import Path
 import fitz
 sys.path.insert(0,str(Path(__file__).parent))
 from referencias_pt import encontrar
 FLAGS=fitz.TEXTFLAGS_RAWDICT & ~fitz.TEXT_PRESERVE_IMAGES
-SOURCES={'em-paz-com-deus':'paz.pdf','jesus-restaurador':'jesus.pdf','jesus-restaurador-mulheres':'mulheres.pdf','apocalipse-revelacoes-esperanca':'apocalipse-0.pdf','deus-revela-seu-amor':'amor.pdf','esperanca-para-a-familia':'familia.pdf','guia-estudos-calebe':'calebe-0.pdf'}
+SOURCES={'em-paz-com-deus':'paz.pdf','jesus-restaurador':'jesus.pdf','jesus-restaurador-mulheres':'mulheres.pdf','apocalipse-revelacoes-esperanca':'apocalipse-0.pdf','deus-revela-seu-amor':'amor.pdf','esperanca-para-a-familia':'familia.pdf','guia-estudos-calebe':'calebe-0.pdf','biblia-facil-daniel':'daniel.pdf'}
 STARTS={'em-paz-com-deus':[7,12,18,24,30,35,40,45], 'apocalipse-revelacoes-esperanca':[5,10,14,17,22,26,30,34,38,44,49,54,59,65,70,74,80,85,91,95,100], 'esperanca-para-a-familia':[8,10,12,14,17,19,22,24,26,28,31,34,37,39], 'deus-revela-seu-amor':list(range(2,37,2)), 'guia-estudos-calebe':list(range(3,38,2))}
 for k in ['jesus-restaurador','jesus-restaurador-mulheres']:STARTS[k]=list(range(5,63,3))+[71,80,88,96,105,113,121]
 def area(rect):return [round(float(x),2) for x in rect]
@@ -167,6 +167,10 @@ def gerar(base,output):
  for item in catalog['estudos']:
   key=item['id'];path=base/SOURCES[key]
   assert hashlib.sha256(path.read_bytes()).hexdigest()==item['sha256'],key
+  if key=='biblia-facil-daniel':
+   from indexar_daniel import indexar,reconhecer
+   with fitz.open(path) as doc:result['estudos'].append(indexar(doc,reconhecer(doc,base)))
+   continue
   doc=fitz.open(path);pages=[pagina(p,key) for p in doc]
   # Uma mesma pergunta pode começar numa página e ter linhas na seguinte.
   if key=='em-paz-com-deus':

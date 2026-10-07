@@ -1,3 +1,11 @@
+## Bíblia de Estudo 1.9.0
+
+### Novidades da 1.9.0
+
+- **Bíblia Fácil — Daniel.** Guia oficial com 81 páginas e 16 lições. Download dentro do aplicativo por HTTPS, leitura offline e respostas dos questionários salvas no aparelho.
+- **Questionários no final do guia.** O botão de questionário leva da leitura aos exercícios da lição e permite voltar. Perguntas e alternativas digitalizadas aparecem como recortes do PDF original no editor de respostas.
+- **Apocalipse conferido.** O ZIP de Revelações de Esperança corresponde à edição já disponível, com 21 lições; o estudo permanece no catálogo sem duplicação.
+
 ## Bíblia de Estudo 1.8.0
 
 ### Novidades da 1.8.0

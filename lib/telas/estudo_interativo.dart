@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
@@ -50,6 +51,7 @@ class TelaEstudoInterativo extends StatefulWidget {
     required this.prefs,
     this.carregarIndice,
     this.lerTexto,
+    this.recortarImagem,
     this.construirLeitor,
   });
   final File arquivo;
@@ -57,6 +59,7 @@ class TelaEstudoInterativo extends StatefulWidget {
   final SharedPreferences prefs;
   final Future<Map> Function()? carregarIndice;
   final Future<String> Function(int, List)? lerTexto;
+  final Future<Uint8List> Function(int, List)? recortarImagem;
   final WidgetBuilder? construirLeitor;
   @override
   State<TelaEstudoInterativo> createState() => _TelaEstudoInterativoState();
@@ -72,10 +75,21 @@ class _TelaEstudoInterativoState extends State<TelaEstudoInterativo> {
   late int _pagina = widget.prefs.getInt('estudo_pdf_pagina_${widget.id}') ?? 1;
   Map get _dadosPagina => (_indice!['paginas'] as List)[_pagina - 1] as Map;
   List get _licoes => _indice!['licoes'] as List;
+  late int? _numeroLicaoEscolhida = widget.prefs.getInt(
+    'estudo_licao_${widget.id}',
+  );
   Map? get _licao {
+    bool contem(Map l) =>
+        (_pagina >= (l['inicio'] as int) && _pagina <= (l['fim'] as int)) ||
+        (l['paginasQuestionario'] as List? ?? []).contains(_pagina);
     for (final l in _licoes) {
-      if (_pagina >= (l['inicio'] as int) && _pagina <= (l['fim'] as int)) {
-        return l as Map;
+      if (l['numero'] == _numeroLicaoEscolhida && contem(l as Map)) {
+        return l;
+      }
+    }
+    for (final l in _licoes) {
+      if (contem(l as Map)) {
+        return l;
       }
     }
     return null;
@@ -105,6 +119,42 @@ class _TelaEstudoInterativoState extends State<TelaEstudoInterativo> {
     final p = _documento!.pages[pagina - 1];
     final texto = await (_textos[pagina] ??= p.loadText());
     return texto == null ? '' : textoDentroDasAreas(texto, p.height, areas);
+  }
+
+  Future<Uint8List> _recortar(int pagina, List area) async {
+    if (widget.recortarImagem != null) {
+      return widget.recortarImagem!(pagina, area);
+    }
+    final p = _documento!.pages[pagina - 1];
+    final r = Rect.fromLTRB(
+      (area[0] as num).toDouble(),
+      (area[1] as num).toDouble(),
+      (area[2] as num).toDouble(),
+      (area[3] as num).toDouble(),
+    ).inflate(3).intersect(Rect.fromLTWH(0, 0, p.width, p.height));
+    final escala = 1500 / p.width;
+    final pixels = await p.render(
+      x: (r.left * escala).floor(),
+      y: (r.top * escala).floor(),
+      width: (r.width * escala).ceil(),
+      height: (r.height * escala).ceil(),
+      fullWidth: p.width * escala,
+      fullHeight: p.height * escala,
+    );
+    if (pixels == null) {
+      throw StateError('Não foi possível mostrar a pergunta original.');
+    }
+    try {
+      final imagem = await pixels.createImage();
+      try {
+        return (await imagem.toByteData(format: ui.ImageByteFormat.png))!.buffer
+            .asUint8List();
+      } finally {
+        imagem.dispose();
+      }
+    } finally {
+      pixels.dispose();
+    }
   }
 
   void _erro(Object e) {
@@ -157,6 +207,9 @@ class _TelaEstudoInterativoState extends State<TelaEstudoInterativo> {
       final n = pagina['pagina'] as int;
       final enunciado = pergunta['paginaEnunciado'] as int? ?? n;
       final texto = await _extrair(enunciado, pergunta['areasTexto'] as List);
+      final imagem = pergunta['areaImagem'] == null
+          ? null
+          : await _recortar(n, pergunta['areaImagem'] as List);
       final opcoes = <String, List<String>>{};
       for (final c in pergunta['respostas'] as List) {
         if (c['tipo'] == 'alternativas') {
@@ -179,6 +232,7 @@ class _TelaEstudoInterativoState extends State<TelaEstudoInterativo> {
           respostas: _estado,
           textoOriginal: texto,
           textosOpcoes: opcoes,
+          imagemOriginal: imagem,
           consultarVersiculos: refs.isEmpty
               ? null
               : () => mostrarVersiculosFlutuantes(ctx, refs),
@@ -227,6 +281,8 @@ class _TelaEstudoInterativoState extends State<TelaEstudoInterativo> {
                         builder: (_, snap) => Text(
                           q['semEnunciado'] == true
                               ? 'Espaço ${i + 1} • enunciado incompleto no original'
+                              : q['areaImagem'] != null
+                              ? 'Lição ${q['licao']} • pergunta ${q['numeroOriginal']}'
                               : (snap.data?.isNotEmpty == true
                                     ? snap.data!
                                     : 'Resposta ou reflexão ${i + 1}'),
@@ -397,6 +453,7 @@ class _TelaEstudoInterativoState extends State<TelaEstudoInterativo> {
       }
     }
     for (final r in dados['referencias'] as List) {
+      if (r['somenteConsulta'] == true) continue;
       for (final a in r['areas'] as List) {
         widgets.add(
           pos(
@@ -504,6 +561,8 @@ class _TelaEstudoInterativoState extends State<TelaEstudoInterativo> {
                         ],
                         onChanged: (n) {
                           if (n != null) {
+                            _numeroLicaoEscolhida = n;
+                            widget.prefs.setInt('estudo_licao_${widget.id}', n);
                             _ir(
                               (_licoes.firstWhere((l) => l['numero'] == n)
                                       as Map)['inicio']
@@ -513,6 +572,31 @@ class _TelaEstudoInterativoState extends State<TelaEstudoInterativo> {
                         },
                       ),
                     ),
+                    if (licao?['paginasQuestionario'] != null)
+                      IconButton(
+                        tooltip:
+                            (licao!['paginasQuestionario'] as List).contains(
+                              _pagina,
+                            )
+                            ? 'Voltar à leitura da lição'
+                            : 'Abrir questionário da lição',
+                        icon: const Icon(Icons.quiz_outlined),
+                        onPressed: () {
+                          _numeroLicaoEscolhida = licao['numero'] as int;
+                          widget.prefs.setInt(
+                            'estudo_licao_${widget.id}',
+                            _numeroLicaoEscolhida!,
+                          );
+                          _ir(
+                            (licao['paginasQuestionario'] as List).contains(
+                                  _pagina,
+                                )
+                                ? licao['inicio'] as int
+                                : (licao['paginasQuestionario'] as List).first
+                                      as int,
+                          );
+                        },
+                      ),
                     if (licao != null)
                       IconButton(
                         tooltip: _estado.concluida(licao['numero'] as int)

@@ -122,7 +122,9 @@ bool urlEstudoPermitida(Uri url) =>
     (url.host == 'deptos.adventistas.org' ||
         url.host == 'deptos.adventistas.org.s3.amazonaws.com' ||
         (url.host == 's3.amazonaws.com' &&
-            url.path.startsWith('/missaocalebe.org.br/')));
+            (url.path.startsWith('/missaocalebe.org.br/') ||
+                url.path ==
+                    '/ministeriopessoal.org/downloads/2016/bibliafacil_guiaestudo_daniel.pdf')));
 
 /// Escolhe o PDF pela edição conhecida, sem extrair caminhos do ZIP no disco.
 Uint8List prepararPdfEstudo(Map<String, dynamic> entrada) {
