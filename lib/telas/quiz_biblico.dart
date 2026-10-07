@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../dados/quiz_biblico.dart';
 import '../dados/quiz_migracao.dart';
 import 'versiculos_flutuantes.dart';
+import 'atalho_epub_pessoal.dart';
 
 class TelaQuizBiblico extends StatefulWidget {
   const TelaQuizBiblico({super.key});
@@ -194,6 +195,7 @@ class _TelaQuizBiblicoState extends State<TelaQuizBiblico> {
                           : 'Importar novamente',
                     ),
                   ),
+                  const AtalhoEpubPessoal(),
                   if (livro != null) ...[
                     FilledButton.icon(
                       onPressed: jogar,
