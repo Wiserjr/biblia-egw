@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../dados/quiz_biblico.dart';
+import '../dados/quiz_migracao.dart';
 import 'versiculos_flutuantes.dart';
 
 class TelaQuizBiblico extends StatefulWidget {
@@ -34,9 +35,19 @@ class _TelaQuizBiblicoState extends State<TelaQuizBiblico> {
   Future<void> carregar() async {
     try {
       final f = await arquivo();
-      final dados = await f.exists()
+      var dados = await f.exists()
           ? jsonDecode(await f.readAsString()) as Map<String, dynamic>
           : null;
+      if (dados != null) {
+        final indice = jsonDecode(
+          await rootBundle.loadString('assets/quiz_indice_cpb.json'),
+        ) as Map<String, dynamic>;
+        final atualizado = atualizarBancoQuiz(dados, indice);
+        if (!identical(atualizado, dados)) {
+          await f.writeAsString(jsonEncode(atualizado), flush: true);
+          dados = atualizado;
+        }
+      }
       final prefs = await SharedPreferences.getInstance();
       if (mounted) {
         setState(() {
@@ -98,12 +109,33 @@ class _TelaQuizBiblicoState extends State<TelaQuizBiblico> {
     final perguntas = (livro!['perguntas'] as List)
         .map((p) => PerguntaQuiz.fromJson(Map<String, dynamic>.from(p)))
         .toList();
+    final prefs = await SharedPreferences.getInstance();
+    final chave = 'quiz_cpb_historico_${livro!['hash']}';
+    Map<String, int> historico;
+    try {
+      historico = Map<String, int>.from(
+        jsonDecode(prefs.getString(chave) ?? '{}'),
+      );
+    } catch (_) {
+      historico = {};
+    }
+    var gravacao = Future<void>.value();
+    final partida = PartidaQuiz(
+      perguntas,
+      historico: historico,
+      aoExibir: (_) {
+        final copia = jsonEncode(historico);
+        gravacao = gravacao.then((_) async {
+          await prefs.setString(chave, copia);
+        });
+      },
+    );
+    if (!mounted) return;
     final pontos = await Navigator.push<int>(
       context,
-      MaterialPageRoute(
-        builder: (_) => TelaPartidaQuiz(partida: PartidaQuiz(perguntas)),
-      ),
+      MaterialPageRoute(builder: (_) => TelaPartidaQuiz(partida: partida)),
     );
+    await gravacao;
     if (pontos != null && pontos > recorde) {
       await (await SharedPreferences.getInstance()).setInt(
         'quiz_cpb_recorde',
@@ -197,7 +229,7 @@ class _TelaQuizBiblicoState extends State<TelaQuizBiblico> {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'O desafio usa 60 perguntas selecionadas, com alternativas e níveis preparados para o aplicativo. O leitor conserva o texto do autor; imagens e diagramação do EPUB não são reproduzidas. Confira as referências bíblicas ao estudar.',
+                    'O desafio usa 180 perguntas selecionadas. O histórico neste aparelho prioriza as questões menos vistas em cada nível, inclusive as puladas, e permanece entre partidas. O leitor conserva o texto do autor; imagens e diagramação do EPUB não são reproduzidas. Confira as referências bíblicas ao estudar.',
                   ),
                 ],
               ),

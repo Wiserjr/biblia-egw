@@ -136,6 +136,7 @@ Map<String, dynamic> importarQuiz(Map<String, dynamic> entrada) {
         .where((s) => s.isNotEmpty)
         .toList();
     secoes.add({
+      'capitulo': i,
       'titulo': titulos.isEmpty ? 'Seção $i' : titulos.join(' — '),
       'grupo': i < 31
           ? 'Curiosidades'
@@ -148,6 +149,7 @@ Map<String, dynamic> importarQuiz(Map<String, dynamic> entrada) {
     });
   }
   return {
+    'versaoIndice': indice['versao'],
     'hash': indice['sha256Epub'],
     'perguntas': perguntas,
     'secoes': secoes,
@@ -155,11 +157,19 @@ Map<String, dynamic> importarQuiz(Map<String, dynamic> entrada) {
 }
 
 class PartidaQuiz {
-  PartidaQuiz(this.banco, {Random? random}) : random = random ?? Random() {
+  PartidaQuiz(
+    this.banco, {
+    Random? random,
+    Map<String, int>? historico,
+    this.aoExibir,
+  }) : random = random ?? Random(),
+       historico = historico ?? {} {
     proxima();
   }
   final List<PerguntaQuiz> banco;
   final Random random;
+  final Map<String, int> historico;
+  final void Function(PerguntaQuiz)? aoExibir;
   static const premios = [
     1000,
     2000,
@@ -197,11 +207,14 @@ class PartidaQuiz {
             .toList()
           ..shuffle(random);
     if (candidatos.isEmpty) throw StateError('Não há perguntas suficientes.');
-    atual = candidatos.first;
+    final menor = candidatos.map((p) => historico[p.id] ?? 0).reduce(min);
+    atual = candidatos.firstWhere((p) => (historico[p.id] ?? 0) == menor);
     usados.add(atual.id);
+    historico[atual.id] = (historico[atual.id] ?? 0) + 1;
     opcoes = [...atual.alternativas]..shuffle(random);
     ocultas = {};
     respondeu = false;
+    aoExibir?.call(atual);
   }
 
   void confirmar(String resposta) {

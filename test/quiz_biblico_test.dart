@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:biblia_estudo/dados/quiz_biblico.dart';
+import 'package:biblia_estudo/dados/quiz_migracao.dart';
 import 'package:biblia_estudo/telas/quiz_biblico.dart';
 
 void main() {
@@ -77,9 +78,42 @@ void main() {
       throwsFormatException,
     );
   });
+  test(
+    'histórico sobrevive entre partidas e percorre cada nível antes de repetir',
+    () {
+      var historico = <String, int>{};
+      final exibidas = <String>{};
+      for (var partida = 0; partida < 4; partida++) {
+        final p = PartidaQuiz(
+          banco(),
+          historico: historico,
+          random: Random(partida),
+        );
+        for (var rodada = 0; rodada < 15; rodada++) {
+          expect(exibidas.add(p.atual.id), true);
+          p.confirmar('Correta');
+          if (!p.terminou) p.proxima();
+        }
+        historico = Map<String, int>.from(jsonDecode(jsonEncode(historico)));
+      }
+      expect(exibidas.length, 60);
+      final nova = PartidaQuiz(banco(), historico: historico);
+      expect(historico[nova.atual.id], 2);
+    },
+  );
+  test('pulos e saída precoce contam no histórico', () {
+    final historico = <String, int>{};
+    final p = PartidaQuiz(banco(), historico: historico);
+    final primeira = p.atual.id;
+    p.pular();
+    p.parar();
+    final nova = PartidaQuiz(banco(), historico: historico);
+    expect(nova.atual.id, isNot(primeira));
+    expect(historico.length, 3);
+  });
   final caminho = Platform.environment['BIBLIA_TEST_QUIZ_EPUB'];
   test(
-    'EPUB pessoal: 60 perguntas, níveis e conteúdo textual',
+    'EPUB pessoal: 180 perguntas e migração da importação anterior',
     () {
       final indice = jsonDecode(
         File('assets/quiz_indice_cpb.json').readAsStringSync(),
@@ -91,12 +125,41 @@ void main() {
       final perguntas = (livro['perguntas'] as List)
           .map((j) => PerguntaQuiz.fromJson(j))
           .toList();
-      expect(perguntas.length, 60);
+      expect(perguntas.length, 180);
       for (var n = 1; n <= 3; n++) {
-        expect(perguntas.where((p) => p.nivel == n).length, 20);
+        expect(perguntas.where((p) => p.nivel == n).length, 60);
       }
       expect((livro['secoes'] as List).length, 125);
+      final antigo = {...livro}..remove('versaoIndice');
+      antigo['perguntas'] = (livro['perguntas'] as List).take(60).toList();
+      antigo['secoes'] = [
+        for (final s in livro['secoes'])
+          {...Map<String, dynamic>.from(s)}..remove('capitulo'),
+      ];
+      final atualizado = atualizarBancoQuiz(antigo, indice);
+      expect((atualizado['perguntas'] as List).length, 180);
+      expect(atualizado['secoes'], antigo['secoes']);
+      expect(atualizado['perguntas'], livro['perguntas']);
+      expect(
+        identical(atualizarBancoQuiz(atualizado, indice), atualizado),
+        true,
+      );
       expect(perguntas.first.resposta, 'Pão e carne');
+      final historico = <String, int>{};
+      final vistas = <String>{};
+      for (var jogo = 0; jogo < 12; jogo++) {
+        final p = PartidaQuiz(
+          perguntas,
+          historico: historico,
+          random: Random(jogo),
+        );
+        for (var rodada = 0; rodada < 15; rodada++) {
+          expect(vistas.add(p.atual.id), true);
+          p.confirmar(p.atual.resposta);
+          if (!p.terminou) p.proxima();
+        }
+      }
+      expect(vistas.length, 180);
       expect(
         perguntas.every(
           (p) => p.referencias.isNotEmpty && p.alternativas.length == 4,
