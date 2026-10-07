@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../dados/quiz_biblico.dart';
 import '../dados/quiz_migracao.dart';
 import 'versiculos_flutuantes.dart';
+import 'atalho_epub_pessoal.dart';
 
 class TelaQuizBiblico extends StatefulWidget {
   const TelaQuizBiblico({super.key});
@@ -194,6 +195,7 @@ class _TelaQuizBiblicoState extends State<TelaQuizBiblico> {
                           : 'Importar novamente',
                     ),
                   ),
+                  const AtalhoEpubPessoal(),
                   if (livro != null) ...[
                     FilledButton.icon(
                       onPressed: jogar,
@@ -294,156 +296,171 @@ class _TelaPartidaQuizState extends State<TelaPartidaQuiz> {
         ),
         scaffoldBackgroundColor: const Color(0xff101a35),
         cardTheme: const CardThemeData(color: Color(0xff202f51)),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xff101a35),
+          foregroundColor: Color(0xfff5f6fa),
+          surfaceTintColor: Colors.transparent,
+        ),
       ),
-      child: Scaffold(
-        appBar: AppBar(title: const Text('Rumo ao Milhão')),
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1000),
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                Text(
-                  '${formatarPontos(p.pontos)} pontos • ${p.acertos} acertos',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                Text(
-                  'Garantidos: ${formatarPontos(p.garantidos)} • Rodada ${p.acertos == 15
-                      ? 15
-                      : p.respondeu && p.acertou
-                      ? p.acertos
-                      : p.acertos + 1}/15',
-                ),
-                const SizedBox(height: 20),
-                if (!p.terminou || p.respondeu) ...[
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Text(
-                        p.atual.texto,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                    ),
-                  ),
-                  for (final o in p.opcoes)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 5),
-                      child: OutlinedButton(
-                        onPressed:
-                            p.respondeu || p.terminou || p.ocultas.contains(o)
-                            ? null
-                            : () => setState(() => selecionada = o),
-                        style: OutlinedButton.styleFrom(
-                          alignment: Alignment.centerLeft,
-                          padding: const EdgeInsets.all(18),
-                          backgroundColor: selecionada == o
-                              ? Theme.of(context).colorScheme.primaryContainer
-                              : null,
-                        ),
-                        child: Text(
-                          p.ocultas.contains(o)
-                              ? 'Alternativa eliminada'
-                              : '${String.fromCharCode(65 + p.opcoes.indexOf(o))}. $o',
-                        ),
-                      ),
-                    ),
-                ],
-                if (!p.respondeu && !p.terminou) ...[
-                  FilledButton(
-                    onPressed: selecionada == null
-                        ? null
-                        : () => setState(() => p.confirmar(selecionada!)),
-                    child: const Text('Confirmar resposta'),
-                  ),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      OutlinedButton(
-                        onPressed: p.usouMetade
-                            ? null
-                            : () => setState(() {
-                                p.metade();
-                                if (p.ocultas.contains(selecionada)) {
-                                  selecionada = null;
-                                }
-                              }),
-                        child: const Text('Meio a meio'),
-                      ),
-                      OutlinedButton(
-                        onPressed: p.pulos == 0
-                            ? null
-                            : () => setState(() {
-                                p.pular();
-                                selecionada = null;
-                              }),
-                        child: Text('Pular (${p.pulos})'),
-                      ),
-                      TextButton(
-                        onPressed: () => setState(p.parar),
-                        child: const Text('Parar e conservar pontos'),
-                      ),
-                    ],
-                  ),
-                ],
-                if (p.respondeu) ...[
-                  const SizedBox(height: 12),
+      // O contexto interno lê o tema do quiz, inclusive para estilos explícitos.
+      child: Builder(
+        builder: (context) => Scaffold(
+          appBar: AppBar(title: const Text('Rumo ao Milhão')),
+          body: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1000),
+              child: ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
                   Text(
-                    p.acertou
-                        ? 'Resposta correta!'
-                        : 'A resposta correta é: ${p.atual.resposta}',
-                    style: Theme.of(context).textTheme.titleMedium,
+                    '${formatarPontos(p.pontos)} pontos • ${p.acertos} acertos',
+                    style: Theme.of(context).textTheme.titleLarge,
                   ),
-                  const Text(
-                    'Fonte: Curiosidades e Testes Bíblicos, Rafael Escandón (CPB).',
+                  Text(
+                    'Garantidos: ${formatarPontos(p.garantidos)} • Rodada ${p.acertos == 15
+                        ? 15
+                        : p.respondeu && p.acertou
+                        ? p.acertos
+                        : p.acertos + 1}/15',
                   ),
-                  TextButton.icon(
-                    onPressed: () => mostrarVersiculosFlutuantes(
-                      context,
-                      p.atual.referencias,
-                    ),
-                    icon: const Icon(Icons.menu_book),
-                    label: const Text('Conferir na Bíblia'),
-                  ),
-                  if (!p.terminou)
-                    FilledButton(
-                      onPressed: () => setState(() {
-                        p.proxima();
-                        selecionada = null;
-                      }),
-                      child: const Text('Próxima rodada'),
-                    ),
-                ],
-                if (p.terminou) ...[
                   const SizedBox(height: 20),
-                  Text(
-                    p.acertos == 15
-                        ? 'Você chegou ao milhão!'
-                        : 'Partida encerrada',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  Text('Resultado: ${formatarPontos(p.resultado)} pontos'),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(context, p.resultado),
-                    child: const Text('Voltar ao desafio'),
-                  ),
-                ],
-                ExpansionTile(
-                  title: const Text('Escada de pontos'),
-                  children: [
-                    for (var i = 14; i >= 0; i--)
-                      ListTile(
-                        dense: true,
-                        title: Text('Rodada ${i + 1}'),
-                        trailing: Text(formatarPontos(PartidaQuiz.premios[i])),
-                        leading: Icon(
-                          i < p.acertos
-                              ? Icons.check_circle
-                              : Icons.circle_outlined,
+                  if (!p.terminou || p.respondeu) ...[
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Text(
+                          p.atual.texto,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ),
+                    ),
+                    for (final o in p.opcoes)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 5),
+                        child: OutlinedButton(
+                          onPressed:
+                              p.respondeu || p.terminou || p.ocultas.contains(o)
+                              ? null
+                              : () => setState(() => selecionada = o),
+                          style: OutlinedButton.styleFrom(
+                            alignment: Alignment.centerLeft,
+                            padding: const EdgeInsets.all(18),
+                            backgroundColor: selecionada == o
+                                ? Theme.of(context).colorScheme.primaryContainer
+                                : null,
+                            foregroundColor: selecionada == o
+                                ? Theme.of(context)
+                                      .colorScheme
+                                      .onPrimaryContainer
+                                : Theme.of(context).colorScheme.primary,
+                          ),
+                          child: Text(
+                            p.ocultas.contains(o)
+                                ? 'Alternativa eliminada'
+                                : '${String.fromCharCode(65 + p.opcoes.indexOf(o))}. $o',
+                          ),
                         ),
                       ),
                   ],
-                ),
-              ],
+                  if (!p.respondeu && !p.terminou) ...[
+                    FilledButton(
+                      onPressed: selecionada == null
+                          ? null
+                          : () => setState(() => p.confirmar(selecionada!)),
+                      child: const Text('Confirmar resposta'),
+                    ),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        OutlinedButton(
+                          onPressed: p.usouMetade
+                              ? null
+                              : () => setState(() {
+                                  p.metade();
+                                  if (p.ocultas.contains(selecionada)) {
+                                    selecionada = null;
+                                  }
+                                }),
+                          child: const Text('Meio a meio'),
+                        ),
+                        OutlinedButton(
+                          onPressed: p.pulos == 0
+                              ? null
+                              : () => setState(() {
+                                  p.pular();
+                                  selecionada = null;
+                                }),
+                          child: Text('Pular (${p.pulos})'),
+                        ),
+                        TextButton(
+                          onPressed: () => setState(p.parar),
+                          child: const Text('Parar e conservar pontos'),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (p.respondeu) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      p.acertou
+                          ? 'Resposta correta!'
+                          : 'A resposta correta é: ${p.atual.resposta}',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const Text(
+                      'Fonte: Curiosidades e Testes Bíblicos, Rafael Escandón (CPB).',
+                    ),
+                    TextButton.icon(
+                      onPressed: () => mostrarVersiculosFlutuantes(
+                        context,
+                        p.atual.referencias,
+                      ),
+                      icon: const Icon(Icons.menu_book),
+                      label: const Text('Conferir na Bíblia'),
+                    ),
+                    if (!p.terminou)
+                      FilledButton(
+                        onPressed: () => setState(() {
+                          p.proxima();
+                          selecionada = null;
+                        }),
+                        child: const Text('Próxima rodada'),
+                      ),
+                  ],
+                  if (p.terminou) ...[
+                    const SizedBox(height: 20),
+                    Text(
+                      p.acertos == 15
+                          ? 'Você chegou ao milhão!'
+                          : 'Partida encerrada',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    Text('Resultado: ${formatarPontos(p.resultado)} pontos'),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(context, p.resultado),
+                      child: const Text('Voltar ao desafio'),
+                    ),
+                  ],
+                  ExpansionTile(
+                    title: const Text('Escada de pontos'),
+                    children: [
+                      for (var i = 14; i >= 0; i--)
+                        ListTile(
+                          dense: true,
+                          title: Text('Rodada ${i + 1}'),
+                          trailing: Text(
+                            formatarPontos(PartidaQuiz.premios[i]),
+                          ),
+                          leading: Icon(
+                            i < p.acertos
+                                ? Icons.check_circle
+                                : Icons.circle_outlined,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

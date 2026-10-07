@@ -2,6 +2,8 @@
 
 Entrada: Temas e estudos → Estudos bíblicos → Desafio Bíblico — Rumo ao Milhão.
 
+Na 1.10.1, “Adicionar link pessoal de download” salva um endereço HTTPS nas preferências locais (`atalho_epub_pessoal`). O botão “Baixar meu EPUB” abre esse endereço no navegador externo; a importação continua sendo uma ação separada. É possível editar ou remover o atalho. O aplicativo não inclui um endereço padrão nem distribui o link pessoal do usuário.
+
 O usuário importa a edição pessoal de **Curiosidades e Testes Bíblicos**, Rafael Escandón, Casa Publicadora Brasileira. O EPUB original não é alterado. O texto importado fica no diretório de suporte do aplicativo, em `quiz_cpb_pessoal.json`, sem sincronização ou inclusão na cópia de segurança geral. Para outro aparelho, importe o EPUB novamente.
 
 O índice público contém o hash da edição, localizadores, referências bíblicas e três alternativas editoriais por pergunta. Não contém o livro, suas imagens, enunciados ou gabaritos. A importação exige SHA-256 `cf012e84074a4d1dc96d36789dc1f80cae988e64c8f20b76b42d834388306a19`. Outra edição precisa de um índice próprio; o aplicativo recusa o arquivo antes de descompactá-lo.
