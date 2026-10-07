@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:biblia_estudo/dados/quiz_biblico.dart';
 import 'package:biblia_estudo/dados/quiz_migracao.dart';
 import 'package:biblia_estudo/telas/quiz_biblico.dart';
+import 'package:biblia_estudo/telas/tema.dart';
 
 void main() {
   List<PerguntaQuiz> banco() => [
@@ -189,6 +190,79 @@ void main() {
         await tester.pump();
         expect(find.text('Resposta correta!'), findsOneWidget);
         expect(find.text('Conferir na Bíblia'), findsOneWidget);
+        expect(tester.takeException(), null);
+      },
+    );
+  }
+  for (final noturno in [false, true]) {
+    testWidgets(
+      'contraste do quiz com tema externo ${noturno ? "escuro" : "claro"}',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final p = PartidaQuiz(banco());
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: noturno ? temaEscuro() : temaClaro(),
+            home: MediaQuery(
+              data: const MediaQueryData(textScaler: TextScaler.linear(1.5)),
+              child: TelaPartidaQuiz(partida: p),
+            ),
+          ),
+        );
+        double contraste(Color a, Color b) {
+          final x = a.computeLuminance(), y = b.computeLuminance();
+          return (max(x, y) + .05) / (min(x, y) + .05);
+        }
+
+        final pergunta = tester.widget<Text>(find.text(p.atual.texto));
+        final tema = Theme.of(tester.element(find.text(p.atual.texto)));
+        expect(
+          contraste(pergunta.style!.color!, tema.cardTheme.color!),
+          greaterThanOrEqualTo(4.5),
+        );
+        final pontos = tester.widget<Text>(find.text('0 pontos • 0 acertos'));
+        expect(
+          contraste(pontos.style!.color!, tema.scaffoldBackgroundColor),
+          greaterThanOrEqualTo(4.5),
+        );
+        final alternativa = find.textContaining('. Correta');
+        await tester.ensureVisible(alternativa);
+        await tester.tap(alternativa);
+        await tester.pump();
+        final botao = tester.widget<OutlinedButton>(
+          find.ancestor(of: alternativa, matching: find.byType(OutlinedButton)),
+        );
+        expect(
+          contraste(
+            botao.style!.foregroundColor!.resolve({})!,
+            botao.style!.backgroundColor!.resolve({})!,
+          ),
+          greaterThanOrEqualTo(4.5),
+        );
+        await tester.ensureVisible(find.text('Confirmar resposta'));
+        await tester.tap(find.text('Confirmar resposta'));
+        await tester.pump();
+        final feedback = tester.widget<Text>(find.text('Resposta correta!'));
+        expect(
+          contraste(feedback.style!.color!, tema.scaffoldBackgroundColor),
+          greaterThanOrEqualTo(4.5),
+        );
+        await tester.ensureVisible(find.text('Próxima rodada'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Próxima rodada'));
+        await tester.pump();
+        await tester.ensureVisible(find.text('Parar e conservar pontos'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Parar e conservar pontos'));
+        await tester.pump();
+        final resultado = tester.widget<Text>(find.text('Partida encerrada'));
+        expect(
+          contraste(resultado.style!.color!, tema.scaffoldBackgroundColor),
+          greaterThanOrEqualTo(4.5),
+        );
         expect(tester.takeException(), null);
       },
     );

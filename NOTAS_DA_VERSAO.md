@@ -1,3 +1,9 @@
+## Bíblia de Estudo 1.10.1
+
+### Correções da 1.10.1
+
+- **Leitura do quiz no modo noturno.** Pergunta, pontuação, feedback e resultado usam o tema interno do jogo, com texto claro sobre o fundo azul. A alternativa selecionada usa cores correspondentes de texto e fundo, e a barra superior acompanha a tela.
+
 ## Bíblia de Estudo 1.10.0
 
 ### Novidades da 1.10.0
