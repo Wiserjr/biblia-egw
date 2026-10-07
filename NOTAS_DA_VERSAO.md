@@ -1,3 +1,12 @@
+## Bíblia de Estudo 1.10.0
+
+### Novidades da 1.10.0
+
+- **Desafio Bíblico — Rumo ao Milhão.** Quinze rodadas, quatro alternativas, três pulos, ajuda meio a meio e marcos de pontuação. Pontos virtuais, sem prêmio em dinheiro ou limite de tempo.
+- **Sua cópia pessoal da CPB.** Importe o EPUB de Curiosidades e Testes Bíblicos, Rafael Escandón, para liberar 180 perguntas selecionadas e consultar o conteúdo textual por assunto. O material importado permanece local; o aplicativo não distribui o livro.
+- **Aprender depois de responder.** Referências abrem na Bíblia do aplicativo. Melhor resultado salvo no aparelho; partidas iniciam do zero. Imagens e diagramação do EPUB não são reproduzidas.
+- **Mais variedade entre partidas.** Banco triplicado para 180 perguntas, sessenta por nível, e histórico local que prioriza as menos vistas, inclusive após pular ou encerrar cedo. Importações anteriores são ampliadas automaticamente com o texto já salvo.
+
 ## Bíblia de Estudo 1.9.0
 
 ### Novidades da 1.9.0

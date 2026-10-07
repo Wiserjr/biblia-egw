@@ -1,0 +1,3294 @@
+{
+  "versao": 2,
+  "sha256Epub": "cf012e84074a4d1dc96d36789dc1f80cae988e64c8f20b76b42d834388306a19",
+  "titulo": "Curiosidades e Testes Bíblicos",
+  "autor": "Rafael Escandón",
+  "editora": "Casa Publicadora Brasileira",
+  "perguntas": [
+    {
+      "id": "cpb-32-2",
+      "capitulo": 32,
+      "numero": 2,
+      "dificuldade": 1,
+      "distratores": [
+        "Frutas e água",
+        "Leite e mel",
+        "Lentilhas e vinho"
+      ],
+      "referencias": [
+        [
+          11,
+          17006,
+          17006
+        ]
+      ]
+    },
+    {
+      "id": "cpb-32-4",
+      "capitulo": 32,
+      "numero": 4,
+      "dificuldade": 1,
+      "distratores": [
+        "Pão e peixe",
+        "Frutas e leite",
+        "Lentilhas e carne"
+      ],
+      "referencias": [
+        [
+          41,
+          1006,
+          1006
+        ]
+      ]
+    },
+    {
+      "id": "cpb-32-5",
+      "capitulo": 32,
+      "numero": 5,
+      "dificuldade": 1,
+      "distratores": [
+        "Sete pães e três peixes",
+        "Dois pães e cinco peixes",
+        "Um pão e um peixe"
+      ],
+      "referencias": [
+        [
+          42,
+          9013,
+          9013
+        ]
+      ]
+    },
+    {
+      "id": "cpb-33-3",
+      "capitulo": 33,
+      "numero": 3,
+      "dificuldade": 1,
+      "distratores": [
+        "Sobre um cavalo",
+        "Sobre um jumento",
+        "Sobre uma mula"
+      ],
+      "referencias": [
+        [
+          1,
+          24061,
+          24061
+        ]
+      ]
+    },
+    {
+      "id": "cpb-33-4",
+      "capitulo": 33,
+      "numero": 4,
+      "dificuldade": 1,
+      "distratores": [
+        "Leões",
+        "Lobos",
+        "Jumentos"
+      ],
+      "referencias": [
+        [
+          7,
+          15004,
+          15004
+        ]
+      ]
+    },
+    {
+      "id": "cpb-34-2",
+      "capitulo": 34,
+      "numero": 2,
+      "dificuldade": 1,
+      "distratores": [
+        "Abraão",
+        "Isaque",
+        "Moisés"
+      ],
+      "referencias": [
+        [
+          1,
+          19001,
+          19002
+        ]
+      ]
+    },
+    {
+      "id": "cpb-34-3",
+      "capitulo": 34,
+      "numero": 3,
+      "dificuldade": 1,
+      "distratores": [
+        "Duas",
+        "Seis",
+        "Oito"
+      ],
+      "referencias": [
+        [
+          26,
+          10020,
+          10021
+        ]
+      ]
+    },
+    {
+      "id": "cpb-34-4",
+      "capitulo": 34,
+      "numero": 4,
+      "dificuldade": 1,
+      "distratores": [
+        "José",
+        "Davi",
+        "Samuel"
+      ],
+      "referencias": [
+        [
+          1,
+          32024,
+          32024
+        ]
+      ]
+    },
+    {
+      "id": "cpb-35-3",
+      "capitulo": 35,
+      "numero": 3,
+      "dificuldade": 1,
+      "distratores": [
+        "Figueira",
+        "Oliveira",
+        "Palmeira"
+      ],
+      "referencias": [
+        [
+          10,
+          18009,
+          18009
+        ]
+      ]
+    },
+    {
+      "id": "cpb-36-1",
+      "capitulo": 36,
+      "numero": 1,
+      "dificuldade": 1,
+      "distratores": [
+        "Jacó",
+        "Isaque",
+        "José"
+      ],
+      "referencias": [
+        [
+          1,
+          27036,
+          27038
+        ]
+      ]
+    },
+    {
+      "id": "cpb-37-5",
+      "capitulo": 37,
+      "numero": 5,
+      "dificuldade": 1,
+      "distratores": [
+        "Rute",
+        "Débora",
+        "Raquel"
+      ],
+      "referencias": [
+        [
+          17,
+          2012,
+          2018
+        ]
+      ]
+    },
+    {
+      "id": "cpb-38-5",
+      "capitulo": 38,
+      "numero": 5,
+      "dificuldade": 1,
+      "distratores": [
+        "De Belém",
+        "De Nazaré",
+        "De Jericó"
+      ],
+      "referencias": [
+        [
+          43,
+          1044,
+          1044
+        ]
+      ]
+    },
+    {
+      "id": "cpb-40-5",
+      "capitulo": 40,
+      "numero": 5,
+      "dificuldade": 1,
+      "distratores": [
+        "Salomão",
+        "Saul",
+        "Davi"
+      ],
+      "referencias": [
+        [
+          11,
+          12025,
+          12028
+        ]
+      ]
+    },
+    {
+      "id": "cpb-42-5",
+      "capitulo": 42,
+      "numero": 5,
+      "dificuldade": 1,
+      "distratores": [
+        "Ester",
+        "Jezabel",
+        "Atalia"
+      ],
+      "referencias": [
+        [
+          17,
+          1009,
+          1012
+        ]
+      ]
+    },
+    {
+      "id": "cpb-43-2",
+      "capitulo": 43,
+      "numero": 2,
+      "dificuldade": 1,
+      "distratores": [
+        "Pedro",
+        "João",
+        "Estêvão"
+      ],
+      "referencias": [
+        [
+          44,
+          28002,
+          28006
+        ]
+      ]
+    },
+    {
+      "id": "cpb-43-5",
+      "capitulo": 43,
+      "numero": 5,
+      "dificuldade": 1,
+      "distratores": [
+        "André",
+        "Tomé",
+        "Filipe"
+      ],
+      "referencias": [
+        [
+          40,
+          17024,
+          17027
+        ]
+      ]
+    },
+    {
+      "id": "cpb-45-1",
+      "capitulo": 45,
+      "numero": 1,
+      "dificuldade": 1,
+      "distratores": [
+        "Sara",
+        "Rebeca",
+        "Raquel"
+      ],
+      "referencias": [
+        [
+          1,
+          3020,
+          3020
+        ]
+      ]
+    },
+    {
+      "id": "cpb-46-3",
+      "capitulo": 46,
+      "numero": 3,
+      "dificuldade": 1,
+      "distratores": [
+        "Um cesto",
+        "Uma cama de madeira",
+        "Uma rede"
+      ],
+      "referencias": [
+        [
+          42,
+          2007,
+          2007
+        ]
+      ]
+    },
+    {
+      "id": "cpb-47-3",
+      "capitulo": 47,
+      "numero": 3,
+      "dificuldade": 1,
+      "distratores": [
+        "120",
+        "144",
+        "200"
+      ],
+      "referencias": [
+        [
+          43,
+          21011,
+          21011
+        ]
+      ]
+    },
+    {
+      "id": "cpb-49-3",
+      "capitulo": 49,
+      "numero": 3,
+      "dificuldade": 1,
+      "distratores": [
+        "Ester",
+        "Débora",
+        "Miriã"
+      ],
+      "referencias": [
+        [
+          8,
+          1014,
+          1018
+        ]
+      ]
+    },
+    {
+      "id": "cpb-32-1",
+      "capitulo": 32,
+      "numero": 1,
+      "dificuldade": 2,
+      "distratores": [
+        "De pão sem fermento",
+        "De frutas amargas",
+        "De peixe assado"
+      ],
+      "referencias": [
+        [
+          2,
+          16031,
+          16031
+        ]
+      ]
+    },
+    {
+      "id": "cpb-35-2",
+      "capitulo": 35,
+      "numero": 2,
+      "dificuldade": 2,
+      "distratores": [
+        "Oliveiras de Jericó",
+        "Palmeiras do Egito",
+        "Figueiras de Betânia"
+      ],
+      "referencias": [
+        [
+          11,
+          5006,
+          5006
+        ]
+      ]
+    },
+    {
+      "id": "cpb-35-4",
+      "capitulo": 35,
+      "numero": 4,
+      "dificuldade": 2,
+      "distratores": [
+        "Oliveira e figueira",
+        "Videira e carvalho",
+        "Cipreste e acácia"
+      ],
+      "referencias": [
+        [
+          19,
+          92012,
+          92012
+        ]
+      ]
+    },
+    {
+      "id": "cpb-35-5",
+      "capitulo": 35,
+      "numero": 5,
+      "dificuldade": 2,
+      "distratores": [
+        "Oliveira",
+        "Palmeira",
+        "Cedro"
+      ],
+      "referencias": [
+        [
+          40,
+          21019,
+          21019
+        ]
+      ]
+    },
+    {
+      "id": "cpb-37-4",
+      "capitulo": 37,
+      "numero": 4,
+      "dificuldade": 2,
+      "distratores": [
+        "Gideão",
+        "José",
+        "Jefté"
+      ],
+      "referencias": [
+        [
+          7,
+          14010,
+          14013
+        ]
+      ]
+    },
+    {
+      "id": "cpb-38-1",
+      "capitulo": 38,
+      "numero": 1,
+      "dificuldade": 2,
+      "distratores": [
+        "Nazaré e Cafarnaum",
+        "Jericó e Betânia",
+        "Hebrom e Samaria"
+      ],
+      "referencias": [
+        [
+          42,
+          2004,
+          2004
+        ],
+        [
+          10,
+          5005,
+          5009
+        ]
+      ]
+    },
+    {
+      "id": "cpb-38-3",
+      "capitulo": 38,
+      "numero": 3,
+      "dificuldade": 2,
+      "distratores": [
+        "Os filisteus",
+        "Os amalequitas",
+        "Os assírios"
+      ],
+      "referencias": [
+        [
+          6,
+          15063,
+          15063
+        ]
+      ]
+    },
+    {
+      "id": "cpb-39-2",
+      "capitulo": 39,
+      "numero": 2,
+      "dificuldade": 2,
+      "distratores": [
+        "Saul",
+        "Acabe",
+        "Salomão"
+      ],
+      "referencias": [
+        [
+          7,
+          3017,
+          3017
+        ]
+      ]
+    },
+    {
+      "id": "cpb-40-1",
+      "capitulo": 40,
+      "numero": 1,
+      "dificuldade": 2,
+      "distratores": [
+        "Cinco denários",
+        "Dez denários",
+        "Um talento"
+      ],
+      "referencias": [
+        [
+          40,
+          20002,
+          20002
+        ]
+      ]
+    },
+    {
+      "id": "cpb-40-2",
+      "capitulo": 40,
+      "numero": 2,
+      "dificuldade": 2,
+      "distratores": [
+        "10 siclos de prata",
+        "30 siclos de prata",
+        "50 siclos de prata"
+      ],
+      "referencias": [
+        [
+          1,
+          37028,
+          37028
+        ]
+      ]
+    },
+    {
+      "id": "cpb-41-1",
+      "capitulo": 41,
+      "numero": 1,
+      "dificuldade": 2,
+      "distratores": [
+        "Davi",
+        "Absalão",
+        "Samuel"
+      ],
+      "referencias": [
+        [
+          9,
+          20018,
+          20020
+        ]
+      ]
+    },
+    {
+      "id": "cpb-42-2",
+      "capitulo": 42,
+      "numero": 2,
+      "dificuldade": 2,
+      "distratores": [
+        "Três dias",
+        "Cinco dias",
+        "Doze dias"
+      ],
+      "referencias": [
+        [
+          2,
+          12015,
+          12015
+        ]
+      ]
+    },
+    {
+      "id": "cpb-42-3",
+      "capitulo": 42,
+      "numero": 3,
+      "dificuldade": 2,
+      "distratores": [
+        "Páscoa",
+        "Pentecostes",
+        "Tabernáculos"
+      ],
+      "referencias": [
+        [
+          17,
+          9026,
+          9026
+        ]
+      ]
+    },
+    {
+      "id": "cpb-43-1",
+      "capitulo": 43,
+      "numero": 1,
+      "dificuldade": 2,
+      "distratores": [
+        "Esaú",
+        "Isaque",
+        "Potifar"
+      ],
+      "referencias": [
+        [
+          1,
+          31036,
+          31036
+        ],
+        [
+          1,
+          31041,
+          31041
+        ]
+      ]
+    },
+    {
+      "id": "cpb-43-3",
+      "capitulo": 43,
+      "numero": 3,
+      "dificuldade": 2,
+      "distratores": [
+        "Jessé",
+        "Elimeleque",
+        "Davi"
+      ],
+      "referencias": [
+        [
+          8,
+          4013,
+          4013
+        ]
+      ]
+    },
+    {
+      "id": "cpb-44-4",
+      "capitulo": 44,
+      "numero": 4,
+      "dificuldade": 2,
+      "distratores": [
+        "Abraão",
+        "Josué",
+        "Arão"
+      ],
+      "referencias": [
+        [
+          2,
+          32031,
+          32032
+        ]
+      ]
+    },
+    {
+      "id": "cpb-48-1",
+      "capitulo": 48,
+      "numero": 1,
+      "dificuldade": 2,
+      "distratores": [
+        "Sinai",
+        "Sião",
+        "Nebo"
+      ],
+      "referencias": [
+        [
+          11,
+          18019,
+          18019
+        ]
+      ]
+    },
+    {
+      "id": "cpb-49-4",
+      "capitulo": 49,
+      "numero": 4,
+      "dificuldade": 2,
+      "distratores": [
+        "Vasti",
+        "Mical",
+        "Orfa"
+      ],
+      "referencias": [
+        [
+          17,
+          4016,
+          4017
+        ]
+      ]
+    },
+    {
+      "id": "cpb-49-5",
+      "capitulo": 49,
+      "numero": 5,
+      "dificuldade": 2,
+      "distratores": [
+        "Sara",
+        "Raquel",
+        "Débora"
+      ],
+      "referencias": [
+        [
+          9,
+          1022,
+          1028
+        ]
+      ]
+    },
+    {
+      "id": "cpb-51-4",
+      "capitulo": 51,
+      "numero": 4,
+      "dificuldade": 2,
+      "distratores": [
+        "Deus é meu juiz",
+        "O Senhor salva",
+        "Pai de muitas nações"
+      ],
+      "referencias": [
+        [
+          40,
+          1023,
+          1023
+        ]
+      ]
+    },
+    {
+      "id": "cpb-39-4",
+      "capitulo": 39,
+      "numero": 4,
+      "dificuldade": 3,
+      "distratores": [
+        "Absalão",
+        "Amnom",
+        "Manassés"
+      ],
+      "referencias": [
+        [
+          11,
+          2013,
+          2025
+        ]
+      ]
+    },
+    {
+      "id": "cpb-41-2",
+      "capitulo": 41,
+      "numero": 2,
+      "dificuldade": 3,
+      "distratores": [
+        "Davi",
+        "Saul",
+        "Salomão"
+      ],
+      "referencias": [
+        [
+          12,
+          13014,
+          13017
+        ]
+      ]
+    },
+    {
+      "id": "cpb-43-4",
+      "capitulo": 43,
+      "numero": 4,
+      "dificuldade": 3,
+      "distratores": [
+        "Josué e Calebe",
+        "Moisés e Arão",
+        "Nadabe e Abiú"
+      ],
+      "referencias": [
+        [
+          2,
+          31001,
+          31001
+        ],
+        [
+          2,
+          31006,
+          31006
+        ]
+      ]
+    },
+    {
+      "id": "cpb-44-1",
+      "capitulo": 44,
+      "numero": 1,
+      "dificuldade": 3,
+      "distratores": [
+        "Em Jerusalém",
+        "Em Jericó",
+        "Em Samaria"
+      ],
+      "referencias": [
+        [
+          15,
+          6002,
+          6002
+        ]
+      ]
+    },
+    {
+      "id": "cpb-44-5",
+      "capitulo": 44,
+      "numero": 5,
+      "dificuldade": 3,
+      "distratores": [
+        "Eli",
+        "Abiatar",
+        "Zadoque"
+      ],
+      "referencias": [
+        [
+          12,
+          22008,
+          22008
+        ]
+      ]
+    },
+    {
+      "id": "cpb-45-5",
+      "capitulo": 45,
+      "numero": 5,
+      "dificuldade": 3,
+      "distratores": [
+        "De Abraão",
+        "De Davi",
+        "De Jacó"
+      ],
+      "referencias": [
+        [
+          18,
+          42014,
+          42015
+        ]
+      ]
+    },
+    {
+      "id": "cpb-57-1",
+      "capitulo": 57,
+      "numero": 1,
+      "dificuldade": 3,
+      "distratores": [
+        "Abraão",
+        "Isaque",
+        "Levi"
+      ],
+      "referencias": [
+        [
+          1,
+          14018,
+          14018
+        ]
+      ]
+    },
+    {
+      "id": "cpb-47-4",
+      "capitulo": 47,
+      "numero": 4,
+      "dificuldade": 3,
+      "distratores": [
+        "Em Elim",
+        "Em Refidim",
+        "Em Jericó"
+      ],
+      "referencias": [
+        [
+          2,
+          15023,
+          15025
+        ]
+      ]
+    },
+    {
+      "id": "cpb-48-2",
+      "capitulo": 48,
+      "numero": 2,
+      "dificuldade": 3,
+      "distratores": [
+        "Judá",
+        "Nebo",
+        "Carmelo"
+      ],
+      "referencias": [
+        [
+          7,
+          2008,
+          2009
+        ]
+      ]
+    },
+    {
+      "id": "cpb-48-3",
+      "capitulo": 48,
+      "numero": 3,
+      "dificuldade": 3,
+      "distratores": [
+        "Carmelo",
+        "Nebo",
+        "Sião"
+      ],
+      "referencias": [
+        [
+          2,
+          3001,
+          3001
+        ]
+      ]
+    },
+    {
+      "id": "cpb-50-4",
+      "capitulo": 50,
+      "numero": 4,
+      "dificuldade": 3,
+      "distratores": [
+        "Jabal",
+        "Tubalcaim",
+        "Enoque"
+      ],
+      "referencias": [
+        [
+          1,
+          4021,
+          4021
+        ]
+      ]
+    },
+    {
+      "id": "cpb-51-1",
+      "capitulo": 51,
+      "numero": 1,
+      "dificuldade": 3,
+      "distratores": [
+        "Sara",
+        "Rute",
+        "Débora"
+      ],
+      "referencias": [
+        [
+          8,
+          1020,
+          1020
+        ]
+      ]
+    },
+    {
+      "id": "cpb-52-1",
+      "capitulo": 52,
+      "numero": 1,
+      "dificuldade": 3,
+      "distratores": [
+        "20",
+        "30",
+        "60"
+      ],
+      "referencias": [
+        [
+          1,
+          25020,
+          25020
+        ]
+      ]
+    },
+    {
+      "id": "cpb-52-5",
+      "capitulo": 52,
+      "numero": 5,
+      "dificuldade": 3,
+      "distratores": [
+        "7",
+        "12",
+        "40"
+      ],
+      "referencias": [
+        [
+          1,
+          47028,
+          47028
+        ]
+      ]
+    },
+    {
+      "id": "cpb-53-4",
+      "capitulo": 53,
+      "numero": 4,
+      "dificuldade": 3,
+      "distratores": [
+        "Esdras",
+        "Neemias",
+        "Samuel"
+      ],
+      "referencias": [
+        [
+          24,
+          36004,
+          36004
+        ]
+      ]
+    },
+    {
+      "id": "cpb-54-5",
+      "capitulo": 54,
+      "numero": 5,
+      "dificuldade": 3,
+      "distratores": [
+        "Eunice",
+        "Priscila",
+        "Lídia"
+      ],
+      "referencias": [
+        [
+          55,
+          1005,
+          1005
+        ]
+      ]
+    },
+    {
+      "id": "cpb-55-1",
+      "capitulo": 55,
+      "numero": 1,
+      "dificuldade": 3,
+      "distratores": [
+        "30 estádios",
+        "90 estádios",
+        "120 estádios"
+      ],
+      "referencias": [
+        [
+          42,
+          24013,
+          24013
+        ]
+      ]
+    },
+    {
+      "id": "cpb-55-4",
+      "capitulo": 55,
+      "numero": 4,
+      "dificuldade": 3,
+      "distratores": [
+        "O côvado",
+        "O talento",
+        "O siclo"
+      ],
+      "referencias": [
+        [
+          26,
+          45011,
+          45011
+        ]
+      ]
+    },
+    {
+      "id": "cpb-58-1",
+      "capitulo": 58,
+      "numero": 1,
+      "dificuldade": 3,
+      "distratores": [
+        "Jaboque",
+        "Quisom",
+        "Besor"
+      ],
+      "referencias": [
+        [
+          43,
+          18001,
+          18001
+        ]
+      ]
+    },
+    {
+      "id": "cpb-60-1",
+      "capitulo": 60,
+      "numero": 1,
+      "dificuldade": 3,
+      "distratores": [
+        "Siroco",
+        "Zéfiro",
+        "Bóreas"
+      ],
+      "referencias": [
+        [
+          44,
+          27014,
+          27014
+        ]
+      ]
+    },
+    {
+      "id": "cpb-32-6",
+      "capitulo": 32,
+      "numero": 6,
+      "dificuldade": 1,
+      "distratores": [
+        "Davi",
+        "Moisés",
+        "Salomão"
+      ],
+      "referencias": [
+        [
+          1,
+          43011,
+          43011
+        ]
+      ]
+    },
+    {
+      "id": "cpb-32-7",
+      "capitulo": 32,
+      "numero": 7,
+      "dificuldade": 2,
+      "distratores": [
+        "Por ser raro",
+        "Por ser caro",
+        "Por ser reservado aos sacerdotes"
+      ],
+      "referencias": [
+        [
+          3,
+          11007,
+          11007
+        ]
+      ]
+    },
+    {
+      "id": "cpb-32-9",
+      "capitulo": 32,
+      "numero": 9,
+      "dificuldade": 3,
+      "distratores": [
+        "Lentilhas e vinho",
+        "Leite e mel",
+        "Frutas e carne"
+      ],
+      "referencias": [
+        [
+          43,
+          21009,
+          21009
+        ]
+      ]
+    },
+    {
+      "id": "cpb-32-10",
+      "capitulo": 32,
+      "numero": 10,
+      "dificuldade": 1,
+      "distratores": [
+        "Isaías",
+        "Davi",
+        "Noé"
+      ],
+      "referencias": [
+        [
+          1,
+          42001,
+          42002
+        ]
+      ]
+    },
+    {
+      "id": "cpb-33-1",
+      "capitulo": 33,
+      "numero": 1,
+      "dificuldade": 2,
+      "distratores": [
+        "A ovelha",
+        "A cabra",
+        "O jumento"
+      ],
+      "referencias": [
+        [
+          2,
+          22001,
+          22001
+        ]
+      ]
+    },
+    {
+      "id": "cpb-33-6",
+      "capitulo": 33,
+      "numero": 6,
+      "dificuldade": 1,
+      "distratores": [
+        "Os levitas",
+        "Os benjamitas",
+        "Os rubenitas"
+      ],
+      "referencias": [
+        [
+          13,
+          12008,
+          12008
+        ]
+      ]
+    },
+    {
+      "id": "cpb-33-7",
+      "capitulo": 33,
+      "numero": 7,
+      "dificuldade": 2,
+      "distratores": [
+        "Com a abelha",
+        "Com o gafanhoto",
+        "Com a borboleta"
+      ],
+      "referencias": [
+        [
+          20,
+          6006,
+          6006
+        ]
+      ]
+    },
+    {
+      "id": "cpb-33-8",
+      "capitulo": 33,
+      "numero": 8,
+      "dificuldade": 3,
+      "distratores": [
+        "Tiago",
+        "Pedro",
+        "Judas"
+      ],
+      "referencias": [
+        [
+          50,
+          3002,
+          3002
+        ]
+      ]
+    },
+    {
+      "id": "cpb-33-9",
+      "capitulo": 33,
+      "numero": 9,
+      "dificuldade": 1,
+      "distratores": [
+        "Carmelo",
+        "Gilboa",
+        "Moriá"
+      ],
+      "referencias": [
+        [
+          2,
+          19011,
+          19013
+        ]
+      ]
+    },
+    {
+      "id": "cpb-34-1",
+      "capitulo": 34,
+      "numero": 1,
+      "dificuldade": 2,
+      "distratores": [
+        "No deserto de Sin",
+        "No jardim do Getsêmani",
+        "No palácio de Herodes"
+      ],
+      "referencias": [
+        [
+          27,
+          6022,
+          6022
+        ]
+      ]
+    },
+    {
+      "id": "cpb-34-6",
+      "capitulo": 34,
+      "numero": 6,
+      "dificuldade": 3,
+      "distratores": [
+        "Samuel",
+        "Jonas",
+        "Ezequiel"
+      ],
+      "referencias": [
+        [
+          11,
+          19005,
+          19006
+        ]
+      ]
+    },
+    {
+      "id": "cpb-34-7",
+      "capitulo": 34,
+      "numero": 7,
+      "dificuldade": 1,
+      "distratores": [
+        "Gabriel",
+        "Rafael",
+        "Uriel"
+      ],
+      "referencias": [
+        [
+          66,
+          12007,
+          12009
+        ]
+      ]
+    },
+    {
+      "id": "cpb-34-8",
+      "capitulo": 34,
+      "numero": 8,
+      "dificuldade": 2,
+      "distratores": [
+        "Os soldados de Saul",
+        "Os soldados de Josué",
+        "Os soldados de Davi"
+      ],
+      "referencias": [
+        [
+          40,
+          28002,
+          28002
+        ],
+        [
+          40,
+          28004,
+          28004
+        ]
+      ]
+    },
+    {
+      "id": "cpb-34-10",
+      "capitulo": 34,
+      "numero": 10,
+      "dificuldade": 3,
+      "distratores": [
+        "Ao redor dos reis",
+        "Ao redor dos mais ricos",
+        "Ao redor de todos os templos"
+      ],
+      "referencias": [
+        [
+          19,
+          34007,
+          34007
+        ]
+      ]
+    },
+    {
+      "id": "cpb-35-6",
+      "capitulo": 35,
+      "numero": 6,
+      "dificuldade": 1,
+      "distratores": [
+        "A figueira",
+        "A oliveira",
+        "O cedro"
+      ],
+      "referencias": [
+        [
+          66,
+          22014,
+          22014
+        ]
+      ]
+    },
+    {
+      "id": "cpb-35-7",
+      "capitulo": 35,
+      "numero": 7,
+      "dificuldade": 2,
+      "distratores": [
+        "Carvalho",
+        "Palmeira",
+        "Cedro"
+      ],
+      "referencias": [
+        [
+          42,
+          19004,
+          19004
+        ]
+      ]
+    },
+    {
+      "id": "cpb-35-8",
+      "capitulo": 35,
+      "numero": 8,
+      "dificuldade": 3,
+      "distratores": [
+        "Oliveira",
+        "Figueira",
+        "Cedro"
+      ],
+      "referencias": [
+        [
+          40,
+          13031,
+          13031
+        ]
+      ]
+    },
+    {
+      "id": "cpb-35-9",
+      "capitulo": 35,
+      "numero": 9,
+      "dificuldade": 1,
+      "distratores": [
+        "Oliveira",
+        "Palmeira",
+        "Figueira"
+      ],
+      "referencias": [
+        [
+          1,
+          6014,
+          6014
+        ]
+      ]
+    },
+    {
+      "id": "cpb-35-10",
+      "capitulo": 35,
+      "numero": 10,
+      "dificuldade": 2,
+      "distratores": [
+        "Figueira",
+        "Videira",
+        "Oliveira"
+      ],
+      "referencias": [
+        [
+          11,
+          19001,
+          19005
+        ]
+      ]
+    },
+    {
+      "id": "cpb-36-3",
+      "capitulo": 36,
+      "numero": 3,
+      "dificuldade": 3,
+      "distratores": [
+        "Gideão, sobre Samaria",
+        "Samuel, sobre Belém",
+        "Davi, sobre Hebrom"
+      ],
+      "referencias": [
+        [
+          6,
+          6026,
+          6026
+        ]
+      ]
+    },
+    {
+      "id": "cpb-36-4",
+      "capitulo": 36,
+      "numero": 4,
+      "dificuldade": 1,
+      "distratores": [
+        "Porque receberão riquezas",
+        "Porque serão reis",
+        "Porque viverão sem dificuldades"
+      ],
+      "referencias": [
+        [
+          40,
+          5007,
+          5007
+        ]
+      ]
+    },
+    {
+      "id": "cpb-36-7",
+      "capitulo": 36,
+      "numero": 7,
+      "dificuldade": 2,
+      "distratores": [
+        "Salomão",
+        "Saul",
+        "Absalão"
+      ],
+      "referencias": [
+        [
+          10,
+          16005,
+          16007
+        ]
+      ]
+    },
+    {
+      "id": "cpb-36-8",
+      "capitulo": 36,
+      "numero": 8,
+      "dificuldade": 3,
+      "distratores": [
+        "Porque serão chamados reis",
+        "Porque serão chamados profetas",
+        "Porque serão chamados sacerdotes"
+      ],
+      "referencias": [
+        [
+          40,
+          5009,
+          5009
+        ]
+      ]
+    },
+    {
+      "id": "cpb-36-9",
+      "capitulo": 36,
+      "numero": 9,
+      "dificuldade": 1,
+      "distratores": [
+        "Ebal",
+        "Sinai",
+        "Carmelo"
+      ],
+      "referencias": [
+        [
+          5,
+          11029,
+          11029
+        ]
+      ]
+    },
+    {
+      "id": "cpb-36-10",
+      "capitulo": 36,
+      "numero": 10,
+      "dificuldade": 2,
+      "distratores": [
+        "Gerizim",
+        "Moriá",
+        "Gilboa"
+      ],
+      "referencias": [
+        [
+          5,
+          11029,
+          11029
+        ]
+      ]
+    },
+    {
+      "id": "cpb-37-3",
+      "capitulo": 37,
+      "numero": 3,
+      "dificuldade": 3,
+      "distratores": [
+        "Isaque",
+        "José",
+        "Boaz"
+      ],
+      "referencias": [
+        [
+          1,
+          29003,
+          29030
+        ]
+      ]
+    },
+    {
+      "id": "cpb-37-8",
+      "capitulo": 37,
+      "numero": 8,
+      "dificuldade": 1,
+      "distratores": [
+        "Neemias",
+        "Josué",
+        "Daniel"
+      ],
+      "referencias": [
+        [
+          15,
+          9001,
+          9003
+        ]
+      ]
+    },
+    {
+      "id": "cpb-37-9",
+      "capitulo": 37,
+      "numero": 9,
+      "dificuldade": 2,
+      "distratores": [
+        "Na sinagoga de Nazaré",
+        "No templo de Jerusalém",
+        "Na casa de Pedro"
+      ],
+      "referencias": [
+        [
+          43,
+          2001,
+          2011
+        ]
+      ]
+    },
+    {
+      "id": "cpb-38-2",
+      "capitulo": 38,
+      "numero": 2,
+      "dificuldade": 3,
+      "distratores": [
+        "Belém",
+        "Nazaré",
+        "Betânia"
+      ],
+      "referencias": [
+        [
+          11,
+          16034,
+          16034
+        ]
+      ]
+    },
+    {
+      "id": "cpb-38-4",
+      "capitulo": 38,
+      "numero": 4,
+      "dificuldade": 1,
+      "distratores": [
+        "Nazaré",
+        "Betânia",
+        "Belém"
+      ],
+      "referencias": [
+        [
+          12,
+          20020,
+          20020
+        ]
+      ]
+    },
+    {
+      "id": "cpb-38-7",
+      "capitulo": 38,
+      "numero": 7,
+      "dificuldade": 2,
+      "distratores": [
+        "Jerusalém",
+        "Corinto",
+        "Éfeso"
+      ],
+      "referencias": [
+        [
+          44,
+          11026,
+          11026
+        ]
+      ]
+    },
+    {
+      "id": "cpb-38-8",
+      "capitulo": 38,
+      "numero": 8,
+      "dificuldade": 3,
+      "distratores": [
+        "Babel",
+        "Ur",
+        "Jericó"
+      ],
+      "referencias": [
+        [
+          1,
+          4017,
+          4017
+        ]
+      ]
+    },
+    {
+      "id": "cpb-38-9",
+      "capitulo": 38,
+      "numero": 9,
+      "dificuldade": 1,
+      "distratores": [
+        "Jericó",
+        "Hebrom",
+        "Samaria"
+      ],
+      "referencias": [
+        [
+          7,
+          16001,
+          16003
+        ]
+      ]
+    },
+    {
+      "id": "cpb-38-10",
+      "capitulo": 38,
+      "numero": 10,
+      "dificuldade": 2,
+      "distratores": [
+        "Nazaré",
+        "Cafarnaum",
+        "Belém"
+      ],
+      "referencias": [
+        [
+          26,
+          25005,
+          25005
+        ]
+      ]
+    },
+    {
+      "id": "cpb-39-5",
+      "capitulo": 39,
+      "numero": 5,
+      "dificuldade": 3,
+      "distratores": [
+        "Na terra do Egito",
+        "Na terra de Moabe",
+        "Na terra da Assíria"
+      ],
+      "referencias": [
+        [
+          9,
+          13019,
+          13019
+        ]
+      ]
+    },
+    {
+      "id": "cpb-39-7",
+      "capitulo": 39,
+      "numero": 7,
+      "dificuldade": 1,
+      "distratores": [
+        "Amnom, filho de Davi",
+        "Jônatas, filho de Saul",
+        "Manassés, filho de Ezequias"
+      ],
+      "referencias": [
+        [
+          11,
+          14001,
+          14017
+        ]
+      ]
+    },
+    {
+      "id": "cpb-39-9",
+      "capitulo": 39,
+      "numero": 9,
+      "dificuldade": 2,
+      "distratores": [
+        "Davi",
+        "Salomão",
+        "Ezequias"
+      ],
+      "referencias": [
+        [
+          9,
+          20033,
+          20033
+        ]
+      ]
+    },
+    {
+      "id": "cpb-39-10",
+      "capitulo": 39,
+      "numero": 10,
+      "dificuldade": 3,
+      "distratores": [
+        "Roboão",
+        "Josias",
+        "Saul"
+      ],
+      "referencias": [
+        [
+          12,
+          20020,
+          20020
+        ]
+      ]
+    },
+    {
+      "id": "cpb-40-4",
+      "capitulo": 40,
+      "numero": 4,
+      "dificuldade": 1,
+      "distratores": [
+        "Um talento de ouro",
+        "Dez denários",
+        "Um siclo de prata"
+      ],
+      "referencias": [
+        [
+          41,
+          12042,
+          12042
+        ]
+      ]
+    },
+    {
+      "id": "cpb-40-7",
+      "capitulo": 40,
+      "numero": 7,
+      "dificuldade": 2,
+      "distratores": [
+        "Uma espada de prata",
+        "Um anel de ferro",
+        "Um escudo de bronze"
+      ],
+      "referencias": [
+        [
+          27,
+          5029,
+          5029
+        ]
+      ]
+    },
+    {
+      "id": "cpb-40-8",
+      "capitulo": 40,
+      "numero": 8,
+      "dificuldade": 3,
+      "distratores": [
+        "12 anos",
+        "15 anos",
+        "30 anos"
+      ],
+      "referencias": [
+        [
+          2,
+          30014,
+          30014
+        ]
+      ]
+    },
+    {
+      "id": "cpb-40-9",
+      "capitulo": 40,
+      "numero": 9,
+      "dificuldade": 1,
+      "distratores": [
+        "Dois siclos",
+        "Um talento",
+        "Dez denários"
+      ],
+      "referencias": [
+        [
+          2,
+          30013,
+          30013
+        ]
+      ]
+    },
+    {
+      "id": "cpb-40-10",
+      "capitulo": 40,
+      "numero": 10,
+      "dificuldade": 2,
+      "distratores": [
+        "Um",
+        "Três",
+        "Cinco"
+      ],
+      "referencias": [
+        [
+          40,
+          10029,
+          10029
+        ]
+      ]
+    },
+    {
+      "id": "cpb-41-3",
+      "capitulo": 41,
+      "numero": 3,
+      "dificuldade": 3,
+      "distratores": [
+        "Correr apenas pela fama",
+        "Correr sem objetivo",
+        "Correr para agradar aos juízes"
+      ],
+      "referencias": [
+        [
+          46,
+          9024,
+          9024
+        ]
+      ]
+    },
+    {
+      "id": "cpb-41-6",
+      "capitulo": 41,
+      "numero": 6,
+      "dificuldade": 1,
+      "distratores": [
+        "Foi morto por uma pedra",
+        "Foi envenenado",
+        "Foi morto por um raio"
+      ],
+      "referencias": [
+        [
+          10,
+          18014,
+          18014
+        ]
+      ]
+    },
+    {
+      "id": "cpb-41-7",
+      "capitulo": 41,
+      "numero": 7,
+      "dificuldade": 2,
+      "distratores": [
+        "Quando Pedro caiu no mar",
+        "Quando Paulo naufragou",
+        "Quando Moisés atravessou o mar"
+      ],
+      "referencias": [
+        [
+          32,
+          1017,
+          1017
+        ]
+      ]
+    },
+    {
+      "id": "cpb-41-10",
+      "capitulo": 41,
+      "numero": 10,
+      "dificuldade": 3,
+      "distratores": [
+        "Labão",
+        "Esaú",
+        "Abimeleque"
+      ],
+      "referencias": [
+        [
+          1,
+          10008,
+          10009
+        ]
+      ]
+    },
+    {
+      "id": "cpb-42-1",
+      "capitulo": 42,
+      "numero": 1,
+      "dificuldade": 1,
+      "distratores": [
+        "O irmão mais velho",
+        "O dono dos porcos",
+        "O juiz da cidade"
+      ],
+      "referencias": [
+        [
+          42,
+          15022,
+          15024
+        ]
+      ]
+    },
+    {
+      "id": "cpb-42-7",
+      "capitulo": 42,
+      "numero": 7,
+      "dificuldade": 2,
+      "distratores": [
+        "João Batista",
+        "Herodes",
+        "Pilatos"
+      ],
+      "referencias": [
+        [
+          42,
+          5029,
+          5029
+        ]
+      ]
+    },
+    {
+      "id": "cpb-42-8",
+      "capitulo": 42,
+      "numero": 8,
+      "dificuldade": 3,
+      "distratores": [
+        "Festa da Dedicação",
+        "Festa de Purim",
+        "Festa dos Tabernáculos"
+      ],
+      "referencias": [
+        [
+          2,
+          34022,
+          34022
+        ]
+      ]
+    },
+    {
+      "id": "cpb-42-9",
+      "capitulo": 42,
+      "numero": 9,
+      "dificuldade": 1,
+      "distratores": [
+        "Purim",
+        "Pentecoste",
+        "Dedicação"
+      ],
+      "referencias": [
+        [
+          42,
+          2041,
+          2045
+        ]
+      ]
+    },
+    {
+      "id": "cpb-43-6",
+      "capitulo": 43,
+      "numero": 6,
+      "dificuldade": 2,
+      "distratores": [
+        "Bartimeu",
+        "Nicodemos",
+        "Jairo"
+      ],
+      "referencias": [
+        [
+          43,
+          11001,
+          11001
+        ]
+      ]
+    },
+    {
+      "id": "cpb-43-8",
+      "capitulo": 43,
+      "numero": 8,
+      "dificuldade": 3,
+      "distratores": [
+        "Josué",
+        "Calebe",
+        "Hur"
+      ],
+      "referencias": [
+        [
+          2,
+          4014,
+          4014
+        ]
+      ]
+    },
+    {
+      "id": "cpb-43-9",
+      "capitulo": 43,
+      "numero": 9,
+      "dificuldade": 1,
+      "distratores": [
+        "Samuel",
+        "Saul",
+        "Sansão"
+      ],
+      "referencias": [
+        [
+          6,
+          6001,
+          6012
+        ]
+      ]
+    },
+    {
+      "id": "cpb-44-3",
+      "capitulo": 44,
+      "numero": 3,
+      "dificuldade": 2,
+      "distratores": [
+        "Moisés",
+        "Esdras",
+        "Ezequiel"
+      ],
+      "referencias": [
+        [
+          6,
+          18009,
+          18009
+        ]
+      ]
+    },
+    {
+      "id": "cpb-44-6",
+      "capitulo": 44,
+      "numero": 6,
+      "dificuldade": 3,
+      "distratores": [
+        "Josias",
+        "Ezequias",
+        "Davi"
+      ],
+      "referencias": [
+        [
+          24,
+          36022,
+          36023
+        ]
+      ]
+    },
+    {
+      "id": "cpb-44-9",
+      "capitulo": 44,
+      "numero": 9,
+      "dificuldade": 1,
+      "distratores": [
+        "O livro de Ester",
+        "O livro de Rute",
+        "O livro de Provérbios"
+      ],
+      "referencias": [
+        [
+          6,
+          10013,
+          10013
+        ]
+      ]
+    },
+    {
+      "id": "cpb-45-2",
+      "capitulo": 45,
+      "numero": 2,
+      "dificuldade": 2,
+      "distratores": [
+        "A viúva de Sarepta",
+        "A mulher de Jó",
+        "A mãe de Samuel"
+      ],
+      "referencias": [
+        [
+          12,
+          4035,
+          4035
+        ]
+      ]
+    },
+    {
+      "id": "cpb-45-4",
+      "capitulo": 45,
+      "numero": 4,
+      "dificuldade": 3,
+      "distratores": [
+        "Sara",
+        "Raquel",
+        "Lia"
+      ],
+      "referencias": [
+        [
+          1,
+          27006,
+          27010
+        ]
+      ]
+    },
+    {
+      "id": "cpb-45-6",
+      "capitulo": 45,
+      "numero": 6,
+      "dificuldade": 1,
+      "distratores": [
+        "Rute",
+        "Ester",
+        "Mical"
+      ],
+      "referencias": [
+        [
+          8,
+          1014,
+          1014
+        ]
+      ]
+    },
+    {
+      "id": "cpb-45-8",
+      "capitulo": 45,
+      "numero": 8,
+      "dificuldade": 2,
+      "distratores": [
+        "Miriã",
+        "Ana",
+        "Noemi"
+      ],
+      "referencias": [
+        [
+          7,
+          5007,
+          5007
+        ]
+      ]
+    },
+    {
+      "id": "cpb-45-9",
+      "capitulo": 45,
+      "numero": 9,
+      "dificuldade": 3,
+      "distratores": [
+        "Abigail",
+        "Jezabel",
+        "Ester"
+      ],
+      "referencias": [
+        [
+          10,
+          21010,
+          21010
+        ]
+      ]
+    },
+    {
+      "id": "cpb-45-10",
+      "capitulo": 45,
+      "numero": 10,
+      "dificuldade": 1,
+      "distratores": [
+        "Rebeca, mãe de Jacó",
+        "Ana, mãe de Samuel",
+        "Maria, mãe de Jesus"
+      ],
+      "referencias": [
+        [
+          2,
+          2009,
+          2009
+        ]
+      ]
+    },
+    {
+      "id": "cpb-46-4",
+      "capitulo": 46,
+      "numero": 4,
+      "dificuldade": 2,
+      "distratores": [
+        "Josias",
+        "Samuel",
+        "Manassés"
+      ],
+      "referencias": [
+        [
+          12,
+          11002,
+          11003
+        ],
+        [
+          12,
+          11021,
+          11021
+        ]
+      ]
+    },
+    {
+      "id": "cpb-46-6",
+      "capitulo": 46,
+      "numero": 6,
+      "dificuldade": 3,
+      "distratores": [
+        "Possuir muitas terras",
+        "Conhecer todos os reis",
+        "Falar muitas línguas"
+      ],
+      "referencias": [
+        [
+          40,
+          18003,
+          18003
+        ]
+      ]
+    },
+    {
+      "id": "cpb-46-8",
+      "capitulo": 46,
+      "numero": 8,
+      "dificuldade": 1,
+      "distratores": [
+        "O filho de Jairo",
+        "O filho de Eli",
+        "O filho de Herodes"
+      ],
+      "referencias": [
+        [
+          12,
+          4019,
+          4020
+        ]
+      ]
+    },
+    {
+      "id": "cpb-46-9",
+      "capitulo": 46,
+      "numero": 9,
+      "dificuldade": 2,
+      "distratores": [
+        "Prata, trigo e azeite",
+        "Bronze, mel e vinho",
+        "Linho, sal e madeira"
+      ],
+      "referencias": [
+        [
+          40,
+          2011,
+          2011
+        ]
+      ]
+    },
+    {
+      "id": "cpb-46-10",
+      "capitulo": 46,
+      "numero": 10,
+      "dificuldade": 3,
+      "distratores": [
+        "Davi",
+        "José",
+        "Jeremias"
+      ],
+      "referencias": [
+        [
+          9,
+          3004,
+          3004
+        ],
+        [
+          9,
+          3006,
+          3006
+        ],
+        [
+          9,
+          3010,
+          3010
+        ]
+      ]
+    },
+    {
+      "id": "cpb-47-1",
+      "capitulo": 47,
+      "numero": 1,
+      "dificuldade": 1,
+      "distratores": [
+        "Uma pessoa",
+        "Duas pessoas",
+        "Sete pessoas"
+      ],
+      "referencias": [
+        [
+          41,
+          5041,
+          5042
+        ],
+        [
+          42,
+          7015,
+          7015
+        ],
+        [
+          43,
+          11044,
+          11044
+        ]
+      ]
+    },
+    {
+      "id": "cpb-47-2",
+      "capitulo": 47,
+      "numero": 2,
+      "dificuldade": 2,
+      "distratores": [
+        "Quando Elias subiu ao céu",
+        "Quando Josué entrou em Canaã",
+        "Quando Jonas chegou a Nínive"
+      ],
+      "referencias": [
+        [
+          2,
+          3002,
+          3004
+        ]
+      ]
+    },
+    {
+      "id": "cpb-47-8",
+      "capitulo": 47,
+      "numero": 8,
+      "dificuldade": 3,
+      "distratores": [
+        "Pilatos",
+        "Faraó",
+        "Nabucodonosor"
+      ],
+      "referencias": [
+        [
+          44,
+          12021,
+          12023
+        ]
+      ]
+    },
+    {
+      "id": "cpb-47-9",
+      "capitulo": 47,
+      "numero": 9,
+      "dificuldade": 1,
+      "distratores": [
+        "Paulo e Barnabé",
+        "Tiago e João",
+        "Moisés e Arão"
+      ],
+      "referencias": [
+        [
+          40,
+          14025,
+          14033
+        ]
+      ]
+    },
+    {
+      "id": "cpb-47-10",
+      "capitulo": 47,
+      "numero": 10,
+      "dificuldade": 2,
+      "distratores": [
+        "Priscila",
+        "Lídia",
+        "Marta"
+      ],
+      "referencias": [
+        [
+          44,
+          9040,
+          9040
+        ]
+      ]
+    },
+    {
+      "id": "cpb-48-4",
+      "capitulo": 48,
+      "numero": 4,
+      "dificuldade": 3,
+      "distratores": [
+        "Monte Carmelo",
+        "Monte Sinai",
+        "Monte Gilboa"
+      ],
+      "referencias": [
+        [
+          44,
+          1009,
+          1012
+        ]
+      ]
+    },
+    {
+      "id": "cpb-48-6",
+      "capitulo": 48,
+      "numero": 6,
+      "dificuldade": 1,
+      "distratores": [
+        "Nebo",
+        "Carmelo",
+        "Gerizim"
+      ],
+      "referencias": [
+        [
+          4,
+          20027,
+          20028
+        ]
+      ]
+    },
+    {
+      "id": "cpb-48-7",
+      "capitulo": 48,
+      "numero": 7,
+      "dificuldade": 2,
+      "distratores": [
+        "Gilboa",
+        "Gerizim",
+        "Carmelo"
+      ],
+      "referencias": [
+        [
+          2,
+          19011,
+          19011
+        ]
+      ]
+    },
+    {
+      "id": "cpb-48-8",
+      "capitulo": 48,
+      "numero": 8,
+      "dificuldade": 3,
+      "distratores": [
+        "Sinai",
+        "Hor",
+        "Ebal"
+      ],
+      "referencias": [
+        [
+          1,
+          22002,
+          22002
+        ]
+      ]
+    },
+    {
+      "id": "cpb-48-9",
+      "capitulo": 48,
+      "numero": 9,
+      "dificuldade": 1,
+      "distratores": [
+        "Carmelo",
+        "Nebo",
+        "Gerizim"
+      ],
+      "referencias": [
+        [
+          9,
+          31001,
+          31002
+        ]
+      ]
+    },
+    {
+      "id": "cpb-49-1",
+      "capitulo": 49,
+      "numero": 1,
+      "dificuldade": 2,
+      "distratores": [
+        "Vasti",
+        "Ester",
+        "Abigail"
+      ],
+      "referencias": [
+        [
+          12,
+          11001,
+          11001
+        ]
+      ]
+    },
+    {
+      "id": "cpb-49-6",
+      "capitulo": 49,
+      "numero": 6,
+      "dificuldade": 3,
+      "distratores": [
+        "Lia",
+        "Sara",
+        "Rebeca"
+      ],
+      "referencias": [
+        [
+          1,
+          35016,
+          35018
+        ]
+      ]
+    },
+    {
+      "id": "cpb-49-9",
+      "capitulo": 49,
+      "numero": 9,
+      "dificuldade": 1,
+      "distratores": [
+        "Ester",
+        "Abigail",
+        "Rispa"
+      ],
+      "referencias": [
+        [
+          12,
+          11002,
+          11003
+        ]
+      ]
+    },
+    {
+      "id": "cpb-50-1",
+      "capitulo": 50,
+      "numero": 1,
+      "dificuldade": 2,
+      "distratores": [
+        "Durante o Sermão do Monte",
+        "Durante o batismo",
+        "Durante a transfiguração"
+      ],
+      "referencias": [
+        [
+          41,
+          14026,
+          14026
+        ]
+      ]
+    },
+    {
+      "id": "cpb-50-2",
+      "capitulo": 50,
+      "numero": 2,
+      "dificuldade": 3,
+      "distratores": [
+        "Flautas de prata",
+        "Harpas de madeira",
+        "Címbalos de bronze"
+      ],
+      "referencias": [
+        [
+          6,
+          6013,
+          6013
+        ]
+      ]
+    },
+    {
+      "id": "cpb-50-3",
+      "capitulo": 50,
+      "numero": 3,
+      "dificuldade": 1,
+      "distratores": [
+        "Com uma corrida",
+        "Com uma coroação",
+        "Com um casamento"
+      ],
+      "referencias": [
+        [
+          2,
+          15001,
+          15001
+        ]
+      ]
+    },
+    {
+      "id": "cpb-50-6",
+      "capitulo": 50,
+      "numero": 6,
+      "dificuldade": 2,
+      "distratores": [
+        "Uma harpa",
+        "Uma flauta",
+        "Uma trombeta"
+      ],
+      "referencias": [
+        [
+          2,
+          15020,
+          15020
+        ]
+      ]
+    },
+    {
+      "id": "cpb-50-9",
+      "capitulo": 50,
+      "numero": 9,
+      "dificuldade": 3,
+      "distratores": [
+        "Harpa",
+        "Flauta",
+        "Tamborim"
+      ],
+      "referencias": [
+        [
+          2,
+          19019,
+          19019
+        ]
+      ]
+    },
+    {
+      "id": "cpb-50-10",
+      "capitulo": 50,
+      "numero": 10,
+      "dificuldade": 1,
+      "distratores": [
+        "Trombeta",
+        "Tamborim",
+        "Címbalo"
+      ],
+      "referencias": [
+        [
+          40,
+          9023,
+          9024
+        ]
+      ]
+    },
+    {
+      "id": "cpb-51-6",
+      "capitulo": 51,
+      "numero": 6,
+      "dificuldade": 2,
+      "distratores": [
+        "Zorobabel",
+        "Absalão",
+        "Natã"
+      ],
+      "referencias": [
+        [
+          10,
+          12025,
+          12025
+        ]
+      ]
+    },
+    {
+      "id": "cpb-51-8",
+      "capitulo": 51,
+      "numero": 8,
+      "dificuldade": 3,
+      "distratores": [
+        "Beltessazar",
+        "Abede-Nego",
+        "Sesbazar"
+      ],
+      "referencias": [
+        [
+          1,
+          41045,
+          41045
+        ]
+      ]
+    },
+    {
+      "id": "cpb-51-9",
+      "capitulo": 51,
+      "numero": 9,
+      "dificuldade": 1,
+      "distratores": [
+        "Judá",
+        "Abraão",
+        "Efraim"
+      ],
+      "referencias": [
+        [
+          1,
+          32028,
+          32028
+        ]
+      ]
+    },
+    {
+      "id": "cpb-52-3",
+      "capitulo": 52,
+      "numero": 3,
+      "dificuldade": 2,
+      "distratores": [
+        "Duas",
+        "Três",
+        "Oito"
+      ],
+      "referencias": [
+        [
+          1,
+          7013,
+          7013
+        ]
+      ]
+    },
+    {
+      "id": "cpb-52-6",
+      "capitulo": 52,
+      "numero": 6,
+      "dificuldade": 3,
+      "distratores": [
+        "3",
+        "7",
+        "12"
+      ],
+      "referencias": [
+        [
+          43,
+          5002,
+          5002
+        ]
+      ]
+    },
+    {
+      "id": "cpb-52-7",
+      "capitulo": 52,
+      "numero": 7,
+      "dificuldade": 1,
+      "distratores": [
+        "12",
+        "30",
+        "40"
+      ],
+      "referencias": [
+        [
+          13,
+          2022,
+          2022
+        ]
+      ]
+    },
+    {
+      "id": "cpb-52-8",
+      "capitulo": 52,
+      "numero": 8,
+      "dificuldade": 2,
+      "distratores": [
+        "3",
+        "10",
+        "40"
+      ],
+      "referencias": [
+        [
+          6,
+          6003,
+          6004
+        ]
+      ]
+    },
+    {
+      "id": "cpb-52-9",
+      "capitulo": 52,
+      "numero": 9,
+      "dificuldade": 3,
+      "distratores": [
+        "7",
+        "20",
+        "40"
+      ],
+      "referencias": [
+        [
+          12,
+          24018,
+          24018
+        ]
+      ]
+    },
+    {
+      "id": "cpb-52-10",
+      "capitulo": 52,
+      "numero": 10,
+      "dificuldade": 1,
+      "distratores": [
+        "10",
+        "12",
+        "30"
+      ],
+      "referencias": [
+        [
+          11,
+          9011,
+          9011
+        ]
+      ]
+    },
+    {
+      "id": "cpb-53-1",
+      "capitulo": 53,
+      "numero": 1,
+      "dificuldade": 2,
+      "distratores": [
+        "Paulo",
+        "Pedro",
+        "Salomão"
+      ],
+      "referencias": [
+        [
+          42,
+          4023,
+          4023
+        ]
+      ]
+    },
+    {
+      "id": "cpb-53-3",
+      "capitulo": 53,
+      "numero": 3,
+      "dificuldade": 3,
+      "distratores": [
+        "Isaías",
+        "Jeremias",
+        "Ezequiel"
+      ],
+      "referencias": [
+        [
+          12,
+          2011,
+          2011
+        ]
+      ]
+    },
+    {
+      "id": "cpb-53-5",
+      "capitulo": 53,
+      "numero": 5,
+      "dificuldade": 1,
+      "distratores": [
+        "Isaque",
+        "Boaz",
+        "José"
+      ],
+      "referencias": [
+        [
+          1,
+          29016,
+          29025
+        ]
+      ]
+    },
+    {
+      "id": "cpb-53-8",
+      "capitulo": 53,
+      "numero": 8,
+      "dificuldade": 2,
+      "distratores": [
+        "Judá",
+        "Levi",
+        "Efraim"
+      ],
+      "referencias": [
+        [
+          13,
+          12001,
+          12002
+        ]
+      ]
+    },
+    {
+      "id": "cpb-54-2",
+      "capitulo": 54,
+      "numero": 2,
+      "dificuldade": 3,
+      "distratores": [
+        "Sara",
+        "Lia",
+        "Raquel"
+      ],
+      "referencias": [
+        [
+          1,
+          25021,
+          25024
+        ]
+      ]
+    },
+    {
+      "id": "cpb-54-3",
+      "capitulo": 54,
+      "numero": 3,
+      "dificuldade": 1,
+      "distratores": [
+        "Ló era irmão de Abraão",
+        "Ló era filho de Abraão",
+        "Ló era primo de Abraão"
+      ],
+      "referencias": [
+        [
+          1,
+          12005,
+          12005
+        ]
+      ]
+    },
+    {
+      "id": "cpb-54-6",
+      "capitulo": 54,
+      "numero": 6,
+      "dificuldade": 2,
+      "distratores": [
+        "Eram primos",
+        "Eram pai e filho",
+        "Eram tio e sobrinho"
+      ],
+      "referencias": [
+        [
+          40,
+          4018,
+          4018
+        ]
+      ]
+    },
+    {
+      "id": "cpb-54-7",
+      "capitulo": 54,
+      "numero": 7,
+      "dificuldade": 3,
+      "distratores": [
+        "Débora",
+        "Ester",
+        "Ana"
+      ],
+      "referencias": [
+        [
+          2,
+          6020,
+          6020
+        ]
+      ]
+    },
+    {
+      "id": "cpb-54-8",
+      "capitulo": 54,
+      "numero": 8,
+      "dificuldade": 1,
+      "distratores": [
+        "De Josias",
+        "De Ezequias",
+        "De Roboão"
+      ],
+      "referencias": [
+        [
+          12,
+          11001,
+          11001
+        ]
+      ]
+    },
+    {
+      "id": "cpb-54-9",
+      "capitulo": 54,
+      "numero": 9,
+      "dificuldade": 2,
+      "distratores": [
+        "Roboão era irmão de Salomão",
+        "Roboão era pai de Salomão",
+        "Roboão era sobrinho de Salomão"
+      ],
+      "referencias": [
+        [
+          11,
+          11043,
+          11043
+        ]
+      ]
+    },
+    {
+      "id": "cpb-55-2",
+      "capitulo": 55,
+      "numero": 2,
+      "dificuldade": 3,
+      "distratores": [
+        "Dez batos",
+        "Cem batos",
+        "Mil batos"
+      ],
+      "referencias": [
+        [
+          23,
+          5010,
+          5010
+        ]
+      ]
+    },
+    {
+      "id": "cpb-55-3",
+      "capitulo": 55,
+      "numero": 3,
+      "dificuldade": 1,
+      "distratores": [
+        "Caminho de três dias",
+        "Caminho de sete dias",
+        "Caminho de quarenta dias"
+      ],
+      "referencias": [
+        [
+          11,
+          19004,
+          19004
+        ]
+      ]
+    },
+    {
+      "id": "cpb-55-5",
+      "capitulo": 55,
+      "numero": 5,
+      "dificuldade": 2,
+      "distratores": [
+        "10 siclos de prata",
+        "20 siclos de prata",
+        "40 siclos de prata"
+      ],
+      "referencias": [
+        [
+          12,
+          6025,
+          6025
+        ]
+      ]
+    },
+    {
+      "id": "cpb-55-6",
+      "capitulo": 55,
+      "numero": 6,
+      "dificuldade": 3,
+      "distratores": [
+        "Um talento",
+        "Um siclo de ouro",
+        "Um quadrante"
+      ],
+      "referencias": [
+        [
+          66,
+          6006,
+          6006
+        ]
+      ]
+    },
+    {
+      "id": "cpb-55-8",
+      "capitulo": 55,
+      "numero": 8,
+      "dificuldade": 1,
+      "distratores": [
+        "Como um presente",
+        "Como uma virtude",
+        "Como uma bênção"
+      ],
+      "referencias": [
+        [
+          20,
+          11001,
+          11001
+        ]
+      ]
+    },
+    {
+      "id": "cpb-56-1",
+      "capitulo": 56,
+      "numero": 1,
+      "dificuldade": 2,
+      "distratores": [
+        "Haja firmamento",
+        "Haja árvores",
+        "Haja animais"
+      ],
+      "referencias": [
+        [
+          1,
+          1003,
+          1003
+        ]
+      ]
+    },
+    {
+      "id": "cpb-56-7",
+      "capitulo": 56,
+      "numero": 7,
+      "dificuldade": 3,
+      "distratores": [
+        "Noé",
+        "Enoque",
+        "Lameque"
+      ],
+      "referencias": [
+        [
+          1,
+          4017,
+          4017
+        ]
+      ]
+    },
+    {
+      "id": "cpb-56-8",
+      "capitulo": 56,
+      "numero": 8,
+      "dificuldade": 1,
+      "distratores": [
+        "Sara",
+        "Rebeca",
+        "Raquel"
+      ],
+      "referencias": [
+        [
+          1,
+          4019,
+          4019
+        ]
+      ]
+    },
+    {
+      "id": "cpb-56-9",
+      "capitulo": 56,
+      "numero": 9,
+      "dificuldade": 2,
+      "distratores": [
+        "Caim",
+        "Abel",
+        "Sete"
+      ],
+      "referencias": [
+        [
+          1,
+          4019,
+          4019
+        ]
+      ]
+    },
+    {
+      "id": "cpb-57-2",
+      "capitulo": 57,
+      "numero": 2,
+      "dificuldade": 3,
+      "distratores": [
+        "Ester",
+        "Vasti",
+        "Mical"
+      ],
+      "referencias": [
+        [
+          11,
+          21008,
+          21008
+        ]
+      ]
+    },
+    {
+      "id": "cpb-57-4",
+      "capitulo": 57,
+      "numero": 4,
+      "dificuldade": 1,
+      "distratores": [
+        "Davi",
+        "Saul",
+        "Roboão"
+      ],
+      "referencias": [
+        [
+          11,
+          11001,
+          11003
+        ]
+      ]
+    },
+    {
+      "id": "cpb-57-5",
+      "capitulo": 57,
+      "numero": 5,
+      "dificuldade": 2,
+      "distratores": [
+        "Josias",
+        "Ezequias",
+        "Davi"
+      ],
+      "referencias": [
+        [
+          11,
+          16033,
+          16033
+        ]
+      ]
+    },
+    {
+      "id": "cpb-57-6",
+      "capitulo": 57,
+      "numero": 6,
+      "dificuldade": 3,
+      "distratores": [
+        "Ester da Pérsia",
+        "Vasti da Pérsia",
+        "Atalia de Judá"
+      ],
+      "referencias": [
+        [
+          44,
+          8027,
+          8027
+        ]
+      ]
+    },
+    {
+      "id": "cpb-58-4",
+      "capitulo": 58,
+      "numero": 4,
+      "dificuldade": 3,
+      "distratores": [
+        "No rio Nilo",
+        "No rio Eufrates",
+        "No rio Tigre"
+      ],
+      "referencias": [
+        [
+          40,
+          3013,
+          3017
+        ]
+      ]
+    }
+  ]
+}

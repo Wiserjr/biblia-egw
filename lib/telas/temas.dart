@@ -10,6 +10,7 @@ import 'estudos_importados.dart';
 import 'largura_texto.dart';
 import 'navegacao.dart';
 import 'tema.dart';
+import 'quiz_biblico.dart';
 import 'texto_biblico.dart';
 
 /// Índice temático e estudos bíblicos.
@@ -154,6 +155,20 @@ class _TelaTemasState extends State<TelaTemas> {
                   MaterialPageRoute(
                     builder: (_) => const TelaEstudosImportados(),
                   ),
+                ),
+              ),
+            ),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.emoji_events_outlined),
+                title: const Text('Desafio Bíblico — Rumo ao Milhão'),
+                subtitle: const Text(
+                  'Quiz, curiosidades e testes com seu EPUB pessoal',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TelaQuizBiblico()),
                 ),
               ),
             ),
