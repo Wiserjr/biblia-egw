@@ -7,8 +7,9 @@ A fonte é o catálogo do Louvor JA (``assets/louvorja_pt.db.gz`` do repositóri
 Wiserjr/louvorja, baixado para ``ferramentas/cache/``), que já tem
 as doze traduções conferidas pelo ``conferir_catalogo.py`` daquele app —
 incluindo as duas edições da Bíblia Livre injetadas pelo ``build_db.py``. Assim
-os dois apps mostram exatamente o mesmo texto e só existe um lugar para
-corrigir uma tradução.
+as doze traduções originais conservam o mesmo texto. Depois, o importador
+``importar_damarals.py`` acrescenta nove versões do catálogo damarals/biblias,
+na revisão fixada, sem substituir traduções já existentes.
 """
 import gzip
 import os
@@ -17,6 +18,7 @@ import sqlite3
 import sys
 import tempfile
 import urllib.request
+import subprocess
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -131,6 +133,8 @@ def main():
             shutil.copyfileobj(f, g)
         print("Gerado %s (%.1f MB)" % (
             DESTINO, os.path.getsize(DESTINO) / 1e6))
+        subprocess.run([sys.executable, os.path.join(PASTA, "importar_damarals.py")],
+                       check=True)
     finally:
         shutil.rmtree(tmp)
 

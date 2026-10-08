@@ -56,11 +56,27 @@ class Biblia {
     int fim, {
     int limite = 12,
   }) async {
+    // ID estável atribuído pelo importador; evita consultas extras por trecho.
+    final agrupada = versao == 23;
+    final cobertura = agrupada
+        ? ' OR EXISTS (SELECT 1 FROM versiculo_intervalo i '
+              'WHERE i.versao=versiculo.versao AND i.livro=versiculo.livro '
+              'AND i.capitulo=versiculo.capitulo AND i.inicio=versiculo.versiculo '
+              'AND i.capitulo*1000+i.inicio <= ? AND i.capitulo*1000+i.fim >= ?)'
+        : '';
     final rows = await _db.rawQuery(
       'SELECT capitulo, versiculo, texto FROM versiculo '
-      'WHERE versao=? AND livro=? AND capitulo*1000+versiculo BETWEEN ? AND ? '
+      'WHERE versao=? AND livro=? AND (capitulo*1000+versiculo BETWEEN ? AND ?'
+      '$cobertura) '
       'ORDER BY capitulo, versiculo LIMIT ?',
-      [versao, livro, ini, fim, limite],
+      [
+        versao,
+        livro,
+        ini,
+        fim,
+        if (agrupada) ...[fim, ini],
+        limite,
+      ],
     );
     return [
       for (final r in rows)
@@ -76,11 +92,32 @@ class Biblia {
   ) async {
     final todas = await versoes();
     final porId = {for (final v in todas) v.id: v};
-    final rows = await _db.rawQuery(
-      'SELECT x.versao, x.texto FROM versiculo x JOIN versao v ON v.id=x.versao '
-      'WHERE x.livro=? AND x.capitulo=? AND x.versiculo=? ORDER BY v.ordem',
-      [livro, capitulo, versiculo],
+    final rows = List<Map<String, Object?>>.of(
+      await _db.rawQuery(
+        'SELECT x.versao, x.texto FROM versiculo x JOIN versao v ON v.id=x.versao '
+        'WHERE x.livro=? AND x.capitulo=? AND x.versiculo=? ORDER BY v.ordem',
+        [livro, capitulo, versiculo],
+      ),
     );
+    // A Mensagem mantém trechos agrupados (por exemplo, Gn 1:1–2).
+    // Localiza o início do grupo sem duplicar seu texto no leitor.
+    if (todas.any((v) => v.sigla == 'MENS')) {
+      final grupos = await _db.rawQuery(
+        'SELECT x.versao, x.texto FROM versiculo_intervalo i '
+        'JOIN versiculo x ON x.versao=i.versao AND x.livro=i.livro '
+        'AND x.capitulo=i.capitulo AND x.versiculo=i.inicio '
+        'WHERE i.livro=? AND i.capitulo=? AND ? BETWEEN i.inicio+1 AND i.fim',
+        [livro, capitulo, versiculo],
+      );
+      rows.addAll(
+        grupos.where((g) => !rows.any((r) => r['versao'] == g['versao'])),
+      );
+      rows.sort(
+        (a, b) => todas
+            .indexOf(porId[a['versao']]!)
+            .compareTo(todas.indexOf(porId[b['versao']]!)),
+      );
+    }
     return [
       for (final r in rows)
         if (porId[r['versao']] != null)

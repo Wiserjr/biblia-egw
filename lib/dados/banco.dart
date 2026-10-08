@@ -10,7 +10,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart'
 
 /// Os dois bancos do app, ambos embarcados compactados em `assets/`:
 ///
-/// - `biblia.db`  o texto das doze traduções (ferramentas/construir_biblia.py)
+/// - `biblia.db`  o texto das 21 traduções (ferramentas/construir_biblia.py)
 /// - `estudo.db`  índice de Ellen G. White e pioneiros, referências cruzadas,
 ///                introduções e notas (ferramentas/construir_estudo.py)
 ///
