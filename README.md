@@ -2,8 +2,9 @@
 
 App para **Android e Windows** que junta, em cada versículo:
 
-- o texto em **12 traduções** (ARA, NAA, ARC, ACF, NVI, NVT, NTLH, KJA, ACRF,
-  ARIB e as duas edições da Bíblia Livre), com as palavras de Jesus em
+- o texto em **21 traduções** (ARA, NAA, ARC, ACF, NVI, NVT, NTLH, KJA, ACRF,
+  ARIB, as duas edições da Bíblia Livre, AS21, JFAA, KJF, NBV, TB, ALM1911,
+  OL, MENS e VFL), com as palavras de Jesus em
   vermelho e comparação lado a lado;
 - os **trechos de Ellen G. White** que citam o versículo — 95 livros —, e os
   capítulos que narram a passagem ("Este capítulo é baseado em Mateus 4:1-11");
@@ -123,6 +124,9 @@ Até outubro de 2026 o app morava na pasta `biblia/` do repositório
 commits veio junto na separação. Do Louvor JA ele ainda reaproveita as
 traduções: o `construir_biblia.py` baixa o `assets/louvorja_pt.db.gz` daquele
 repositório para `ferramentas/cache/` (ou recebe o caminho do arquivo).
+O mesmo construtor acrescenta nove traduções de
+[damarals/biblias](https://github.com/damarals/biblias), sem substituir as
+existentes. Veja [procedência e limitações](docs/TRADUCOES_DAMARALS.md).
 
 ## Ferramentas (gerar os bancos)
 

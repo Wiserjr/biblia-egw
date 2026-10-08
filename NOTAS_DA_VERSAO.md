@@ -1,3 +1,9 @@
+## Bíblia de Estudo 1.11.0
+
+- **Nove traduções adicionais para leitura offline, busca e comparação.** Almeida Século 21, Almeida Atualizada, King James Fiel, Nova Bíblia Viva, Tradução Brasileira, Almeida 1911, O Livro, A Mensagem e Versão Fácil de Ler. O catálogo passa de 12 para 21 traduções, preservando os textos e identificadores existentes.
+- **Trechos agrupados de A Mensagem.** A comparação encontra o trecho que abrange o versículo escolhido e o leitor conserva a numeração da fonte.
+- Fonte: damarals/biblias, revisão `08bfb8f3d569e5a8dd53a0ebefafda416eb066d7`. O texto é preservado como fornecido; consulte `docs/TRADUCOES_DAMARALS.md` para procedência e limitações.
+
 ## Bíblia de Estudo 1.10.1
 
 ### Correções da 1.10.1
