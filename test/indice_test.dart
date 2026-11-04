@@ -77,13 +77,16 @@ void main() {
       final egw = obras.values.where((o) => o.deEllenWhite).toList();
       expect(egw, hasLength(95));
       expect(egw.every((o) => etapas.any((c) => c.obra == o.id)), isTrue);
+      // Os 30 livros sem "Capítulo N —" (meditações diárias, coletâneas)
+      // têm capítulos tirados dos marcadores do PDF; as 91 linhas de sumário
+      // que passavam por capítulo saíram.
       final integrais = etapas.where(
         (c) => c.leituraIntegral && obras[c.obra]!.deEllenWhite,
       );
-      expect(integrais, hasLength(30));
+      expect(integrais, isEmpty);
       expect(
         etapas.where((c) => !c.leituraIntegral && obras[c.obra]!.deEllenWhite),
-        hasLength(2685),
+        hasLength(9789),
       );
       expect(
         etapas.every((c) => c.pagina >= 0 && c.pagina < obras[c.obra]!.paginas),
@@ -591,6 +594,59 @@ void main() {
       final n = await Estudo.instancia.notas(19, 146, 4);
       expect(n.single.texto, contains('pensamentos cessam'));
     });
+  });
+
+  test('capítulos pelos marcadores e sem as linhas do sumário', () async {
+    final obras = await Estudo.instancia.obras();
+    int id(String sigla) =>
+        obras.values.singleWhere((o) => o.sigla == sigla).id;
+    // O Grande Conflito começava por um "Capítulo 27" falso, na página 14.
+    final gc = await Estudo.instancia.capitulosObras(obra: id('GC'));
+    expect(gc.first.titulo, startsWith('Capítulo 1 —'));
+    expect(gc.where((c) => c.titulo.startsWith('Capítulo 27 —')), hasLength(1));
+    // Os IDs dos capítulos que já existiam não mudam (progresso do guia).
+    final pp = await Estudo.instancia.capitulosObras(obra: id('PP'));
+    expect(pp.first.id, 1);
+    // Meditações: um capítulo por dia.
+    final fev = await Estudo.instancia.capitulosObras(obra: id('FEV'));
+    expect(fev, hasLength(365));
+    expect(fev.first.titulo, 'Luz para meu caminho, 1 de Janeiro');
+    expect(fev.every((c) => c.id > 2693), isTrue);
+    final css = await Estudo.instancia.capitulosObras(obra: id('CSS'));
+    expect(css.first.titulo, 'A verdade do santuário uma introdução');
+  });
+
+  test('"Em Ellen G. White" da introdução vem do índice', () async {
+    final gn = await Estudo.instancia.leiturasIntroducao(1);
+    expect(gn.first.tipo, LeituraIntroducao.baseadoNoLivro);
+    expect(gn.first.obra.sigla, 'PP');
+    expect(gn.first.capitulo, startsWith('Capítulo 2 — A criação'));
+    final dn = await Estudo.instancia.leiturasIntroducao(27);
+    expect(
+      dn.where((l) => l.tipo == LeituraIntroducao.baseadoNoLivro),
+      everyElement(
+        isA<LeituraIntroducao>().having((l) => l.obra.sigla, 'obra', 'PR'),
+      ),
+    );
+    expect(
+      dn.last,
+      isA<LeituraIntroducao>()
+          .having((l) => l.tipo, 'tipo', LeituraIntroducao.versiculoAVersiculo)
+          .having((l) => l.obra.sigla, 'obra', 'DA'),
+    );
+    final rm = await Estudo.instancia.leiturasIntroducao(45);
+    expect(rm.first.capitulo, contains('A salvação para os judeus'));
+    expect(rm.every((l) => l.versiculos >= 3), isTrue);
+    expect(await Estudo.instancia.leiturasIntroducao(8), isEmpty);
+  });
+
+  test('notas revisadas: leituras adventistas marcadas como tais', () async {
+    final at = await Estudo.instancia.notas(44, 20, 7);
+    expect(at.single.texto, contains('Se Lucas conta o dia'));
+    final mc = await Estudo.instancia.notas(41, 7, 19);
+    expect(mc.single.texto, contains('Muitos intérpretes'));
+    final sl = await Estudo.instancia.notas(19, 23, 1);
+    expect(sl.single.texto, contains('O divino pastor'));
   });
 
   group('guia sinótico', () {

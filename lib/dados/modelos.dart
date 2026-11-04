@@ -183,10 +183,40 @@ class Introducao {
   const Introducao(this.campos);
 
   /// autor, data, local, destinatarios, tema, versiculo_chave, esboco,
-  /// mensagem, cristo, egw.
+  /// mensagem, cristo (e os complementos de introducoes_andrews.json).
   final Map<String, String?> campos;
 
   String? operator [](String campo) => campos[campo];
+}
+
+/// Leitura de Ellen G. White (ou dos pioneiros) na introdução de um livro
+/// bíblico, tirada do índice das obras (ferramentas/construir_estudo.py).
+class LeituraIntroducao {
+  const LeituraIntroducao(
+    this.obra,
+    this.capitulo,
+    this.pagina,
+    this.tipo,
+    this.versiculos,
+  );
+
+  final Obra obra;
+
+  /// Título do capítulo; nulo no comentário versículo a versículo.
+  final String? capitulo;
+
+  /// Página do PDF (a partir de 0).
+  final int pagina;
+
+  /// [baseadoNoLivro], [citaOLivro] ou [versiculoAVersiculo].
+  final int tipo;
+
+  /// Quantos versículos do livro o capítulo cita (só em [citaOLivro]).
+  final int versiculos;
+
+  static const citaOLivro = 0;
+  static const baseadoNoLivro = 1;
+  static const versiculoAVersiculo = 2;
 }
 
 class Nota {

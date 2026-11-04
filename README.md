@@ -25,8 +25,9 @@ App para **Android e Windows** que junta, em cada versículo:
 - **guia de leitura da biblioteca EGW**: plano por livro, seleção de livros
   ou pelos 95 livros do catálogo, com metas por sessão. Conclusão de capítulos,
   retomada de página, posição e zoom e progresso na cópia de segurança. Os
-  30 livros sem sumário indexado entram como leitura integral, explicitamente
-  indicada; o plano e os lugares são locais, sem sincronização pela conta;
+  30 livros sem "Capítulo N —" (as meditações diárias, as coletâneas) têm
+  capítulos tirados dos marcadores do próprio PDF — nas meditações, um por
+  dia; o plano e os lugares são locais, sem sincronização pela conta;
 - **notas de estudo** em toda a Bíblia: 3.571 notas nos 1.189 capítulos (ver
   *Notas*, abaixo);
 - **mapas**: 18 mapas temáticos (Abraão, Êxodo, conquista, reinos, Elias e
@@ -183,7 +184,11 @@ sementeira da verdade"" aponta para um capítulo que existe no índice (e, com
 título, que o título bate). Para acrescentar ou corrigir uma nota, edite o
 arquivo do livro e rode o `construir_estudo.py`, ou, sem os PDFs em
 `ferramentas/cache/`, o `ferramentas/atualizar_notas.py`, que troca só as notas
-no banco atual, com as mesmas conferências. O gerador abaixo só escreve
+no banco atual, com as mesmas conferências. Depois de rodar o
+`indexar_obras.py` (que baixa os 106 PDFs), o `ferramentas/atualizar_obras.py`
+troca só o que vem das obras — capítulos, trechos, as leituras de Ellen G.
+White dos temas, do guia sinótico e das introduções — sem baixar referências
+cruzadas e mapas. O gerador abaixo só escreve
 notas para capítulos que ainda não têm nenhuma.
 
 `ferramentas/gerar_notas.py` escreve notas curtas por versículo com a API do

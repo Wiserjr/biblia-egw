@@ -229,6 +229,29 @@ class Estudo {
     });
   }
 
+  /// O "Em Ellen G. White" da introdução: capítulos baseados no livro, os
+  /// que mais o citam e o comentário versículo a versículo dos pioneiros.
+  Future<List<LeituraIntroducao>> leiturasIntroducao(int livro) async {
+    final todas = await obras();
+    final rows = await _db.rawQuery(
+      'SELECT e.obra, c.titulo, e.pagina, e.tipo, e.versiculos '
+      'FROM introducao_egw e LEFT JOIN capitulo c ON c.id = e.capitulo '
+      'WHERE e.livro=? ORDER BY e.ordem',
+      [livro],
+    );
+    return [
+      for (final r in rows)
+        if (todas[r['obra']] != null)
+          LeituraIntroducao(
+            todas[r['obra']]!,
+            r['titulo'] as String?,
+            r['pagina'] as int,
+            r['tipo'] as int,
+            r['versiculos'] as int,
+          ),
+    ];
+  }
+
   Future<List<Nota>> notas(int livro, int capitulo, int versiculo) async {
     final k = chave(capitulo, versiculo);
     final rows = await _db.rawQuery(

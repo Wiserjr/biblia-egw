@@ -275,7 +275,7 @@ def introducoes(con):
     with open(INTRODUCOES, encoding="utf-8") as f:
         dados = json.load(f)
     campos = ["autor", "data", "local", "destinatarios", "tema",
-              "versiculo_chave", "esboco", "mensagem", "cristo", "egw"]
+              "versiculo_chave", "esboco", "mensagem", "cristo"]
     for livro, intro in dados.items():
         valores = []
         for c in campos:
@@ -283,9 +283,71 @@ def introducoes(con):
             if isinstance(v, list):
                 v = "\n".join(v)
             valores.append(v)
+        # A coluna egw fica vazia: a lista vem do índice (introducoes_egw).
         con.execute("INSERT INTO introducao VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                    [int(livro)] + valores)
+                    [int(livro)] + valores + [None])
     print("  introduções: %d livros" % len(dados))
+
+
+def introducoes_egw(con):
+    """O "Em Ellen G. White" da introdução de cada livro, tirado do índice.
+
+    Primeiro, os capítulos que a própria autora declara baseados no livro
+    ("Este capítulo é baseado em..."), na ordem das obras, sem as
+    compilações (prioridade acima de 3), que repetem o texto das obras. Se forem menos de
+    seis, completam a lista os capítulos que mais versículos do livro citam,
+    nas obras de comentário, doutrina e testemunhos (prioridade até 3), com ao
+    menos três versículos. Por fim, o comentário versículo a versículo dos
+    pioneiros (Daniel e Apocalipse, de Urias Smith). Tudo conferido nos PDFs
+    pelo indexar_obras.py: nada é escrito à mão.
+
+    tipo: 1 baseado no livro, 0 cita o livro, 2 comentário versículo a
+    versículo (sem capítulo; a página é a do primeiro trecho)."""
+    con.executescript("""
+    DROP TABLE IF EXISTS introducao_egw;
+    CREATE TABLE introducao_egw (
+      livro INTEGER NOT NULL, ordem INTEGER NOT NULL, obra INTEGER NOT NULL,
+      capitulo INTEGER, pagina INTEGER NOT NULL, tipo INTEGER NOT NULL,
+      versiculos INTEGER NOT NULL
+    );
+    """)
+    total = 0
+    for livro in range(1, 67):
+        linhas = [(obra, cap, pagina, 1, 0) for obra, cap, pagina in con.execute(
+            "SELECT t.obra, t.capitulo, c.pagina FROM ref_obra r "
+            "JOIN trecho t ON t.id = r.trecho "
+            "JOIN capitulo c ON c.id = t.capitulo "
+            "JOIN obra o ON o.id = t.obra "
+            "WHERE r.livro = ? AND r.tipo = 1 AND o.grupo = 'egw' "
+            "AND o.prioridade <= 3 "
+            "GROUP BY t.capitulo ORDER BY o.prioridade, o.id, c.pagina",
+            (livro,))]
+        vistos = {cap for _, cap, _, _, _ in linhas}
+        for obra, cap, pagina, n in con.execute(
+                "SELECT t.obra, t.capitulo, c.pagina, count(DISTINCT r.ini) "
+                "FROM ref_obra r JOIN trecho t ON t.id = r.trecho "
+                "JOIN capitulo c ON c.id = t.capitulo "
+                "JOIN obra o ON o.id = t.obra "
+                "WHERE r.livro = ? AND r.tipo = 0 AND o.grupo = 'egw' "
+                "AND o.prioridade <= 3 AND r.fim - r.ini < 900 "
+                "GROUP BY t.capitulo HAVING count(DISTINCT r.ini) >= 3 "
+                "ORDER BY count(DISTINCT r.ini) DESC, o.prioridade, c.id",
+                (livro,)):
+            if len(linhas) >= 6:
+                break
+            if cap not in vistos:
+                linhas.append((obra, cap, pagina, 0, n))
+        linhas += [(obra, None, pagina, 2, 0) for obra, pagina in con.execute(
+            "SELECT t.obra, min(t.pagina) FROM ref_obra r "
+            "JOIN trecho t ON t.id = r.trecho JOIN obra o ON o.id = t.obra "
+            "WHERE r.livro = ? AND r.tipo = 2 "
+            "GROUP BY t.obra ORDER BY o.prioridade, o.id", (livro,))]
+        con.executemany(
+            "INSERT INTO introducao_egw VALUES (?,?,?,?,?,?,?)",
+            [(livro, i) + linha for i, linha in enumerate(linhas)])
+        total += len(linhas)
+    con.execute("CREATE INDEX ix_introducao_egw ON introducao_egw (livro)")
+    print("  introduções, Ellen G. White: %d leituras" % total)
 
 
 def copiar_mapas(con):
@@ -384,7 +446,8 @@ def _leituras(con, tema, refs):
                 "JOIN obra o ON o.id = t.obra "
                 "WHERE r.livro = ? AND r.ini <= ? AND r.fim >= ? "
                 "AND r.fim - r.ini < 900 AND o.grupo = 'egw' "
-                "AND o.prioridade < 6",
+                # Sem as meditações diárias (5) e as edições condensadas (6).
+                "AND o.prioridade < 5",
                 (livro, fim, ini)):
             chave = (obra, cap, pagina)
             contagem.setdefault(chave, set()).add(i)
@@ -606,6 +669,7 @@ def main():
         copiar_obras(con)
         referencias_cruzadas(con, textos, crus)
         introducoes(con)
+        introducoes_egw(con)
         existe = {(l, c * 1000 + v) for (l, c, v) in textos}
         notas(con, existe)
         copiar_mapas(con)
