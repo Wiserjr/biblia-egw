@@ -4,15 +4,41 @@ Fonte: https://github.com/damarals/biblias
 
 Revisão: `08bfb8f3d569e5a8dd53a0ebefafda416eb066d7`.
 
-Importação do JSON canônico de AS21, JFAA, KJF, NBV, TB, ALM1911, OL,
-MENS e VFL. IDs estáveis 16–24. As doze traduções anteriores conservam seus
-IDs, textos e ordem. As nove adicionais aparecem depois delas.
+## O que vai no app e o que é baixado
 
-O aplicativo compartilha este banco entre Android e Windows. A atualização
-do número da versão faz o banco embarcado substituir a cópia de leitura;
-marcações e preferências continuam separadas.
+A coleção tem nove versões que não estavam no catálogo do Louvor JA. Só as
+duas de domínio público vão no banco embarcado (`assets/biblia.db.gz`):
 
-Para reproduzir a importação sobre o banco atual:
+| Sigla | ID | Versão | Situação |
+|---|:---:|---|---|
+| TB | 20 | Tradução Brasileira | embarcada (domínio público) |
+| ALM1911 | 21 | Almeida 1911 | embarcada (domínio público) |
+| AS21 | 16 | Almeida Século 21 (Vida Nova) | download a pedido |
+| JFAA | 17 | Almeida Atualizada (editora não informada) | download a pedido |
+| KJF | 18 | King James Fiel (BVBooks) | download a pedido |
+| NBV | 19 | Nova Bíblia Viva (Mundo Cristão) | download a pedido |
+| OL | 22 | O Livro (Biblica) | download a pedido |
+| MENS | 23 | A Mensagem (Editora Vida) | download a pedido |
+| VFL | 24 | Versão Fácil de Ler (Bible League International) | download a pedido |
+
+As sete protegidas por direitos autorais estiveram embarcadas só na 1.11.0.
+Desde a 1.12.0 o app não as distribui: na lista de traduções, "Mais
+traduções" abre a tela onde a pessoa baixa a que quiser, livro a livro, de
+`raw.githubusercontent.com/damarals/biblias/<revisão>/data/canonical/`. O
+download usa a mesma revisão fixada acima e as mesmas conferências do
+importador (66 livros, todos os capítulos, versículos não vazios e sem
+repetição) e só grava quando tudo chegou, numa transação. O texto fica num
+banco gravável próprio do aparelho, `traducoes_extras.db`, que as atualizações
+do app não tocam (lib/dados/traducoes_extras.dart). Os IDs são os mesmos da
+1.11.0, então preferências e marcações antigas voltam a valer depois do
+download.
+
+Baixar da coleção pública não torna o uso autorizado pela editora: a tela
+avisa isso e manda conferir a permissão. O app só deixa de ser quem
+distribui o texto.
+
+Para reproduzir a importação das duas embarcadas sobre o banco atual (o
+script também remove do banco qualquer uma das sete, se ainda estiver lá):
 
 ```
 python ferramentas/importar_damarals.py
@@ -40,5 +66,6 @@ As novas fontes não recebem marcações de palavras de Jesus criadas pelo app.
 O código da coleção tem licença MIT (Daniel Amaral, 2022–2026). O catálogo
 da fonte identifica TB e ALM1911 como domínio público e as demais adições
 como protegidas por direitos autorais de suas editoras. A licença do código
-não constitui autorização editorial para os textos. A integração local
-não equivale a publicação de uma release nem à verificação dessas autorizações.
+não constitui autorização editorial para os textos. Por isso, desde a
+1.12.0, só TB e ALM1911 vão no app, e as outras sete ficam no download a
+pedido descrito acima.

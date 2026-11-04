@@ -73,7 +73,8 @@ flutter:
   uses-material-design: true
 
   # Os dois bancos, compactados (ver lib/dados/banco.dart):
-  #   biblia.db.gz  doze traduções (ferramentas/construir_biblia.py)
+  #   biblia.db.gz  14 traduções (ferramentas/construir_biblia.py); as das
+  #                 editoras o app baixa a pedido (lib/dados/traducoes_extras.dart)
   #   estudo.db.gz  índice de Ellen G. White e pioneiros, referências
   #                 cruzadas, introduções, notas (ferramentas/construir_estudo.py)
   assets:
