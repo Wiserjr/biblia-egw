@@ -1,7 +1,13 @@
-"""Acrescenta as traduções de damarals/biblias, preservando as existentes.
+"""Acrescenta as traduções de domínio público de damarals/biblias.
 
 python ferramentas/importar_damarals.py [checkout da fonte]
 O checkout padrão é baixado na revisão fixada, para permitir reprodução.
+
+Só a Tradução Brasileira e a Almeida 1911 (domínio público) vão no banco
+embarcado. As demais versões da coleção pertencem às suas editoras: o app não
+as distribui, e quem quiser as baixa pelo próprio app, direto do repositório
+damarals/biblias (lib/dados/traducoes_extras.dart, com os mesmos IDs e a
+mesma revisão). Se o banco ainda tiver alguma delas, este script a remove.
 """
 import gzip
 from contextlib import closing
@@ -19,7 +25,11 @@ from referencias_pt import CAPITULOS
 RAIZ = Path(__file__).resolve().parents[1]
 REVISAO = "08bfb8f3d569e5a8dd53a0ebefafda416eb066d7"
 FONTE = "https://github.com/damarals/biblias"
-NOVAS = ("AS21", "JFAA", "KJF", "NBV", "TB", "ALM1911", "OL", "MENS", "VFL")
+# IDs fixos: preferências e marcações antigas continuam apontando para eles.
+EMBARCADAS = {"TB": 20, "ALM1911": 21}
+# Protegidas por direitos autorais: baixadas a pedido no app, nunca embarcadas.
+PARA_BAIXAR = {"AS21": 16, "JFAA": 17, "KJF": 18, "NBV": 19, "OL": 22,
+               "MENS": 23, "VFL": 24}
 
 
 def obter_fonte():
@@ -30,12 +40,23 @@ def obter_fonte():
     return pasta
 
 
+def remover_protegidas(db):
+    """Tira do banco embarcado as versões que só podem vir por download."""
+    for sigla, vid in PARA_BAIXAR.items():
+        db.execute("DELETE FROM versiculo WHERE versao=?", (vid,))
+        db.execute("DELETE FROM versiculo_intervalo WHERE versao=?", (vid,))
+        db.execute("DELETE FROM versao WHERE id=?", (vid,))
+        db.execute("DELETE FROM info WHERE chave=?", ("fonte_" + sigla,))
+
+
 def acrescentar(db, pasta):
     """Valida cada versão antes de inserir. IDs fixos não alteram preferências."""
+    # A tabela fica mesmo vazia: o app consulta o mesmo esquema nos dois bancos.
     db.execute("CREATE TABLE IF NOT EXISTS versiculo_intervalo ("
                "versao INTEGER, livro INTEGER, capitulo INTEGER, inicio INTEGER, "
                "fim INTEGER, PRIMARY KEY(versao,livro,capitulo,inicio))")
-    for vid, sigla in enumerate(NOVAS, 16):
+    remover_protegidas(db)
+    for sigla, vid in EMBARCADAS.items():
         existente = db.execute("SELECT id FROM versao WHERE sigla=?", (sigla,)).fetchone()
         if existente:
             if existente[0] != vid:
@@ -72,6 +93,8 @@ def acrescentar(db, pasta):
                         intervalos.append((vid, n, cap["number"], numero, fim))
         if livros != set(range(1, 67)):
             raise ValueError(f"{sigla}: faltam livros")
+        if meta.get("license") != "public-domain":
+            raise ValueError(f"{sigla} não é de domínio público na fonte")
         db.execute("INSERT INTO versao VALUES (?,?,?,?)", (vid, sigla, meta["name"], vid-4))
         db.executemany("INSERT INTO versiculo VALUES (?,?,?,?,?)", linhas)
         db.executemany("INSERT INTO versiculo_intervalo VALUES (?,?,?,?,?)", intervalos)
@@ -89,6 +112,8 @@ def main():
         with closing(sqlite3.connect(banco)) as db:
             with db:
                 acrescentar(db, pasta)
+            db.execute("VACUUM")
+            with db:
                 if db.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
                     raise ValueError("Banco inválido")
         parcial = asset.with_suffix(".gz.parcial")

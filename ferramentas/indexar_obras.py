@@ -266,6 +266,105 @@ def indexar_obra(con, id_obra, arquivo, comentario_versiculo):
     return n_refs
 
 
+def _numero(titulo):
+    m = re.match(r"\D*(\d+)", titulo)
+    return int(m.group(1)) if m else None
+
+
+def limpar_capitulos_do_sumario(con):
+    """Apaga os "capítulos" que são linhas do sumário.
+
+    Quando o título no sumário quebra em duas linhas, a primeira não tem o
+    pontilhado nem o número da página e passa por título de capítulo
+    ("Capítulo 27 — A vida que satisfaz — como alcançar paz de", na página 14
+    de O Grande Conflito). O capítulo de verdade aparece de novo adiante, com
+    o mesmo número e o título inteiro. Entre os dois, o falso é o que está
+    amontoado com outros títulos em uma ou duas páginas (o sumário), ou, se
+    nenhum estiver, o de título truncado.
+
+    Roda depois da indexação e só apaga linhas: os IDs dos capítulos reais não
+    mudam, porque o progresso do guia de leitura do app os guarda."""
+    falsos = set()
+    for (obra,) in con.execute("SELECT DISTINCT obra FROM capitulo").fetchall():
+        caps = con.execute("SELECT id, titulo, pagina FROM capitulo "
+                           "WHERE obra=? ORDER BY id", (obra,)).fetchall()
+
+        def amontoado(p):
+            return sum(1 for _, _, q in caps if abs(q - p) <= 1) - 1 >= 2
+
+        for i, (a, ta, pa) in enumerate(caps):
+            for b, tb, pb in caps[i + 1:]:
+                if _numero(ta) != _numero(tb) or \
+                        not (ta.startswith(tb) or tb.startswith(ta)):
+                    continue
+                if amontoado(pa) != amontoado(pb):
+                    falsos.add(a if amontoado(pa) else b)
+                elif len(ta) != len(tb):
+                    falsos.add(a if len(ta) < len(tb) else b)
+                else:
+                    falsos.add(a if pa <= pb else b)
+    for cid in sorted(falsos):
+        con.execute("DELETE FROM capitulo WHERE id=?", (cid,))
+        con.execute(
+            "UPDATE trecho SET capitulo=(SELECT c.id FROM capitulo c "
+            "WHERE c.obra=trecho.obra AND c.pagina<=trecho.pagina "
+            "ORDER BY c.pagina DESC, c.id DESC LIMIT 1) WHERE capitulo=?",
+            (cid,))
+    return len(falsos)
+
+
+# Marcadores que não são etapas de leitura.
+_FORA_DO_GUIA = re.compile(
+    r"^(Informações sobre este livro|Prefácio|Apresentação|Apêndice|Índice|"
+    r"Conteúdo|Leitura para estudo adicional|Perguntas para estudo)", re.I)
+
+
+def capitulos_pelos_marcadores(con, id_obra, caminho):
+    """Capítulos de um livro sem "Capítulo N —" (as meditações diárias, as
+    coletâneas), tirados dos marcadores do próprio PDF.
+
+    Os marcadores têm níveis: nas meditações, o mês e, dentro dele, os dias;
+    nas coletâneas, a seção e, dentro dela, os capítulos e seus subtítulos.
+    Vale o nível mais raso cujas etapas tenham em média até 12 páginas — os
+    dias, os capítulos —, e entram também as folhas mais rasas que ele (um
+    capítulo fora de seção). Os trechos do livro passam a apontar para o
+    capítulo onde estão."""
+    import pypdfium2 as pdfium
+    doc = pdfium.PdfDocument(caminho)
+    try:
+        total = len(doc)
+        marcas = []
+        for b in doc.get_toc(max_depth=4):
+            dest = b.get_dest()
+            if dest is not None:
+                marcas.append((b.level, b.get_title().strip(),
+                               dest.get_index()))
+    finally:
+        doc.close()
+    folhas = [i + 1 == len(marcas) or marcas[i + 1][0] <= m[0]
+              for i, m in enumerate(marcas)]
+    validas = [(m, f) for m, f in zip(marcas, folhas)
+               if m[1] and not _FORA_DO_GUIA.match(m[1])]
+    if not validas:
+        return 0
+    inicio = min(m[2] for m, _ in validas)
+    escolhidas = []
+    for nivel in range(4):
+        escolhidas = [m for m, folha in validas
+                      if m[0] == nivel or (m[0] < nivel and folha)]
+        if escolhidas and (total - inicio) / len(escolhidas) <= 12:
+            break
+    escolhidas.sort(key=lambda m: m[2])
+    for _, titulo, pagina in escolhidas:
+        con.execute("INSERT INTO capitulo (obra, titulo, pagina) "
+                    "VALUES (?,?,?)", (id_obra, titulo, pagina))
+    con.execute(
+        "UPDATE trecho SET capitulo=(SELECT c.id FROM capitulo c "
+        "WHERE c.obra=trecho.obra AND c.pagina<=trecho.pagina "
+        "ORDER BY c.pagina DESC, c.id DESC LIMIT 1) WHERE obra=?", (id_obra,))
+    return len(escolhidas)
+
+
 def main():
     os.makedirs(CACHE, exist_ok=True)
     if os.path.exists(SAIDA):
@@ -288,6 +387,17 @@ def main():
         total += n
         print("%-6s %6d referências  %s" % (sigla, n, arquivo))
         con.commit()
+    # Depois de todas as obras, para não mexer nos IDs dos capítulos já
+    # indexados: o guia de leitura do app guarda o progresso por eles.
+    print("Linhas do sumário tiradas dos capítulos: %d" %
+          limpar_capitulos_do_sumario(con))
+    for id_obra, arquivo, sigla in con.execute(
+            "SELECT o.id, o.arquivo, o.sigla FROM obra o WHERE o.grupo='egw' "
+            "AND NOT EXISTS (SELECT 1 FROM capitulo c WHERE c.obra=o.id) "
+            "ORDER BY o.id").fetchall():
+        n = capitulos_pelos_marcadores(con, id_obra, baixar(arquivo))
+        print("%-6s %4d capítulos pelos marcadores do PDF" % (sigla, n))
+    con.commit()
     con.execute("CREATE INDEX ix_ref_obra ON ref_obra (livro, ini)")
     con.commit()
     print("Total: %d referências em %d trechos" % (

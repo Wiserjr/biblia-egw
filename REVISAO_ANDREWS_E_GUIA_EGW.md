@@ -77,8 +77,8 @@ compatível com a visão geral, embora não replique o esboço da Study Bible.
 2. Escolha **Criar plano de leitura**. Selecione um livro, vários livros ou
    **Biblioteca EGW completa**. A ordem segue a prioridade do catálogo e o ID
    da obra; os capítulos seguem a página e o ID do índice.
-3. Defina de 1 a 20 etapas por sessão. Uma etapa é um capítulo indexado; nos
-   livros sem sumário, é a leitura integral. O plano funciona no próprio ritmo,
+3. Defina de 1 a 20 etapas por sessão. Uma etapa é um capítulo indexado; nas
+   meditações diárias, um dia. O plano funciona no próprio ritmo,
    sem calendário, notificações novas ou dias vencidos.
 4. Abra um capítulo e marque sua conclusão quando terminar. A conclusão é
    manual e reversível; abrir uma página não conclui um capítulo.
@@ -86,10 +86,16 @@ compatível com a visão geral, embora não replique o esboço da Study Bible.
    posição horizontal e zoom. Abrir o livro diretamente pela Biblioteca também
    retoma. Abrir um capítulo ou um link de versículo respeita a página pedida.
 
-O catálogo contém 95 livros EGW: 65 têm 2.685 entradas de capítulos e 30 ainda
-não têm capítulos indexados. O plano completo cobre os 95, com 2.715 etapas:
-2.685 capítulos e 30 leituras integrais. As unidades não têm a mesma duração;
-uma meta por etapas não equivale a uma meta por minutos.
+O catálogo contém 95 livros EGW, todos com capítulos indexados: 9.789 etapas
+(na 1.12.0). Os 65 livros com títulos "Capítulo N —" no texto são lidos pelo
+`indexar_obras.py`; os outros 30 — as 17 meditações diárias e coletâneas como
+Primeiros Escritos, Cristo em Seu Santuário e Testemunhos Seletos — têm os
+capítulos tirados dos marcadores do próprio PDF, no nível em que as etapas têm
+em média até 12 páginas (nas meditações, um dia). Até a 1.11.0, esses 30
+entravam como leitura integral, e 91 linhas de sumário passavam por capítulo
+(O Grande Conflito começava por um "Capítulo 27" na página 14); elas saíram
+sem mudar os IDs dos capítulos reais, que guardam o progresso. As unidades não
+têm a mesma duração; uma meta por etapas não equivale a uma meta por minutos.
 
 Os pioneiros continuam separados na Biblioteca. O guia individual também
 permite acompanhar um pioneiro; a opção de biblioteca EGW completa seleciona
@@ -110,16 +116,16 @@ não foi incluído na sincronização de conta/nuvem existente.
 
 ## Continuidade editorial
 
-Uma próxima revisão pode tornar **Em Ellen G. White** mais precisa, substituindo
-indicações genéricas por capítulos e links efetivamente conferidos nos PDFs
-portugueses. Nesta entrega, as indicações EGW anteriores não foram
-recertificadas nem apresentadas como verificadas pelas fontes Andrews.
+Na 1.12.0, **Em Ellen G. White** deixou de ser texto escrito à mão e passou a
+vir do índice dos PDFs (`introducoes_egw` no `construir_estudo.py`): os
+capítulos que a própria autora declara baseados no livro ("Este capítulo é
+baseado em..."), nas obras principais; se forem menos de seis, os capítulos
+que mais versículos do livro citam (ao menos três); e o comentário versículo
+a versículo dos pioneiros. Cada item abre o livro na página. Rute, Obadias,
+Habacuque, 2 João e 3 João não têm capítulo assim, e a introdução diz isso.
 
-Outra melhoria é indexar os sumários dos 30 livros restantes, incluindo a
-estrutura própria das meditações diárias. A leitura integral é um recurso
-explícito para a ausência atual do índice, não uma divisão artificial desses
-livros. O material Andrews do Novo Testamento seria necessário para uma
-revisão equivalente de Mateus a Apocalipse com a mesma atribuição.
+O material Andrews do Novo Testamento seria necessário para uma revisão
+equivalente de Mateus a Apocalipse com a mesma atribuição.
 
 ## Complemento com as dez digitalizações em português
 

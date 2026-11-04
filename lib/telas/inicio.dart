@@ -24,6 +24,7 @@ import 'plano.dart';
 import 'seletor.dart';
 import 'sinotico.dart';
 import 'temas.dart';
+import 'traducoes_extras.dart';
 
 /// Tela principal: o leitor e, ao tocar num versículo, o painel de estudo.
 ///
@@ -226,15 +227,33 @@ class _TelaInicioState extends State<TelaInicio> {
                 selected: v.id == _versao?.id,
                 onTap: () => Navigator.pop(c, v),
               ),
+            const Divider(),
+            ListTile(
+              leading: const SizedBox(width: 72, child: Icon(Icons.download)),
+              title: const Text('Mais traduções'),
+              subtitle: const Text('Versões das editoras, para baixar'),
+              onTap: () => Navigator.pop(c, _maisTraducoes),
+            ),
           ],
         ),
       ),
     );
-    if (v != null) {
+    if (identical(v, _maisTraducoes)) {
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const TelaTraducoesExtras()),
+      );
+      Biblia.instancia.esquecerVersoes();
+      await _carregarVersoes();
+    } else if (v != null) {
       setState(() => _versao = v);
       Ajustes.instancia.versao = v.id;
     }
   }
+
+  /// Marca, na lista de traduções, o pedido para abrir os downloads.
+  static const _maisTraducoes = Versao(-1, '', '');
 
   Future<void> _abrir(Widget tela) async {
     final p = await Navigator.push<Posicao>(

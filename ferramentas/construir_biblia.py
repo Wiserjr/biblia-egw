@@ -8,8 +8,10 @@ Wiserjr/louvorja, baixado para ``ferramentas/cache/``), que já tem
 as doze traduções conferidas pelo ``conferir_catalogo.py`` daquele app —
 incluindo as duas edições da Bíblia Livre injetadas pelo ``build_db.py``. Assim
 as doze traduções originais conservam o mesmo texto. Depois, o importador
-``importar_damarals.py`` acrescenta nove versões do catálogo damarals/biblias,
-na revisão fixada, sem substituir traduções já existentes.
+``importar_damarals.py`` acrescenta as duas versões de domínio público do
+catálogo damarals/biblias (Tradução Brasileira e Almeida 1911), na revisão
+fixada, sem substituir traduções já existentes. As outras sete versões daquele
+catálogo pertencem às editoras e não vão no banco: o app as baixa a pedido.
 """
 import gzip
 import os

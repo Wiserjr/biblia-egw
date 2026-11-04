@@ -8,9 +8,12 @@ import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart'
     show databaseFactoryFfi, sqfliteFfiInit;
 
+import 'traducoes_extras.dart';
+
 /// Os dois bancos do app, ambos embarcados compactados em `assets/`:
 ///
-/// - `biblia.db`  o texto das 21 traduções (ferramentas/construir_biblia.py)
+/// - `biblia.db`  o texto das 14 traduções embarcadas
+///                (ferramentas/construir_biblia.py)
 /// - `estudo.db`  índice de Ellen G. White e pioneiros, referências cruzadas,
 ///                introduções e notas (ferramentas/construir_estudo.py)
 ///
@@ -18,12 +21,19 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart'
 /// descompactado para a pasta de suporte do app. Os dois são só leitura: o que
 /// a pessoa cria (marcações, última leitura) fica nas preferências, para que
 /// trocar o banco numa atualização nunca apague nada dela.
+///
+/// Um terceiro banco, gravável, guarda as traduções que a pessoa baixou
+/// (`traducoes_extras.db`, ver traducoes_extras.dart). Ele não vem no app e
+/// uma atualização não o toca.
 class Banco {
   Banco._();
   static final Banco instancia = Banco._();
 
   late Database biblia;
   late Database estudo;
+
+  /// Nulo só quando não deu para abrir: o app segue com as embarcadas.
+  Database? extras;
   bool _aberto = false;
 
   /// No Windows o sqflite não tem implementação nativa; usa-se a FFI.
@@ -40,7 +50,23 @@ class Banco {
     await dir.create(recursive: true);
     biblia = await _abrir(dir, 'biblia', versaoApp);
     estudo = await _abrir(dir, 'estudo', versaoApp);
+    extras = await _abrirExtras(p.join(dir.path, 'traducoes_extras.db'));
     _aberto = true;
+  }
+
+  /// Um arquivo estragado não pode impedir o app de abrir: na segunda
+  /// tentativa ele é recriado vazio (as traduções podem ser baixadas de novo).
+  Future<Database?> _abrirExtras(String caminho) async {
+    for (var tentativa = 0; tentativa < 2; tentativa++) {
+      try {
+        final db = await openDatabase(caminho);
+        await TraducoesExtras.criarEsquema(db);
+        return db;
+      } catch (_) {
+        if (tentativa == 0) await deleteDatabase(caminho);
+      }
+    }
+    return null;
   }
 
   Future<Database> _abrir(Directory dir, String nome, String versao) async {

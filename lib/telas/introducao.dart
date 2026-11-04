@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../dados/estudo.dart';
 import '../dados/modelos.dart';
 import '../dados/referencias.dart';
+import '../dados/temas.dart' show tituloCurto;
+import 'cartao_trecho.dart' show abrirObra;
 import 'largura_texto.dart';
 import 'tema.dart';
 
@@ -169,10 +171,7 @@ class _TelaIntroducaoState extends State<TelaIntroducao> {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
-                                i['egw'] ?? '',
-                                style: t.textTheme.bodyMedium,
-                              ),
+                              LeiturasDaIntroducao(livro: widget.livro),
                             ],
                           ),
                         ),
@@ -223,6 +222,119 @@ class _TelaIntroducaoState extends State<TelaIntroducao> {
           Expanded(child: Text(valor, style: t.textTheme.bodyMedium)),
         ],
       ),
+    );
+  }
+}
+
+/// "Em Ellen G. White": os capítulos que ela declara baseados no livro, os
+/// que mais o citam e o comentário versículo a versículo dos pioneiros —
+/// todos tirados do índice dos PDFs, e cada um abre o livro na página.
+class LeiturasDaIntroducao extends StatefulWidget {
+  const LeiturasDaIntroducao({super.key, required this.livro});
+  final int livro;
+
+  @override
+  State<LeiturasDaIntroducao> createState() => _LeiturasDaIntroducaoState();
+}
+
+class _LeiturasDaIntroducaoState extends State<LeiturasDaIntroducao> {
+  late final Future<List<LeituraIntroducao>> _leituras = Estudo.instancia
+      .leiturasIntroducao(widget.livro);
+
+  /// Acima disso, os capítulos de uma obra ficam recolhidos.
+  static const _visiveis = 6;
+
+  Widget _item(LeituraIntroducao l, {String? detalhe}) => ListTile(
+    contentPadding: EdgeInsets.zero,
+    dense: true,
+    visualDensity: VisualDensity.compact,
+    title: Text(tituloCurto(l.capitulo ?? l.obra.titulo)),
+    subtitle: detalhe == null ? null : Text(detalhe),
+    trailing: const Icon(Icons.open_in_new, size: 18),
+    onTap: () => abrirObra(context, l.obra, l.pagina),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return FutureBuilder<List<LeituraIntroducao>>(
+      future: _leituras,
+      builder: (context, snap) {
+        final lista = snap.data;
+        if (lista == null) return const SizedBox(height: 24);
+        Widget rotulo(String texto) => Padding(
+          padding: const EdgeInsets.only(top: 6, bottom: 2),
+          child: Text(texto, style: t.textTheme.bodySmall),
+        );
+        final baseados = lista
+            .where((l) => l.tipo == LeituraIntroducao.baseadoNoLivro)
+            .toList();
+        final citam = lista
+            .where((l) => l.tipo == LeituraIntroducao.citaOLivro)
+            .toList();
+        final comentarios = lista
+            .where((l) => l.tipo == LeituraIntroducao.versiculoAVersiculo)
+            .toList();
+        if (lista.isEmpty) {
+          return Text(
+            'Nenhum capítulo de Ellen G. White é dedicado a este livro. Os '
+            'trechos em que ela o cita aparecem em cada versículo, no painel '
+            'de estudo.',
+            style: t.textTheme.bodyMedium,
+          );
+        }
+        final porObra = <int, List<LeituraIntroducao>>{};
+        for (final l in baseados) {
+          (porObra[l.obra.id] ??= []).add(l);
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (baseados.isNotEmpty)
+              rotulo(
+                'Capítulos que, segundo a própria autora, são baseados '
+                'neste livro:',
+              ),
+            for (final caps in porObra.values)
+              if (caps.length <= _visiveis) ...[
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    caps.first.obra.titulo,
+                    style: t.textTheme.labelLarge,
+                  ),
+                ),
+                for (final l in caps) _item(l),
+              ] else
+                ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: EdgeInsets.zero,
+                  title: Text(
+                    caps.first.obra.titulo,
+                    style: t.textTheme.labelLarge,
+                  ),
+                  subtitle: Text('${caps.length} capítulos'),
+                  children: [for (final l in caps) _item(l)],
+                ),
+            if (citam.isNotEmpty) ...[
+              rotulo(
+                baseados.isEmpty
+                    ? 'Capítulos que mais citam este livro:'
+                    : 'Também citam muito este livro:',
+              ),
+              for (final l in citam)
+                _item(
+                  l,
+                  detalhe: '${l.obra.titulo} • cita ${l.versiculos} versículos',
+                ),
+            ],
+            if (comentarios.isNotEmpty) ...[
+              rotulo('Comentário versículo a versículo, dos pioneiros:'),
+              for (final l in comentarios) _item(l, detalhe: l.obra.autor),
+            ],
+          ],
+        );
+      },
     );
   }
 }

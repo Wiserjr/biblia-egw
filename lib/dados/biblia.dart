@@ -2,23 +2,48 @@ import 'package:sqflite/sqflite.dart';
 
 import 'banco.dart';
 import 'modelos.dart';
+import 'traducoes_extras.dart';
 
-/// Consultas ao texto bíblico (banco `biblia.db`).
+/// Consultas ao texto bíblico: o banco embarcado (`biblia.db`) e o das
+/// traduções baixadas (`traducoes_extras.db`), com o mesmo esquema.
 class Biblia {
   Biblia._();
   static final Biblia instancia = Biblia._();
 
   Database get _db => Banco.instancia.biblia;
+  Database? get _extras => Banco.instancia.extras;
+
+  /// O banco onde mora o texto de uma tradução.
+  Database _bancoDe(int versao) =>
+      idsBaixaveis.contains(versao) ? _extras ?? _db : _db;
 
   List<Versao>? _versoes;
   List<Livro>? _livros;
 
-  Future<List<Versao>> versoes() async => _versoes ??= [
-    for (final r in await _db.rawQuery(
-      'SELECT id, sigla, nome FROM versao ORDER BY ordem, sigla',
-    ))
-      Versao(r['id'] as int, r['sigla'] as String, r['nome'] as String),
-  ];
+  /// Depois de baixar ou remover uma tradução.
+  void esquecerVersoes() => _versoes = null;
+
+  Future<List<Versao>> versoes() async => _versoes ??= await _listarVersoes();
+
+  Future<List<Versao>> _listarVersoes() async {
+    const sql = 'SELECT id, sigla, nome, ordem FROM versao';
+    final linhas = [
+      ...await _db.rawQuery(sql),
+      if (_extras case final extras?)
+        for (final r in await extras.rawQuery(sql))
+          if (idsBaixaveis.contains(r['id'])) r,
+    ];
+    linhas.sort((a, b) {
+      final ordem = (a['ordem'] as int).compareTo(b['ordem'] as int);
+      return ordem != 0
+          ? ordem
+          : (a['sigla'] as String).compareTo(b['sigla'] as String);
+    });
+    return [
+      for (final r in linhas)
+        Versao(r['id'] as int, r['sigla'] as String, r['nome'] as String),
+    ];
+  }
 
   Future<List<Livro>> livros() async => _livros ??= [
     for (final r in await _db.rawQuery(
@@ -38,7 +63,7 @@ class Biblia {
 
   Future<List<Versiculo>> capitulo(int versao, int livro, int capitulo) async =>
       [
-        for (final r in await _db.rawQuery(
+        for (final r in await _bancoDe(versao).rawQuery(
           'SELECT versiculo, texto FROM versiculo '
           'WHERE versao=? AND livro=? AND capitulo=? ORDER BY versiculo',
           [versao, livro, capitulo],
@@ -64,7 +89,7 @@ class Biblia {
               'AND i.capitulo=versiculo.capitulo AND i.inicio=versiculo.versiculo '
               'AND i.capitulo*1000+i.inicio <= ? AND i.capitulo*1000+i.fim >= ?)'
         : '';
-    final rows = await _db.rawQuery(
+    final rows = await _bancoDe(versao).rawQuery(
       'SELECT capitulo, versiculo, texto FROM versiculo '
       'WHERE versao=? AND livro=? AND (capitulo*1000+versiculo BETWEEN ? AND ?'
       '$cobertura) '
@@ -92,17 +117,17 @@ class Biblia {
   ) async {
     final todas = await versoes();
     final porId = {for (final v in todas) v.id: v};
-    final rows = List<Map<String, Object?>>.of(
-      await _db.rawQuery(
-        'SELECT x.versao, x.texto FROM versiculo x JOIN versao v ON v.id=x.versao '
-        'WHERE x.livro=? AND x.capitulo=? AND x.versiculo=? ORDER BY v.ordem',
-        [livro, capitulo, versiculo],
-      ),
-    );
+    const sql =
+        'SELECT versao, texto FROM versiculo '
+        'WHERE livro=? AND capitulo=? AND versiculo=?';
+    final rows = [
+      for (final db in [_db, ?_extras])
+        ...await db.rawQuery(sql, [livro, capitulo, versiculo]),
+    ];
     // A Mensagem mantém trechos agrupados (por exemplo, Gn 1:1–2).
     // Localiza o início do grupo sem duplicar seu texto no leitor.
     if (todas.any((v) => v.sigla == 'MENS')) {
-      final grupos = await _db.rawQuery(
+      final grupos = await _bancoDe(23).rawQuery(
         'SELECT x.versao, x.texto FROM versiculo_intervalo i '
         'JOIN versiculo x ON x.versao=i.versao AND x.livro=i.livro '
         'AND x.capitulo=i.capitulo AND x.versiculo=i.inicio '
@@ -112,16 +137,18 @@ class Biblia {
       rows.addAll(
         grupos.where((g) => !rows.any((r) => r['versao'] == g['versao'])),
       );
-      rows.sort(
-        (a, b) => todas
-            .indexOf(porId[a['versao']]!)
-            .compareTo(todas.indexOf(porId[b['versao']]!)),
-      );
     }
-    return [
+    final visiveis = [
       for (final r in rows)
-        if (porId[r['versao']] != null)
-          (porId[r['versao']]!, r['texto'] as String),
+        if (porId[r['versao']] != null) r,
+    ];
+    visiveis.sort(
+      (a, b) => todas
+          .indexOf(porId[a['versao']]!)
+          .compareTo(todas.indexOf(porId[b['versao']]!)),
+    );
+    return [
+      for (final r in visiveis) (porId[r['versao']]!, r['texto'] as String),
     ];
   }
 
@@ -145,7 +172,7 @@ class Biblia {
     if (testamento != null) {
       extra = testamento == 1 ? ' AND livro <= 39' : ' AND livro >= 40';
     }
-    final rows = await _db.rawQuery(
+    final rows = await _bancoDe(versao).rawQuery(
       'SELECT livro, capitulo, versiculo, texto FROM versiculo '
       'WHERE versao=? AND $filtros$extra '
       'ORDER BY livro, capitulo, versiculo LIMIT $limite',

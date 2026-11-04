@@ -2,10 +2,11 @@
 
 App para **Android e Windows** que junta, em cada versículo:
 
-- o texto em **21 traduções** (ARA, NAA, ARC, ACF, NVI, NVT, NTLH, KJA, ACRF,
-  ARIB, as duas edições da Bíblia Livre, AS21, JFAA, KJF, NBV, TB, ALM1911,
-  OL, MENS e VFL), com as palavras de Jesus em
-  vermelho e comparação lado a lado;
+- o texto em **14 traduções** (ARA, NAA, ARC, ACF, NVI, NVT, NTLH, KJA, ACRF,
+  ARIB, as duas edições da Bíblia Livre, TB e ALM1911), com as palavras de
+  Jesus em vermelho e comparação lado a lado, e mais sete (AS21, JFAA, KJF,
+  NBV, OL, MENS e VFL) que pertencem às editoras e não vêm no app: a pessoa
+  as baixa, se quiser, da coleção pública damarals/biblias;
 - os **trechos de Ellen G. White** que citam o versículo — 95 livros —, e os
   capítulos que narram a passagem ("Este capítulo é baseado em Mateus 4:1-11");
 - os **pioneiros adventistas** (11 livros), entre eles *Daniel e Apocalipse*
@@ -24,8 +25,9 @@ App para **Android e Windows** que junta, em cada versículo:
 - **guia de leitura da biblioteca EGW**: plano por livro, seleção de livros
   ou pelos 95 livros do catálogo, com metas por sessão. Conclusão de capítulos,
   retomada de página, posição e zoom e progresso na cópia de segurança. Os
-  30 livros sem sumário indexado entram como leitura integral, explicitamente
-  indicada; o plano e os lugares são locais, sem sincronização pela conta;
+  30 livros sem "Capítulo N —" (as meditações diárias, as coletâneas) têm
+  capítulos tirados dos marcadores do próprio PDF — nas meditações, um por
+  dia; o plano e os lugares são locais, sem sincronização pela conta;
 - **notas de estudo** em toda a Bíblia: 3.571 notas nos 1.189 capítulos (ver
   *Notas*, abaixo);
 - **mapas**: 18 mapas temáticos (Abraão, Êxodo, conquista, reinos, Elias e
@@ -124,9 +126,11 @@ Até outubro de 2026 o app morava na pasta `biblia/` do repositório
 commits veio junto na separação. Do Louvor JA ele ainda reaproveita as
 traduções: o `construir_biblia.py` baixa o `assets/louvorja_pt.db.gz` daquele
 repositório para `ferramentas/cache/` (ou recebe o caminho do arquivo).
-O mesmo construtor acrescenta nove traduções de
-[damarals/biblias](https://github.com/damarals/biblias), sem substituir as
-existentes. Veja [procedência e limitações](docs/TRADUCOES_DAMARALS.md).
+O mesmo construtor acrescenta as duas traduções de domínio público de
+[damarals/biblias](https://github.com/damarals/biblias) (TB e ALM1911), sem
+substituir as existentes; as outras sete daquela coleção são baixadas pelo
+próprio app, a pedido, em "Mais traduções". Veja
+[procedência e limitações](docs/TRADUCOES_DAMARALS.md).
 
 ## Ferramentas (gerar os bancos)
 
@@ -180,7 +184,11 @@ sementeira da verdade"" aponta para um capítulo que existe no índice (e, com
 título, que o título bate). Para acrescentar ou corrigir uma nota, edite o
 arquivo do livro e rode o `construir_estudo.py`, ou, sem os PDFs em
 `ferramentas/cache/`, o `ferramentas/atualizar_notas.py`, que troca só as notas
-no banco atual, com as mesmas conferências. O gerador abaixo só escreve
+no banco atual, com as mesmas conferências. Depois de rodar o
+`indexar_obras.py` (que baixa os 106 PDFs), o `ferramentas/atualizar_obras.py`
+troca só o que vem das obras — capítulos, trechos, as leituras de Ellen G.
+White dos temas, do guia sinótico e das introduções — sem baixar referências
+cruzadas e mapas. O gerador abaixo só escreve
 notas para capítulos que ainda não têm nenhuma.
 
 `ferramentas/gerar_notas.py` escreve notas curtas por versículo com a API do
