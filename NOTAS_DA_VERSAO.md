@@ -1,3 +1,11 @@
+## Bíblia de Estudo 1.12.0
+
+- **Traduções das editoras, só se você baixar.** Almeida Século 21, Almeida Atualizada, King James Fiel, Nova Bíblia Viva, O Livro, A Mensagem e Versão Fácil de Ler pertencem às suas editoras e deixam de vir com o aplicativo. Na lista de traduções, toque em **Mais traduções** para baixar a que quiser, direto da coleção pública damarals/biblias, no GitHub. O texto fica só no seu aparelho e continua lá depois das atualizações. Se você usava uma delas, baixe-a de novo: preferências e marcações voltam a valer. A Tradução Brasileira e a Almeida 1911, de domínio público, continuam no aplicativo.
+- **Guia de leitura com capítulos em todos os livros EGW.** As 17 meditações diárias (um capítulo por dia), Primeiros Escritos, Cristo em Seu Santuário, Testemunhos Seletos e os demais 30 livros que eram "leitura integral" agora têm capítulos, tirados do sumário do próprio PDF. Em 27 livros, entre eles O Grande Conflito, o guia não começa mais por linhas do sumário que passavam por capítulo. O progresso já marcado continua valendo.
+- **"Em Ellen G. White" nas introduções, com links.** Cada livro mostra os capítulos que a própria autora diz serem baseados nele e, quando são poucos, os que mais o citam. Toque para abrir o livro na página.
+- **Notas revisadas** nos quatro Evangelhos, Atos, Romanos, Gênesis e Salmos: leituras adventistas identificadas como tais, citações acertadas ao texto da ARA e capítulos de Ellen G. White conferidos nos Salmos.
+- Profetas e Reis e Primeiros Escritos foram republicados pelo Centro White; o índice acompanha a nova edição.
+
 ## Bíblia de Estudo 1.11.0
 
 - **Nove traduções adicionais para leitura offline, busca e comparação.** Almeida Século 21, Almeida Atualizada, King James Fiel, Nova Bíblia Viva, Tradução Brasileira, Almeida 1911, O Livro, A Mensagem e Versão Fácil de Ler. O catálogo passa de 12 para 21 traduções, preservando os textos e identificadores existentes.
