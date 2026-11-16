@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:biblia_estudo/dados/ajustes.dart';
 import 'package:biblia_estudo/dados/leitura_voz.dart';
 import 'package:biblia_estudo/dados/lembrete.dart';
@@ -111,11 +113,20 @@ void main() {
     });
 
     test('velocidade 1 é a fala normal do plugin (0,5)', () {
-      // Os testes rodam no Linux, que usa a conta do Android.
-      expect(taxaDaVelocidade(1), 0.5);
-      expect(taxaDaVelocidade(2), 1.0);
-      expect(taxaDaVelocidade(0.75), 0.375);
-      expect(taxaDaVelocidade(9), 1.0);
+      // O plugin trata 0,5 como a fala normal: no Android ele dobra o
+      // valor; no Windows soma 0,5. Os testes rodam no Linux (conta do
+      // Android) e no PC do publicar.ps1 (conta do Windows).
+      if (Platform.isWindows) {
+        expect(taxaDaVelocidade(1), 0.5);
+        expect(taxaDaVelocidade(2), 1.5);
+        expect(taxaDaVelocidade(0.75), 0.25);
+        expect(taxaDaVelocidade(9), 1.5);
+      } else {
+        expect(taxaDaVelocidade(1), 0.5);
+        expect(taxaDaVelocidade(2), 1.0);
+        expect(taxaDaVelocidade(0.75), 0.375);
+        expect(taxaDaVelocidade(9), 1.0);
+      }
     });
 
     test('a velocidade e o seguir em frente ficam nos ajustes', () {
