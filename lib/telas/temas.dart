@@ -8,6 +8,7 @@ import '../dados/temas.dart';
 import 'cartao_trecho.dart';
 import 'estudos_importados.dart';
 import 'largura_texto.dart';
+import 'leitura_avulsa.dart';
 import 'navegacao.dart';
 import 'tema.dart';
 import 'quiz_biblico.dart';
@@ -328,8 +329,8 @@ class CartaoPassagem extends StatefulWidget {
   final Versao versao;
 
   /// Dentro de um estudo bíblico: tocar no cartão não sai do estudo. A
-  /// referência abre os versículos numa janela por cima, e só o botão
-  /// "Abrir na Bíblia" leva ao leitor.
+  /// referência abre os versículos numa janela por cima, e o botão "Abrir na
+  /// Bíblia" abre o capítulo por cima do estudo, que continua lá ao voltar.
   final bool noEstudo;
 
   /// Esconde o texto até a pessoa tocar (modo de estudo).
@@ -388,14 +389,22 @@ class _CartaoPassagemState extends State<CartaoPassagem> {
                       ),
                     ),
                     IconButton(
-                      tooltip: 'Abrir na Bíblia (sai do estudo)',
+                      tooltip: 'Abrir na Bíblia (volta ao estudo depois)',
                       visualDensity: VisualDensity.compact,
                       icon: Icon(
                         Icons.open_in_new,
                         size: 18,
                         color: t.hintColor,
                       ),
-                      onPressed: () => irParaVersiculo(context, p.posicao),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => TelaLeituraAvulsa(
+                            posicao: p.posicao,
+                            versao: widget.versao,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 )
