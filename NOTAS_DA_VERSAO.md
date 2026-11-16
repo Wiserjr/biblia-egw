@@ -1,3 +1,7 @@
+## Bíblia de Estudo 1.13.1
+
+- **Estudos bíblicos: abrir na Bíblia sem perder o estudo.** O botão ↗ ao lado da referência abre o capítulo por cima do estudo, com o versículo marcado. Dá para ler, mudar de capítulo e tocar em *Voltar ao estudo* (ou no voltar do aparelho) para continuar de onde parou, com as respostas escritas no lugar. Para seguir lendo na tela principal da Bíblia, use o botão ↗ no alto dessa tela.
+
 ## Bíblia de Estudo 1.13.0
 
 - **Ouvir com mais controle.** Na barra que aparece enquanto a voz lê: pausar e continuar do mesmo versículo, velocidade (0,75× a 2×) e **timer para dormir** (15, 30, 45 ou 60 minutos, ou no fim do capítulo). Ao terminar um capítulo, a voz segue para o próximo e o leitor vai junto (dá para desligar em *Ajustes → Ouvir o capítulo*). No Android, enquanto lê, a notificação "Lendo..." traz Pausar e Parar e mantém a voz com a tela apagada.

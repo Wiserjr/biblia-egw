@@ -6,6 +6,9 @@ import 'package:biblia_estudo/dados/lembrete.dart';
 import 'package:biblia_estudo/dados/modelos.dart';
 import 'package:biblia_estudo/dados/plano.dart';
 import 'package:biblia_estudo/dados/versiculo_do_dia.dart';
+import 'package:biblia_estudo/dados/temas.dart';
+import 'package:biblia_estudo/telas/leitura_avulsa.dart';
+import 'package:biblia_estudo/telas/navegacao.dart';
 import 'package:biblia_estudo/telas/seletor.dart';
 import 'package:biblia_estudo/telas/temas.dart';
 import 'package:flutter/material.dart';
@@ -255,4 +258,51 @@ void main() {
     await t.pumpWidget(campo());
     expect(find.text('Jesus, o Filho.'), findsOneWidget);
   });
+
+  testWidgets(
+    'no estudo, o botão da Bíblia abre o capítulo e volta ao estudo',
+    (t) async {
+      await t.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (c) => TextButton(
+              onPressed: () => Navigator.push(
+                c,
+                MaterialPageRoute(
+                  builder: (_) => const Scaffold(
+                    body: CartaoPassagem(
+                      passagem: Passagem(55, 3016, 3017),
+                      versao: Versao(1, 'ARA', 'Almeida'),
+                      oculto: true,
+                      noEstudo: true,
+                    ),
+                  ),
+                ),
+              ),
+              child: const Text('abrir estudo'),
+            ),
+          ),
+        ),
+      );
+      await t.tap(find.text('abrir estudo'));
+      await t.pumpAndSettle();
+      await t.tap(find.byTooltip('Abrir na Bíblia (volta ao estudo depois)'));
+      await t.pump();
+      await t.pump(const Duration(milliseconds: 500));
+      expect(find.byType(TelaLeituraAvulsa), findsOneWidget);
+      expect(destinoLeitura.value, isNull);
+      await t.tap(find.text('Voltar ao estudo'));
+      await t.pump();
+      await t.pump(const Duration(milliseconds: 500));
+      expect(find.byType(TelaLeituraAvulsa), findsNothing);
+      expect(find.byType(CartaoPassagem), findsOneWidget);
+      // A referência abre só a janela dos versículos, sem sair do estudo.
+      await t.tap(find.textContaining('Timóteo'));
+      await t.pump();
+      await t.pump(const Duration(milliseconds: 500));
+      expect(find.byType(Dialog), findsOneWidget);
+      expect(find.byType(CartaoPassagem), findsOneWidget);
+      expect(destinoLeitura.value, isNull);
+    },
+  );
 }
