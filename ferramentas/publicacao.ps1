@@ -12,6 +12,9 @@
 #   5. Compilar o Windows do zero, com o Visual Studio que o Flutter escolher
 #      na hora, e avisar quando ele mudar; se a compilacao falhar por falta do
 #      ATL do C++ nesse Visual Studio, dizer o que instalar.
+#   6. Compilar o Android so com a chave de assinatura (android\key.properties
+#      apontando para ela). Chave nova so com -NovaChave, e so se a antiga se
+#      perdeu.
 
 # Deixa o main desta pasta igual ao do GitHub, mesclando antes os PRs abertos
 # que a pessoa aprovar. $perguntar recebe o texto da pergunta e devolve a
@@ -227,4 +230,136 @@ function Descrever-FaltaAtl([string]$pasta = 'build\windows\x64') {
         "dele (atlbase.h). Abra o Visual Studio Installer, clique em Modificar nesse " +
         "Visual Studio e, em Componentes individuais, marque 'ATL do C++ para as " +
         "Ferramentas de Build ... mais recentes (x86 e x64)'. Depois rode de novo.")
+}
+
+# Le android\key.properties (propriedades do Java) num hashtable; $null se o
+# arquivo nao existe. Como no Java, "\x" vira "x" (por isso "\\" vira "\").
+function Ler-Chave([string]$arquivo = 'android\key.properties') {
+    if (-not (Test-Path -LiteralPath $arquivo)) { return $null }
+    $props = @{}
+    foreach ($linha in @(Get-Content -LiteralPath $arquivo)) {
+        $l = "$linha".Trim()
+        if (-not $l -or $l.StartsWith('#') -or $l.StartsWith('!')) { continue }
+        $i = $l.IndexOfAny([char[]]@('=', ':'))
+        if ($i -lt 1) { continue }
+        $props[$l.Substring(0, $i).Trim()] = [regex]::Replace($l.Substring($i + 1).Trim(), '\\(.)', '$1')
+    }
+    return $props
+}
+
+# Confere, antes de compilar, a chave que assina o Android: android\key.properties
+# com storeFile apontando para um arquivo que existe (caminho relativo e a
+# partir de android\app, como no Gradle). Sem ela o Gradle assina com a chave
+# de debug deste PC, e nenhum celular aceita a versao por cima da instalada.
+# Devolve o caminho da chave.
+function Conferir-Chave([string]$arquivo = 'android\key.properties', [string]$pastaApp = 'android\app') {
+    $criar = ('Se a chave se perdeu, crie outra com .\publicar.ps1 -NovaChave (quem tem o ' +
+        'app no Android vai precisar desinstalar e instalar de novo).')
+    $props = Ler-Chave $arquivo
+    if ($null -eq $props) {
+        throw "Falta ${arquivo}: o Android sairia assinado com a chave de debug deste PC. $criar"
+    }
+    $loja = $props['storeFile']
+    if (-not $loja) { throw "$arquivo nao diz onde esta a chave (storeFile). $criar" }
+    $caminho = $loja
+    if (-not [System.IO.Path]::IsPathRooted($loja)) { $caminho = Join-Path $pastaApp $loja }
+    if (-not (Test-Path -LiteralPath $caminho -PathType Leaf)) {
+        throw ("A chave de assinatura nao esta em $loja (o caminho vem de $arquivo). " +
+            "Se ela so mudou de lugar, corrija o storeFile. $criar")
+    }
+    foreach ($campo in @('storePassword', 'keyAlias', 'keyPassword')) {
+        if (-not $props[$campo]) { throw "$arquivo nao tem $campo." }
+    }
+    return $caminho
+}
+
+# Senha aleatoria para a chave nova (48 letras e numeros).
+function Nova-Senha {
+    $bytes = New-Object byte[] 24
+    $gerador = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    $gerador.GetBytes($bytes)
+    $gerador.Dispose()
+    return -join ($bytes | ForEach-Object { '{0:x2}' -f $_ })
+}
+
+# O keytool do Java que vem com o Android Studio (ou o do JAVA_HOME, ou o que
+# estiver no PATH).
+function Achar-Keytool([string[]]$lugares = $null, [bool]$procurarNoPath = $true) {
+    if ($null -eq $lugares) {
+        $lugares = @()
+        if ($env:JAVA_HOME) { $lugares += (Join-Path $env:JAVA_HOME 'bin\keytool.exe') }
+        foreach ($base in @($env:ProgramFiles, ${env:ProgramFiles(x86)})) {
+            if ($base) { $lugares += (Join-Path $base 'Android\Android Studio\jbr\bin\keytool.exe') }
+        }
+        if ($env:LOCALAPPDATA) {
+            $lugares += (Join-Path $env:LOCALAPPDATA 'Programs\Android Studio\jbr\bin\keytool.exe')
+        }
+    }
+    foreach ($l in $lugares) {
+        if ($l -and (Test-Path -LiteralPath $l -PathType Leaf)) { return $l }
+    }
+    if ($procurarNoPath) {
+        $comando = Get-Command keytool -CommandType Application -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+        if ($comando) { return $comando.Path }
+    }
+    throw ('Nao achei o keytool, que vem com o Android Studio. Rode "flutter doctor -v": ' +
+        'a linha "Java binary at" mostra a pasta dele. Depois rode de novo com ' +
+        '$env:JAVA_HOME apontando para a pasta acima de bin.')
+}
+
+# Cria uma chave de assinatura nova. So quando a antiga se perdeu: com outra
+# chave o Android recusa a versao por cima da instalada, e cada pessoa tem de
+# desinstalar e instalar de novo. Recusa se a chave atual estiver em ordem.
+# Grava a chave em $pasta, aponta android\key.properties para ela e deixa uma
+# copia do key.properties na mesma pasta, para que guardar a pasta guarde tudo
+# (a senha vai no key.properties); o key.properties anterior, se havia, vai
+# para la como key.properties.antiga. Devolve o caminho da chave.
+# $gerar recebe (keytool, chave, senha, alias) e cria o arquivo (o keytool no
+# uso normal; outra coisa nos testes).
+function Criar-Chave {
+    param(
+        [string]$pasta = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Chave da Biblia de Estudo'),
+        [string]$arquivo = 'android\key.properties',
+        [string]$pastaApp = 'android\app',
+        [string]$alias = 'biblia',
+        [string]$keytool = '',
+        [scriptblock]$gerar = {
+            param($kt, $chave, $senha, $nome)
+            & $kt -genkeypair -noprompt -keystore $chave -storetype PKCS12 -alias $nome `
+                -keyalg RSA -keysize 2048 -validity 10000 -storepass $senha -keypass $senha `
+                -dname 'CN=Biblia de Estudo, O=WiseJr, C=BR'
+            if ($LASTEXITCODE -ne 0) { throw "O keytool falhou (codigo $LASTEXITCODE)." }
+        }
+    )
+    $atual = $null
+    try { $atual = Conferir-Chave $arquivo $pastaApp } catch { }
+    if ($atual) {
+        throw ("A chave em $atual esta em ordem; nao crio outra. Com chave nova, " +
+            'ninguem recebe a atualizacao por cima da versao instalada.')
+    }
+    $chave = Join-Path $pasta 'biblia-estudo.jks'
+    if (Test-Path -LiteralPath $chave) {
+        throw ("Ja existe $chave. Se ela e a chave certa, aponte o storeFile de $arquivo " +
+            'para ela; se nao, tire-a dali e rode de novo.')
+    }
+    if (-not $keytool) { $keytool = Achar-Keytool }
+    New-Item -ItemType Directory -Path $pasta -Force | Out-Null
+    $senha = Nova-Senha
+    # Out-Null: o que o keytool escreve nao pode virar parte do que a funcao devolve.
+    & $gerar $keytool $chave $senha $alias | Out-Null
+    if (-not (Test-Path -LiteralPath $chave -PathType Leaf)) { throw "O keytool nao criou $chave." }
+    if (Test-Path -LiteralPath $arquivo) {
+        Move-Item -LiteralPath $arquivo -Destination (Join-Path $pasta 'key.properties.antiga') -Force
+    }
+    # Barras normais: no key.properties, "\" sozinha some (ver Ler-Chave).
+    $linhas = @(
+        ('storeFile=' + $chave.Replace('\', '/')),
+        "storePassword=$senha",
+        "keyAlias=$alias",
+        "keyPassword=$senha"
+    )
+    Set-Content -LiteralPath $arquivo -Value $linhas -Encoding Ascii
+    Copy-Item -LiteralPath $arquivo -Destination (Join-Path $pasta 'key.properties') -Force
+    return $chave
 }

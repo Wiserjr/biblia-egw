@@ -29,6 +29,8 @@
 #     -SemCompilar   republica o que ja esta em build\publicar\
 #     -SemTestes     pula analyze e testes (nao recomendado)
 #     -SoAndroid     nao compila nem publica o Windows
+#     -NovaChave     cria uma chave de assinatura nova e para (so se a antiga
+#                    se perdeu; ver README, "Chave de assinatura")
 #
 # ATUALIZACAO AUTOMATICA (lib/dados/atualizacao.dart):
 #   - O manifesto vai para uma release fixa, "biblia-atual", que este script
@@ -38,13 +40,15 @@
 #   - Suba o numero depois do + a cada release: e ele que os apps comparam, e
 #     o script recusa publicar se ele nao crescer.
 #   - Assine sempre com a MESMA chave (android\key.properties; ver README), ou
-#     a atualizacao nao entra por cima da versao instalada.
+#     a atualizacao nao entra por cima da versao instalada. Sem a chave o
+#     script nao compila.
 
 param(
     [switch]$Republicar,
     [switch]$SemCompilar,
     [switch]$SemTestes,
-    [switch]$SoAndroid
+    [switch]$SoAndroid,
+    [switch]$NovaChave
 )
 
 $ErrorActionPreference = 'Stop'
@@ -73,6 +77,20 @@ function Existe-Release([string]$nome) {
 if (-not (Test-Path $gh)) { throw "gh nao encontrado em $gh" }
 if (-not (Test-Path 'pubspec.yaml')) { throw 'Rode na raiz do repositorio (pubspec.yaml nao encontrado).' }
 . (Join-Path $PSScriptRoot 'ferramentas\publicacao.ps1')
+
+# --- chave de assinatura ---
+if ($NovaChave) {
+    $nova = Criar-Chave
+    Write-Output ''
+    Write-Output "Chave nova criada em $nova, e android\key.properties aponta para ela."
+    Write-Output ("Guarde AGORA uma copia da pasta $(Split-Path $nova) fora deste PC " +
+        '(Google Drive, pendrive). Sem ela, nenhuma versao futura entra por cima da instalada.')
+    Write-Output 'Depois rode .\publicar.ps1 para publicar.'
+    return
+}
+# Confere antes de mesclar e testar: sem a chave, nenhum celular aceitaria a
+# versao por cima da instalada.
+if (-not $SemCompilar) { $null = Conferir-Chave }
 
 & $gh auth status
 if ($LASTEXITCODE -ne 0) { throw 'Autentique primeiro: gh auth login' }
@@ -123,12 +141,6 @@ if (-not $SemTestes) {
 
 foreach ($a in @('assets\biblia.db.gz', 'assets\estudo.db.gz')) {
     if (-not (Test-Path $a)) { throw "Falta $a. Veja o README (ferramentas)." }
-}
-
-# --- assinatura ---
-if (-not (Test-Path 'android\key.properties')) {
-    Write-Warning ('Sem android\key.properties: os APKs saem com a chave de debug deste PC. ' +
-        'Publicar de outro PC quebra a atualizacao automatica de todo mundo. Ver README, "Chave de assinatura".')
 }
 
 # --- compilacao ---

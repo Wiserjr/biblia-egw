@@ -22,7 +22,9 @@ App Flutter (Android e Windows). O dono publica do próprio PC com
 - Mensagens dos `.ps1` sem acento: o Windows PowerShell 5.1 lê os arquivos
   como ANSI. Nada de sintaxe só do PowerShell 7 (`?:`, `??`, `&&`).
 - Todas as versões são assinadas com a mesma chave (`android/key.properties`,
-  só no PC do dono), senão a atualização automática quebra.
+  só no PC do dono), senão a atualização automática quebra. A chave da 1.0.0
+  à 1.11.0 se perdeu em novembro de 2026; a da 1.12.0 em diante foi criada
+  com `publicar.ps1 -NovaChave` e é a que vale.
 
 ## Testes
 
