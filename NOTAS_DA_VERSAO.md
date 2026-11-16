@@ -4,6 +4,7 @@
 - **Mais ajustes de leitura**, em *Ajustes → Leitura*: espaço entre as linhas, letra com serifa (como a de livro), **papel sépia** no tema claro e **pouca luz** no tema escuro (fundo preto e letra mais suave, para ler à noite).
 - **Histórico de leitura.** Ao escolher o livro, os capítulos lidos por último aparecem em "Recentes", e o botão de relógio abre a lista dos últimos 30, com dia e hora.
 - **Me pôr em dia no Reavivados.** Em *Plano de leitura*, nos capítulos que ficaram para trás, o botão **Me pôr em dia** abre o mais antigo; a faixa "Leitura atrasada" no alto do leitor passa ao seguinte a cada um marcado como lido, até chegar ao de hoje. O calendário da igreja não muda.
+- **Estudos bíblicos sem sair do estudo.** "Mostrar a resposta" mostra o texto ali mesmo, e tocar no cartão não leva mais ao leitor. A referência abre os versículos numa janela por cima do estudo; para ir ao leitor, use o botão ao lado dela. Cada pergunta ganhou o campo **Sua resposta**, para escrever com suas palavras: fica salva no aparelho e vai na cópia de segurança.
 - **Aviso do versículo do dia**, com o texto do versículo na tradução que você usa, na hora escolhida: ligue em *Ajustes → Versículo do dia*. Os avisos são marcados para as próximas duas semanas e se renovam a cada abertura do app.
 
 ## Bíblia de Estudo 1.12.0

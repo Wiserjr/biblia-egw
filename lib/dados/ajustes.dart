@@ -503,6 +503,32 @@ class Ajustes extends ChangeNotifier {
     return null;
   }
 
+  // --- respostas pessoais dos estudos bíblicos ---
+
+  static String _kResposta(String estudo, int pergunta) =>
+      'respostaEstudo:$estudo:$pergunta';
+
+  /// O que a pessoa escreveu na pergunta [pergunta] (a partir de 1) do
+  /// estudo bíblico [estudo], ou ''.
+  String respostaEstudo(String estudo, int pergunta) =>
+      _p.getString(_kResposta(estudo, pergunta)) ?? '';
+
+  void definirRespostaEstudo(String estudo, int pergunta, String texto) {
+    final k = _kResposta(estudo, pergunta);
+    if (texto.trim().isEmpty) {
+      _p.remove(k);
+    } else {
+      _p.setString(k, texto);
+    }
+  }
+
+  /// Todas as respostas pessoais, com a chave "estudo:pergunta".
+  Map<String, String> get respostasEstudos => {
+    for (final k in _p.getKeys())
+      if (k.startsWith('respostaEstudo:'))
+        k.substring('respostaEstudo:'.length): _p.getString(k) ?? '',
+  };
+
   // --- versículo do dia ---
 
   /// A faixa do versículo do dia já foi vista (ou fechada) hoje.
@@ -548,6 +574,7 @@ class Ajustes extends ChangeNotifier {
     'realces': [for (final r in todosRealces()) r.paraMapa()],
     'plano': ?_planoItem,
     'guiaBiblioteca': GuiaBiblioteca.instancia.exportar(),
+    'respostasEstudos': respostasEstudos,
   };
 
   /// O plano em andamento como vai na cópia e na nuvem, ou null.
@@ -673,6 +700,26 @@ class Ajustes extends ChangeNotifier {
       }
     }
     GuiaBiblioteca.instancia.importar(dados['guiaBiblioteca']);
+    // Respostas dos estudos bíblicos: a da cópia entra onde não há nada;
+    // diferente da local, ficam as duas, uma abaixo da outra.
+    final re = dados['respostasEstudos'];
+    if (re is Map) {
+      for (final e in re.entries) {
+        final k = e.key;
+        final v = e.value;
+        if (k is! String || v is! String || v.trim().isEmpty) continue;
+        final i = k.lastIndexOf(':');
+        final n = i < 0 ? null : int.tryParse(k.substring(i + 1));
+        if (n == null || n < 1) continue;
+        final estudo = k.substring(0, i);
+        final local = respostaEstudo(estudo, n);
+        if (local.trim().isEmpty) {
+          definirRespostaEstudo(estudo, n, v);
+        } else if (!local.contains(v.trim())) {
+          definirRespostaEstudo(estudo, n, '$local\n\n${v.trim()}');
+        }
+      }
+    }
     notifyListeners();
     if (antes != null) _avisar(itensDiferentes(antes, itens()));
     return (marcacoes: nMarcas, anotacoes: nNotas, realces: nRealces);

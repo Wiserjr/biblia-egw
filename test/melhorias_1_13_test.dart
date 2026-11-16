@@ -5,6 +5,7 @@ import 'package:biblia_estudo/dados/modelos.dart';
 import 'package:biblia_estudo/dados/plano.dart';
 import 'package:biblia_estudo/dados/versiculo_do_dia.dart';
 import 'package:biblia_estudo/telas/seletor.dart';
+import 'package:biblia_estudo/telas/temas.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -197,5 +198,50 @@ void main() {
     await t.tap(find.text('Salmos 23'));
     await t.pumpAndSettle();
     expect(escolhido, const Posicao(19, 23));
+  });
+
+  group('respostas pessoais dos estudos bíblicos', () {
+    test('gravam, apagam quando vazias e vão na cópia', () {
+      final aj = Ajustes.instancia;
+      aj.definirRespostaEstudo('biblia', 1, 'Deus inspirou.');
+      expect(aj.respostaEstudo('biblia', 1), 'Deus inspirou.');
+      expect(aj.respostaEstudo('biblia', 2), '');
+      expect(aj.exportar()['respostasEstudos'], {'biblia:1': 'Deus inspirou.'});
+      aj.definirRespostaEstudo('biblia', 1, '   ');
+      expect(aj.respostasEstudos, isEmpty);
+    });
+
+    test('restaurar junta sem apagar', () {
+      final aj = Ajustes.instancia;
+      aj.definirRespostaEstudo('biblia', 1, 'Minha.');
+      aj.importar({
+        'app': 'br.com.wisejr.bibliaestudo',
+        'respostasEstudos': {
+          'biblia:1': 'Da cópia.',
+          'biblia:2': 'Nova.',
+          'biblia:x': 'inválida',
+        },
+      });
+      expect(aj.respostaEstudo('biblia', 1), 'Minha.\n\nDa cópia.');
+      expect(aj.respostaEstudo('biblia', 2), 'Nova.');
+      // A mesma cópia de novo não repete o texto.
+      aj.importar({
+        'app': 'br.com.wisejr.bibliaestudo',
+        'respostasEstudos': {'biblia:1': 'Da cópia.'},
+      });
+      expect(aj.respostaEstudo('biblia', 1), 'Minha.\n\nDa cópia.');
+    });
+  });
+
+  testWidgets('o campo da resposta grava e volta preenchido', (t) async {
+    Widget campo() => const MaterialApp(
+      home: Scaffold(body: SuaResposta(estudo: 'biblia', pergunta: 3)),
+    );
+    await t.pumpWidget(campo());
+    await t.enterText(find.byType(TextField), 'Jesus, o Filho.');
+    expect(Ajustes.instancia.respostaEstudo('biblia', 3), 'Jesus, o Filho.');
+    await t.pumpWidget(const SizedBox());
+    await t.pumpWidget(campo());
+    expect(find.text('Jesus, o Filho.'), findsOneWidget);
   });
 }
