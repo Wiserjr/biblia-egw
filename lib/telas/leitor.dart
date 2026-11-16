@@ -246,6 +246,8 @@ class _LeitorState extends State<Leitor> {
           c.maxWidth,
           aj.larguraTexto,
           aj.tamanhoLetra,
+          aj.espacoLinhas,
+          aj.letraSerifa,
           MediaQuery.sizeOf(context).width >= larguraMinimaParaAjuste,
         );
         if (_forma != null && _forma != forma) {
@@ -418,7 +420,11 @@ class _LinhaVersiculo extends StatelessWidget {
     final t = Theme.of(context);
     final aj = Ajustes.instancia;
     final tam = aj.tamanhoLetra;
-    final base = t.textTheme.bodyLarge!.copyWith(fontSize: tam, height: 1.6);
+    final base = t.textTheme.bodyLarge!.copyWith(
+      fontSize: tam,
+      height: aj.espacoLinhas,
+      fontFamily: aj.letraSerifa ? familiaSerifa() : null,
+    );
     final cor = aj.marcacao(posicao.livro, posicao.capitulo, versiculo.numero);
     final anotado =
         aj.anotacao(posicao.livro, posicao.capitulo, versiculo.numero) != null;

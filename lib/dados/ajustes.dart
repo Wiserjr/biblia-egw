@@ -65,6 +65,77 @@ class Ajustes extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- aparência do texto ---
+
+  /// Letra com serifa no texto da Bíblia, como a de livro impresso.
+  bool get letraSerifa => _p.getBool('letraSerifa') ?? false;
+  set letraSerifa(bool v) {
+    _p.setBool('letraSerifa', v);
+    notifyListeners();
+  }
+
+  /// Altura da linha do texto da Bíblia, em múltiplos do tamanho da letra.
+  double get espacoLinhas =>
+      (_p.getDouble('espacoLinhas') ?? espacoLinhasPadrao).clamp(
+        minEspacoLinhas,
+        maxEspacoLinhas,
+      );
+  set espacoLinhas(double v) {
+    _p.setDouble('espacoLinhas', v.clamp(minEspacoLinhas, maxEspacoLinhas));
+    notifyListeners();
+  }
+
+  static const espacoLinhasPadrao = 1.6;
+  static const minEspacoLinhas = 1.2;
+  static const maxEspacoLinhas = 2.4;
+
+  /// No tema claro, papel sépia (amarelado) em vez de branco.
+  bool get papelSepia => _p.getBool('papelSepia') ?? false;
+  set papelSepia(bool v) {
+    _p.setBool('papelSepia', v);
+    notifyListeners();
+  }
+
+  /// No tema escuro, fundo preto e letra mais suave, para ler no escuro.
+  bool get poucaLuz => _p.getBool('poucaLuz') ?? false;
+  set poucaLuz(bool v) {
+    _p.setBool('poucaLuz', v);
+    notifyListeners();
+  }
+
+  // --- ouvir o capítulo ---
+
+  /// Velocidade da voz: 1 é a normal do aparelho.
+  double get velocidadeVoz =>
+      (_p.getDouble('velocidadeVoz') ?? 1.0).clamp(0.5, 2.0);
+  set velocidadeVoz(double v) {
+    _p.setDouble('velocidadeVoz', v.clamp(0.5, 2.0));
+    notifyListeners();
+  }
+
+  /// Ao terminar um capítulo, a voz segue para o próximo.
+  bool get vozContinua => _p.getBool('vozContinua') ?? true;
+  set vozContinua(bool v) {
+    _p.setBool('vozContinua', v);
+    notifyListeners();
+  }
+
+  // --- aviso do versículo do dia ---
+
+  bool get avisoVersiculoDoDia => _p.getBool('avisoVersiculoDoDia') ?? false;
+  set avisoVersiculoDoDia(bool v) {
+    _p.setBool('avisoVersiculoDoDia', v);
+    notifyListeners();
+  }
+
+  /// Hora do aviso, em minutos desde a meia-noite (padrão: 6h30).
+  int get avisoVersiculoMinutos =>
+      _p.getInt('avisoVersiculoMinutos') ?? 6 * 60 + 30;
+  set avisoVersiculoMinutos(int v) {
+    _p.setInt('avisoVersiculoMinutos', v.clamp(0, 24 * 60 - 1));
+    notifyListeners();
+  }
+
   // --- tamanho das áreas da tela ---
 
   /// Quanto da largura do leitor o texto da Bíblia ocupa (1 = tudo). Menos
@@ -117,6 +188,51 @@ class Ajustes extends ChangeNotifier {
   set ultimaPosicao(Posicao p) {
     _p.setInt('ultLivro', p.livro);
     _p.setInt('ultCapitulo', p.capitulo);
+    _registrarHistorico(p);
+  }
+
+  // --- histórico de leitura ---
+
+  static const maxHistorico = 30;
+
+  /// Os capítulos abertos por último, do mais recente ao mais antigo, sem
+  /// repetir, com a hora em que foram abertos.
+  List<({Posicao capitulo, DateTime quando})> get historico => [
+    for (final e in _p.getStringList('historico') ?? const <String>[])
+      ?_lerHistorico(e),
+  ];
+
+  static ({Posicao capitulo, DateTime quando})? _lerHistorico(String e) {
+    final partes = e.split(':');
+    if (partes.length != 3) return null;
+    final l = int.tryParse(partes[0]);
+    final c = int.tryParse(partes[1]);
+    final t = int.tryParse(partes[2]);
+    if (l == null || c == null || t == null) return null;
+    return (
+      capitulo: Posicao(l, c),
+      quando: DateTime.fromMillisecondsSinceEpoch(t),
+    );
+  }
+
+  void _registrarHistorico(Posicao p, [DateTime? agora]) {
+    final quando = (agora ?? DateTime.now()).millisecondsSinceEpoch;
+    final prefixo = '${p.livro}:${p.capitulo}:';
+    final lista = [
+      '$prefixo$quando',
+      for (final e in _p.getStringList('historico') ?? const <String>[])
+        if (!e.startsWith(prefixo)) e,
+    ];
+    _p.setStringList('historico', lista.take(maxHistorico).toList());
+  }
+
+  @visibleForTesting
+  void registrarHistorico(Posicao p, DateTime agora) =>
+      _registrarHistorico(p, agora);
+
+  void limparHistorico() {
+    _p.remove('historico');
+    notifyListeners();
   }
 
   // --- marcações (cor por versículo) e anotações ---
@@ -278,6 +394,7 @@ class Ajustes extends ChangeNotifier {
   }) {
     _p.setString('plano', id);
     _p.remove('planoLeuEm');
+    _p.remove('planoPorEmDia');
     if (comecou == null) {
       _p.remove('planoComecou');
     } else {
@@ -293,8 +410,22 @@ class Ajustes extends ChangeNotifier {
     _p.remove('planoLidos');
     _p.remove('planoComecou');
     _p.remove('planoLeuEm');
+    _p.remove('planoPorEmDia');
     notifyListeners();
     _avisar({chavePlano});
+  }
+
+  /// Nos planos por data, a faixa "Leitura de hoje" passa a mostrar os
+  /// capítulos que ficaram para trás, do mais antigo ao mais novo, até
+  /// chegar ao de hoje. O calendário do plano não muda.
+  bool get porEmDia => _p.getBool('planoPorEmDia') ?? false;
+  set porEmDia(bool v) {
+    if (v) {
+      _p.setBool('planoPorEmDia', true);
+    } else {
+      _p.remove('planoPorEmDia');
+    }
+    notifyListeners();
   }
 
   void marcarDia(int dia, bool lido) => marcarDias([dia], lido);
@@ -304,6 +435,19 @@ class Ajustes extends ChangeNotifier {
     lido ? d.addAll(dias) : d.removeAll(dias);
     _gravarLidos(d);
     if (lido) _p.setString('planoLeuEm', _diaDeHoje(DateTime.now()));
+    // Posto em dia: a faixa volta a mostrar só a leitura de hoje.
+    final pl = PlanoLeitura.porId(plano);
+    if (porEmDia &&
+        pl != null &&
+        pl.porData &&
+        diasAtrasados(
+          pl,
+          d,
+          pl.diaDe(DateTime.now()),
+          comecou: planoComecou,
+        ).isEmpty) {
+      _p.remove('planoPorEmDia');
+    }
     notifyListeners();
     _avisar({chavePlano});
   }
@@ -328,6 +472,17 @@ class Ajustes extends ChangeNotifier {
     final lidos = diasLidos;
     if (pl.porData) {
       final hoje = pl.diaDe(agora ?? DateTime.now());
+      if (porEmDia) {
+        final atrasados = diasAtrasados(pl, lidos, hoje, comecou: planoComecou);
+        if (atrasados.isNotEmpty) {
+          return LeituraHoje(
+            plano: pl,
+            dia: atrasados.first,
+            capitulos: pl.leituraDoDia(atrasados.first),
+            faltam: atrasados.length,
+          );
+        }
+      }
       if (lidos.contains(hoje)) return null;
       return LeituraHoje(
         plano: pl,

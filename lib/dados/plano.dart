@@ -153,9 +153,16 @@ class LeituraHoje {
     required this.plano,
     required this.dia,
     required this.capitulos,
+    this.faltam = 0,
   });
 
   final PlanoLeitura plano;
+
+  /// Pondo em dia: quantos capítulos atrasados faltam, contando este. Zero
+  /// na leitura de hoje.
+  final int faltam;
+
+  bool get atrasada => faltam > 0;
 
   /// O dia do plano (nos planos por data, contado desde o início).
   final int dia;
@@ -165,7 +172,10 @@ class LeituraHoje {
 
   /// Na tela inicial: "Reavivados por Sua Palavra: Salmo 57" ou
   /// "Dia 12: Gênesis 34-36".
-  String get rotulo => plano.porData
+  String get rotulo => atrasada
+      ? 'Pondo em dia (${faltam == 1 ? 'falta 1' : 'faltam $faltam'}): '
+            '$descricao'
+      : plano.porData
       ? '${plano.nome}: $descricao'
       : 'Dia ${dia + 1}: $descricao';
 }

@@ -1,3 +1,11 @@
+## Bíblia de Estudo 1.13.0
+
+- **Ouvir com mais controle.** Na barra que aparece enquanto a voz lê: pausar e continuar do mesmo versículo, velocidade (0,75× a 2×) e **timer para dormir** (15, 30, 45 ou 60 minutos, ou no fim do capítulo). Ao terminar um capítulo, a voz segue para o próximo e o leitor vai junto (dá para desligar em *Ajustes → Ouvir o capítulo*). No Android, enquanto lê, a notificação "Lendo..." traz Pausar e Parar e mantém a voz com a tela apagada.
+- **Mais ajustes de leitura**, em *Ajustes → Leitura*: espaço entre as linhas, letra com serifa (como a de livro), **papel sépia** no tema claro e **pouca luz** no tema escuro (fundo preto e letra mais suave, para ler à noite).
+- **Histórico de leitura.** Ao escolher o livro, os capítulos lidos por último aparecem em "Recentes", e o botão de relógio abre a lista dos últimos 30, com dia e hora.
+- **Me pôr em dia no Reavivados.** Em *Plano de leitura*, nos capítulos que ficaram para trás, o botão **Me pôr em dia** abre o mais antigo; a faixa "Leitura atrasada" no alto do leitor passa ao seguinte a cada um marcado como lido, até chegar ao de hoje. O calendário da igreja não muda.
+- **Aviso do versículo do dia**, com o texto do versículo na tradução que você usa, na hora escolhida: ligue em *Ajustes → Versículo do dia*. Os avisos são marcados para as próximas duas semanas e se renovam a cada abertura do app.
+
 ## Bíblia de Estudo 1.12.0
 
 - **No Android, esta versão precisa ser instalada de novo.** A chave que assina o aplicativo mudou, e o Android não deixa a 1.12.0 entrar por cima das versões anteriores (a atualização avisa que foi "assinada com outra chave"). Antes de desinstalar, guarde seus dados: entre na sua conta em *Ajustes → Seus dados* e toque em **Sincronizar agora**, ou use **Salvar cópia** e guarde o arquivo. Depois desinstale o aplicativo, instale o `biblia-arm64-v8a.apk` desta versão e entre na conta ou use **Restaurar cópia**. Os livros e as traduções baixados precisam ser baixados de novo. Daqui em diante as atualizações voltam a entrar sozinhas. No computador (Windows) nada muda: a atualização entra por cima, como sempre.

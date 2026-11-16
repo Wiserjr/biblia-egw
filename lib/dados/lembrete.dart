@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' show IsolateNameServer;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -6,7 +7,24 @@ import 'package:timezone/data/latest.dart' as tzdados;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'ajustes.dart';
+import 'biblia.dart';
 import 'plano.dart';
+import 'referencias.dart';
+import 'versiculo_do_dia.dart';
+
+/// Nome da porta pela qual um botão da notificação "Lendo..." (Pausar,
+/// Parar), tocado com o app em segundo plano, chega à voz.
+const portaControleVoz = 'biblia_controle_voz';
+
+/// Botão de uma notificação tocado com o app fora da tela. O plugin roda
+/// isto num isolate à parte; se o app estiver aberto (a voz lendo), o pedido
+/// segue pela porta [portaControleVoz].
+@pragma('vm:entry-point')
+void aoResponderNotificacaoNoFundo(NotificationResponse r) {
+  final acao = r.actionId;
+  if (acao == null) return;
+  IsolateNameServer.lookupPortByName(portaControleVoz)?.send(acao);
+}
 
 /// Lembrete diário do plano de leitura, na hora que a pessoa escolher.
 ///
@@ -27,14 +45,33 @@ class Lembrete {
 
   static const _diasWindows = 7;
   static const _canal = 'lembrete_plano';
+  static const _canalVersiculo = 'versiculo_do_dia';
+
+  /// Avisos do versículo do dia marcados à frente (ids 101 em diante): cada
+  /// um com o texto do seu dia, renovados a cada abertura do app.
+  static const _diasVersiculo = 14;
+  static const _idVersiculo = 101;
 
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _iniciado = false;
+
+  FlutterLocalNotificationsPlugin get plugin => _plugin;
+
+  /// Recebe o botão tocado numa notificação com o app aberto ("pausar",
+  /// "parar" da voz).
+  void Function(String acao)? aoAcao;
+
+  Future<bool> iniciar() => _iniciar();
 
   Future<bool> _iniciar() async {
     if (_iniciado) return true;
     tzdados.initializeTimeZones();
     final ok = await _plugin.initialize(
+      onDidReceiveNotificationResponse: (r) {
+        final acao = r.actionId;
+        if (acao != null) aoAcao?.call(acao);
+      },
+      onDidReceiveBackgroundNotificationResponse: aoResponderNotificacaoNoFundo,
       settings: const InitializationSettings(
         android: AndroidInitializationSettings('ic_notificacao'),
         windows: WindowsInitializationSettings(
@@ -66,6 +103,7 @@ class Lembrete {
     if (!suportado) return;
     try {
       if (!await _iniciar()) return;
+      await _atualizarVersiculoDoDia();
       for (var id = 1; id <= _diasWindows; id++) {
         await _plugin.cancel(id: id);
       }
@@ -120,9 +158,96 @@ class Lembrete {
     }
   }
 
+  /// Marca os avisos do versículo do dia dos próximos [_diasVersiculo] dias,
+  /// já com o texto na tradução escolhida (o Android não muda o texto de uma
+  /// notificação que se repete). Quem passar duas semanas sem abrir o app
+  /// deixa de receber o aviso até abrir de novo.
+  Future<void> _atualizarVersiculoDoDia() async {
+    for (var i = 0; i < _diasVersiculo; i++) {
+      await _plugin.cancel(id: _idVersiculo + i);
+    }
+    final aj = Ajustes.instancia;
+    if (!aj.avisoVersiculoDoDia) return;
+    final versoes = await Biblia.instancia.versoes();
+    if (versoes.isEmpty) return;
+    final versao = versoes
+        .firstWhere((v) => v.id == aj.versao, orElse: () => versoes.first)
+        .id;
+
+    const detalhes = NotificationDetails(
+      android: AndroidNotificationDetails(
+        _canalVersiculo,
+        'Versículo do dia',
+        channelDescription: 'O versículo do dia, na hora escolhida.',
+        styleInformation: BigTextStyleInformation(''),
+      ),
+    );
+    final agora = DateTime.now();
+    final minutos = aj.avisoVersiculoMinutos;
+    var primeiro = DateTime(
+      agora.year,
+      agora.month,
+      agora.day,
+      minutos ~/ 60,
+      minutos % 60,
+    );
+    if (!primeiro.isAfter(agora)) {
+      primeiro = primeiro.add(const Duration(days: 1));
+    }
+    for (var i = 0; i < _diasVersiculo; i++) {
+      final d = primeiro.add(Duration(days: i));
+      final quando = DateTime(
+        d.year,
+        d.month,
+        d.day,
+        minutos ~/ 60,
+        minutos % 60,
+      );
+      final r = await VersiculoDoDia.de(quando);
+      if (r == null) continue;
+      final caps = await Biblia.instancia.capitulo(versao, r.livro, r.capitulo);
+      final texto = textoAvisoVersiculo(
+        r,
+        caps.map((v) => (v.numero, v.texto)),
+      );
+      if (texto == null) continue;
+      await _plugin.zonedSchedule(
+        id: _idVersiculo + i,
+        title: texto.titulo,
+        body: texto.corpo,
+        scheduledDate: tz.TZDateTime.from(quando, tz.UTC),
+        notificationDetails: detalhes,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    }
+  }
+
   static String _texto(PlanoLeitura plano, DateTime dia) {
     if (!plano.porData) return '${plano.nome}: abra a leitura de hoje.';
     final d = plano.diaDe(dia);
     return '${plano.nome}: ${descreverLeitura(plano.leituraDoDia(d))}.';
   }
+}
+
+/// Título ("Versículo do dia · João 3:16") e texto do aviso do versículo do
+/// dia, a partir dos versículos do capítulo; null se o capítulo não tiver os
+/// versículos da passagem.
+@visibleForTesting
+({String titulo, String corpo})? textoAvisoVersiculo(
+  ReferenciaDoDia r,
+  Iterable<(int, String)> versiculos,
+) {
+  final partes = [
+    for (final (n, t) in versiculos)
+      if (n >= r.versiculo && n <= r.ate)
+        t
+            .replaceAll(RegExp(r'<[^>]*>'), '')
+            .replaceAll(RegExp(r'\s+'), ' ')
+            .trim(),
+  ];
+  if (partes.isEmpty) return null;
+  final ref =
+      '${Referencias.nome(r.livro)} ${r.capitulo}:${r.versiculo}'
+      '${r.ate > r.versiculo ? '-${r.ate}' : ''}';
+  return (titulo: 'Versículo do dia · $ref', corpo: partes.join(' '));
 }

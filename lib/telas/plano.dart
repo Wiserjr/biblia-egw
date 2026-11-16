@@ -391,9 +391,44 @@ class _ProgressoPorDataState extends State<_ProgressoPorData> {
                     ? '1 capítulo ficou para trás'
                     : '${atrasados.length} capítulos ficaram para trás',
               ),
-              subtitle: const Text('Leia quando puder e marque aqui.'),
+              subtitle: Text(
+                aj.porEmDia
+                    ? 'Pondo em dia: a faixa no alto do leitor mostra um por '
+                          'vez, do mais antigo ao de hoje.'
+                    : 'Leia quando puder e marque aqui.',
+              ),
               shape: const Border(),
               children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Me pôr em dia: abre o mais antigo e, a cada um '
+                          'marcado como lido, a faixa "Leitura atrasada" '
+                          'passa ao seguinte. O calendário da igreja não '
+                          'muda.',
+                          style: t.textTheme.bodySmall,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      if (aj.porEmDia)
+                        TextButton(
+                          onPressed: () => aj.porEmDia = false,
+                          child: const Text('Parar'),
+                        )
+                      else
+                        FilledButton.tonal(
+                          onPressed: () {
+                            aj.porEmDia = true;
+                            _abrir(plano.leituraDoDia(atrasados.first).first);
+                          },
+                          child: const Text('Me pôr em dia'),
+                        ),
+                    ],
+                  ),
+                ),
                 for (final d in atrasados.reversed.take(60))
                   CheckboxListTile(
                     value: false,

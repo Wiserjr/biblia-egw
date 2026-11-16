@@ -12,6 +12,10 @@
     <!-- Lembrete diário do plano de leitura (flutter_local_notifications):
          depois de reiniciar o celular, o lembrete é marcado de novo. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- Ouvir o capítulo com a tela apagada: enquanto a voz lê, um serviço
+         em primeiro plano (com a notificação "Lendo...") mantém o app vivo. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
 
     <application
         android:label="Bíblia de Estudo"
@@ -47,6 +51,16 @@
         <receiver
             android:name=".InstalacaoReceiver"
             android:exported="false" />
+        <!-- Ouvir o capítulo (lib/dados/leitura_voz.dart): o serviço da
+             notificação "Lendo..." e os botões Pausar e Parar dela. -->
+        <service
+            android:name="com.dexterous.flutterlocalnotifications.ForegroundService"
+            android:exported="false"
+            android:stopWithTask="true"
+            android:foregroundServiceType="mediaPlayback" />
+        <receiver
+            android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver" />
         <!-- Lembrete diário do plano de leitura (flutter_local_notifications). -->
         <receiver
             android:exported="false"

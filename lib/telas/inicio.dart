@@ -11,6 +11,7 @@ import '../dados/versiculo_do_dia.dart';
 import 'ajustes.dart';
 import 'area_dividida.dart';
 import 'atualizacao_app.dart';
+import 'barra_voz.dart';
 import 'biblioteca.dart';
 import 'busca.dart';
 import 'cartao_versiculo.dart';
@@ -71,6 +72,7 @@ class _TelaInicioState extends State<TelaInicio> {
       );
     });
     destinoLeitura.addListener(_destinoPedido);
+    LeituraVoz.instancia.addListener(_seguirVoz);
     // Checagem silenciosa: só aparece algo se houver versão nova.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) FluxoAtualizacao.verificar(context);
@@ -83,6 +85,7 @@ class _TelaInicioState extends State<TelaInicio> {
   @override
   void dispose() {
     destinoLeitura.removeListener(_destinoPedido);
+    LeituraVoz.instancia.removeListener(_seguirVoz);
     LeituraVoz.instancia.parar();
     super.dispose();
   }
@@ -96,6 +99,19 @@ class _TelaInicioState extends State<TelaInicio> {
     } else {
       voz.ler(versao.id, _pos.livro, _pos.capitulo);
     }
+  }
+
+  /// A voz passou ao capítulo seguinte: o leitor vai junto.
+  void _seguirVoz() {
+    final cap = LeituraVoz.instancia.capitulo;
+    if (cap == null || !mounted) return;
+    if (cap.livro == _pos.livro && cap.capitulo == _pos.capitulo) return;
+    setState(() {
+      _pos = Posicao(cap.livro, cap.capitulo);
+      _selecionado = null;
+      _rolarPara = null;
+    });
+    Ajustes.instancia.ultimaPosicao = _pos;
   }
 
   /// Versículo pedido por um mapa, tema ou estudo (ver navegacao.dart).
@@ -418,33 +434,7 @@ class _TelaInicioState extends State<TelaInicio> {
           ),
         ],
       ),
-      bottomNavigationBar: ListenableBuilder(
-        listenable: LeituraVoz.instancia,
-        builder: (context, _) {
-          final voz = LeituraVoz.instancia;
-          final cap = voz.capitulo;
-          if (cap == null) return const SizedBox.shrink();
-          final v = voz.versiculo;
-          return Material(
-            color: Theme.of(context).colorScheme.secondaryContainer,
-            child: SafeArea(
-              top: false,
-              child: ListTile(
-                dense: true,
-                leading: const Icon(Icons.record_voice_over_outlined),
-                title: Text(
-                  'Lendo ${Referencias.nome(cap.livro)} ${cap.capitulo}'
-                  '${v != null && v > 0 ? ':$v' : ''}',
-                ),
-                trailing: TextButton(
-                  onPressed: voz.parar,
-                  child: const Text('Parar'),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
+      bottomNavigationBar: const BarraVoz(),
       body: versao == null
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -549,7 +539,10 @@ class _FaixaLeituraHoje extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Leitura de hoje', style: t.textTheme.labelSmall),
+                  Text(
+                    leitura.atrasada ? 'Leitura atrasada' : 'Leitura de hoje',
+                    style: t.textTheme.labelSmall,
+                  ),
                   Text(
                     leitura.rotulo,
                     maxLines: 2,
