@@ -34,8 +34,8 @@ class AppBiblia extends StatelessWidget {
       builder: (context, _) => MaterialApp(
         title: 'Bíblia de Estudo',
         debugShowCheckedModeBanner: false,
-        theme: temaClaro(),
-        darkTheme: temaEscuro(),
+        theme: Ajustes.instancia.papelSepia ? temaSepia() : temaClaro(),
+        darkTheme: Ajustes.instancia.poucaLuz ? temaPoucaLuz() : temaEscuro(),
         themeMode: Ajustes.instancia.tema,
         home: const _Abertura(),
       ),

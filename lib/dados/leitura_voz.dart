@@ -1,9 +1,15 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
+import 'dart:ui' show IsolateNameServer;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
+import 'ajustes.dart';
 import 'biblia.dart';
+import 'lembrete.dart';
 import 'modelos.dart';
 import 'referencias.dart';
 
@@ -11,7 +17,10 @@ import 'referencias.dart';
 /// sem internet quando a voz em português está instalada).
 ///
 /// Lê versículo a versículo, e [versiculo] diz qual está sendo lido, para o
-/// leitor acompanhar.
+/// leitor acompanhar. Com [Ajustes.vozContinua], ao fim do capítulo segue
+/// para o próximo. Dá para pausar, mudar a velocidade e marcar um timer para
+/// dormir. No Android, enquanto lê, uma notificação "Lendo..." (um serviço
+/// em primeiro plano) mantém a voz com a tela apagada, com Pausar e Parar.
 class LeituraVoz extends ChangeNotifier {
   LeituraVoz._();
   static final LeituraVoz instancia = LeituraVoz._();
@@ -20,7 +29,7 @@ class LeituraVoz extends ChangeNotifier {
 
   FlutterTts? _tts;
 
-  /// Capítulo em leitura, ou null se parada.
+  /// Capítulo em leitura (ou pausado), ou null se parada.
   Posicao? get capitulo => _capitulo;
   Posicao? _capitulo;
 
@@ -30,6 +39,12 @@ class LeituraVoz extends ChangeNotifier {
 
   bool get lendo => _capitulo != null;
 
+  /// Parada no meio do capítulo, pronta para [continuar].
+  bool get pausada => _pausada;
+  bool _pausada = false;
+
+  int? _versao;
+
   /// Se está lendo um trecho avulso (ver [falar]).
   bool get falandoTrecho => _falandoTrecho;
   bool _falandoTrecho = false;
@@ -38,47 +53,145 @@ class LeituraVoz extends ChangeNotifier {
   /// no meio do laço percebe que foi substituída e para.
   int _rodada = 0;
 
+  // --- timer para dormir ---
+
+  Timer? _timer;
+
+  /// Quando o timer para dormir vai parar a voz, ou null.
+  DateTime? get timerAte => _timerAte;
+  DateTime? _timerAte;
+
+  /// O timer para no fim do capítulo em leitura.
+  bool get pararNoFimDoCapitulo => _pararNoFim;
+  bool _pararNoFim = false;
+
+  bool get timerLigado => _timerAte != null || _pararNoFim;
+
+  /// Para a voz daqui a [duracao]; null desliga o timer.
+  void marcarTimer(Duration? duracao) {
+    _timer?.cancel();
+    _timer = null;
+    _timerAte = null;
+    _pararNoFim = false;
+    if (duracao != null) {
+      _timerAte = DateTime.now().add(duracao);
+      _timer = Timer(duracao, () {
+        _timer = null;
+        _timerAte = null;
+        parar();
+      });
+    }
+    notifyListeners();
+  }
+
+  /// O timer para dormir para a voz no fim do capítulo.
+  void pararNoFim() {
+    marcarTimer(null);
+    _pararNoFim = true;
+    notifyListeners();
+  }
+
+  // --- velocidade ---
+
+  static const velocidades = [0.75, 1.0, 1.25, 1.5, 2.0];
+
+  /// Muda a velocidade; vale a partir do próximo versículo.
+  Future<void> mudarVelocidade(double v) async {
+    Ajustes.instancia.velocidadeVoz = v;
+    notifyListeners();
+    await _tts?.setSpeechRate(taxaDaVelocidade(v));
+  }
+
   Future<FlutterTts> _motor() async {
     final existente = _tts;
     if (existente != null) return existente;
     final tts = FlutterTts();
     await tts.awaitSpeakCompletion(true);
     await tts.setLanguage('pt-BR');
+    await tts.setSpeechRate(taxaDaVelocidade(Ajustes.instancia.velocidadeVoz));
     return _tts = tts;
   }
 
   /// Lê o capítulo na tradução [versaoId], do versículo [aPartirDe] em
-  /// diante (do começo, se null). Termina sozinha no fim do capítulo, ou
-  /// quando [parar] é chamada.
+  /// diante (do começo, se null). Com [Ajustes.vozContinua], segue pelos
+  /// capítulos seguintes; senão termina no fim do capítulo. Para quando
+  /// [parar] ou [pausar] é chamada.
   Future<void> ler(int versaoId, int livro, int cap, {int? aPartirDe}) async {
-    await parar();
+    await _interromper();
     final rodada = ++_rodada;
+    _versao = versaoId;
+    _pausada = false;
     _capitulo = Posicao(livro, cap);
     _versiculo = 0;
     notifyListeners();
+    _escutarNotificacao();
+    var terminou = false;
     try {
       final tts = await _motor();
-      final versiculos = await Biblia.instancia.capitulo(versaoId, livro, cap);
-      if (rodada != _rodada) return;
-      await tts.speak(
-        aPartirDe == null
-            ? '${Referencias.nome(livro)}, capítulo $cap.'
-            : '${Referencias.nome(livro)} $cap, versículo $aPartirDe.',
+      await tts.setSpeechRate(
+        taxaDaVelocidade(Ajustes.instancia.velocidadeVoz),
       );
-      for (final v in versiculos) {
+      var l = livro;
+      var c = cap;
+      var desde = aPartirDe;
+      while (true) {
         if (rodada != _rodada) return;
-        if (aPartirDe != null && v.numero < aPartirDe) continue;
-        _versiculo = v.numero;
+        _capitulo = Posicao(l, c);
+        _versiculo = 0;
         notifyListeners();
-        await tts.speak(textoFalado(v.texto));
+        await _mostrarNotificacao();
+        final versiculos = await Biblia.instancia.capitulo(versaoId, l, c);
+        if (rodada != _rodada) return;
+        await tts.speak(
+          desde == null
+              ? '${Referencias.nome(l)}, capítulo $c.'
+              : '${Referencias.nome(l)} $c, versículo $desde.',
+        );
+        for (final v in versiculos) {
+          if (rodada != _rodada) return;
+          if (desde != null && v.numero < desde) continue;
+          _versiculo = v.numero;
+          notifyListeners();
+          await tts.speak(textoFalado(v.texto));
+        }
+        if (rodada != _rodada) return;
+        final prox = proximoCapitulo(l, c);
+        if (!Ajustes.instancia.vozContinua || _pararNoFim || prox == null) {
+          terminou = true;
+          return;
+        }
+        (l, c) = (prox.livro, prox.capitulo);
+        desde = null;
       }
     } finally {
-      if (rodada == _rodada) {
-        _capitulo = null;
-        _versiculo = null;
-        notifyListeners();
+      if (rodada == _rodada && (terminou || !_pausada)) {
+        _limpar();
       }
     }
+  }
+
+  /// Para no versículo em leitura, guardando o lugar para [continuar].
+  Future<void> pausar() async {
+    if (!lendo || _pausada) return;
+    _rodada++;
+    _pausada = true;
+    notifyListeners();
+    await _tts?.stop();
+    await _mostrarNotificacao();
+  }
+
+  /// Continua a leitura pausada a partir do versículo em que parou.
+  Future<void> continuar() async {
+    final cap = _capitulo;
+    final versao = _versao;
+    if (!_pausada || cap == null || versao == null) return;
+    final v = _versiculo;
+    await ler(
+      versao,
+      cap.livro,
+      cap.capitulo,
+      aPartirDe: v == null || v < 1 ? null : v,
+    );
   }
 
   /// Lê um trecho avulso (o que foi selecionado num livro, por exemplo).
@@ -104,12 +217,157 @@ class LeituraVoz extends ChangeNotifier {
   Future<void> parar() async {
     if (!lendo && !_falandoTrecho) return;
     _rodada++;
-    _capitulo = null;
-    _versiculo = null;
-    _falandoTrecho = false;
-    notifyListeners();
+    _limpar();
     await _tts?.stop();
   }
+
+  /// Interrompe o que estiver lendo sem desligar o timer (que vale para a
+  /// leitura nova também).
+  Future<void> _interromper() async {
+    _rodada++;
+    _falandoTrecho = false;
+    await _tts?.stop();
+  }
+
+  void _limpar() {
+    _capitulo = null;
+    _versiculo = null;
+    _pausada = false;
+    _falandoTrecho = false;
+    _timer?.cancel();
+    _timer = null;
+    _timerAte = null;
+    _pararNoFim = false;
+    notifyListeners();
+    _esconderNotificacao();
+  }
+
+  // --- notificação "Lendo..." (Android) ---
+
+  static const _idNotificacao = 900;
+  static const _canal = 'ouvir_capitulo';
+  ReceivePort? _porta;
+
+  /// Liga os botões da notificação: com o app em segundo plano eles chegam
+  /// pela porta [portaControleVoz]; com o app aberto, por [Lembrete.aoAcao].
+  void _escutarNotificacao() {
+    if (!Platform.isAndroid || _porta != null) return;
+    final porta = ReceivePort();
+    IsolateNameServer.removePortNameMapping(portaControleVoz);
+    IsolateNameServer.registerPortWithName(porta.sendPort, portaControleVoz);
+    porta.listen((m) {
+      if (m is String) acao(m);
+    });
+    _porta = porta;
+    Lembrete.instancia.aoAcao = acao;
+  }
+
+  /// Botão da notificação: "pausar", "continuar" ou "parar".
+  void acao(String a) {
+    switch (a) {
+      case 'pausar':
+        pausar();
+      case 'continuar':
+        continuar();
+      case 'parar':
+        parar();
+    }
+  }
+
+  AndroidFlutterLocalNotificationsPlugin? get _android => Lembrete
+      .instancia
+      .plugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >();
+
+  bool _servicoLigado = false;
+
+  Future<void> _mostrarNotificacao() async {
+    final cap = _capitulo;
+    if (!Platform.isAndroid || cap == null) return;
+    try {
+      if (!await Lembrete.instancia.iniciar()) return;
+      final android = _android;
+      if (android == null) return;
+      final detalhes = AndroidNotificationDetails(
+        _canal,
+        'Ouvir o capítulo',
+        channelDescription:
+            'Aparece enquanto a voz lê, com os botões Pausar e Parar.',
+        importance: Importance.low,
+        priority: Priority.low,
+        ongoing: true,
+        onlyAlertOnce: true,
+        showWhen: false,
+        playSound: false,
+        enableVibration: false,
+        actions: [
+          AndroidNotificationAction(
+            _pausada ? 'continuar' : 'pausar',
+            _pausada ? 'Continuar' : 'Pausar',
+            cancelNotification: false,
+          ),
+          const AndroidNotificationAction('parar', 'Parar'),
+        ],
+      );
+      final titulo =
+          '${_pausada ? 'Pausado' : 'Lendo'}: '
+          '${Referencias.nome(cap.livro)} ${cap.capitulo}';
+      if (_servicoLigado) {
+        await Lembrete.instancia.plugin.show(
+          id: _idNotificacao,
+          title: titulo,
+          body: 'Bíblia de Estudo',
+          notificationDetails: NotificationDetails(android: detalhes),
+        );
+      } else {
+        await android.startForegroundService(
+          id: _idNotificacao,
+          title: titulo,
+          body: 'Bíblia de Estudo',
+          notificationDetails: detalhes,
+          startType: AndroidServiceStartType.startNotSticky,
+          foregroundServiceTypes: {
+            AndroidServiceForegroundType.foregroundServiceTypeMediaPlayback,
+          },
+        );
+        _servicoLigado = true;
+      }
+    } catch (e) {
+      // Sem a notificação a voz continua, só não segue com a tela apagada.
+      debugPrint('Notificacao da voz: $e');
+    }
+  }
+
+  Future<void> _esconderNotificacao() async {
+    if (!Platform.isAndroid || !_servicoLigado) return;
+    _servicoLigado = false;
+    try {
+      await _android?.stopForegroundService();
+      await Lembrete.instancia.plugin.cancel(id: _idNotificacao);
+    } catch (e) {
+      debugPrint('Notificacao da voz: $e');
+    }
+  }
+}
+
+/// O capítulo depois de [livro] [cap], na ordem da Bíblia; null depois de
+/// Apocalipse 22.
+Posicao? proximoCapitulo(int livro, int cap) {
+  if (cap < Referencias.capitulos[livro - 1]) return Posicao(livro, cap + 1);
+  if (livro < 66) return Posicao(livro + 1, 1);
+  return null;
+}
+
+/// A taxa que o flutter_tts recebe para a [velocidade] (1 = normal). No
+/// Android e no Windows o plugin trata 0,5 como a fala normal: no Android ele
+/// dobra o valor; no Windows soma 0,5.
+@visibleForTesting
+double taxaDaVelocidade(double velocidade) {
+  final v = velocidade.clamp(0.5, 2.0);
+  if (!kIsWeb && Platform.isWindows) return (v - 0.5).clamp(0.0, 1.5);
+  return v / 2;
 }
 
 /// O texto do versículo sem a marcação (`<J>`, `<i>`), que a voz leria.

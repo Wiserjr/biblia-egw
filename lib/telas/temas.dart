@@ -12,6 +12,7 @@ import 'navegacao.dart';
 import 'tema.dart';
 import 'quiz_biblico.dart';
 import 'texto_biblico.dart';
+import 'versiculos_flutuantes.dart';
 
 /// Índice temático e estudos bíblicos.
 class TelaTemas extends StatefulWidget {
@@ -321,9 +322,15 @@ class CartaoPassagem extends StatefulWidget {
     required this.passagem,
     required this.versao,
     this.oculto = false,
+    this.noEstudo = false,
   });
   final Passagem passagem;
   final Versao versao;
+
+  /// Dentro de um estudo bíblico: tocar no cartão não sai do estudo. A
+  /// referência abre os versículos numa janela por cima, e só o botão
+  /// "Abrir na Bíblia" leva ao leitor.
+  final bool noEstudo;
 
   /// Esconde o texto até a pessoa tocar (modo de estudo).
   final bool oculto;
@@ -351,25 +358,61 @@ class _CartaoPassagemState extends State<CartaoPassagem> {
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => irParaVersiculo(context, p.posicao),
+        onTap: widget.noEstudo
+            ? null
+            : () => irParaVersiculo(context, p.posicao),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      ref,
-                      style: t.textTheme.labelLarge?.copyWith(
-                        color: t.colorScheme.primary,
+              if (widget.noEstudo)
+                Row(
+                  children: [
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          onPressed: () => showDialog<void>(
+                            context: context,
+                            builder: (_) =>
+                                VersiculosFlutuantes(passagens: [p]),
+                          ),
+                          icon: const Icon(Icons.menu_book_outlined, size: 18),
+                          label: Text(ref),
+                        ),
                       ),
                     ),
-                  ),
-                  Icon(Icons.chevron_right, size: 18, color: t.hintColor),
-                ],
-              ),
+                    IconButton(
+                      tooltip: 'Abrir na Bíblia (sai do estudo)',
+                      visualDensity: VisualDensity.compact,
+                      icon: Icon(
+                        Icons.open_in_new,
+                        size: 18,
+                        color: t.hintColor,
+                      ),
+                      onPressed: () => irParaVersiculo(context, p.posicao),
+                    ),
+                  ],
+                )
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        ref,
+                        style: t.textTheme.labelLarge?.copyWith(
+                          color: t.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, size: 18, color: t.hintColor),
+                  ],
+                ),
               const SizedBox(height: 4),
               if (_oculto)
                 TextButton.icon(
@@ -414,6 +457,50 @@ class _CartaoPassagemState extends State<CartaoPassagem> {
       ),
     );
   }
+}
+
+/// Campo para a pessoa escrever a própria resposta a uma pergunta do
+/// estudo. Grava a cada mudança, no aparelho (e vai na cópia de segurança).
+class SuaResposta extends StatefulWidget {
+  const SuaResposta({super.key, required this.estudo, required this.pergunta});
+  final String estudo;
+  final int pergunta;
+
+  @override
+  State<SuaResposta> createState() => _SuaRespostaState();
+}
+
+class _SuaRespostaState extends State<SuaResposta> {
+  late final _texto = TextEditingController(
+    text: Ajustes.instancia.respostaEstudo(widget.estudo, widget.pergunta),
+  );
+
+  @override
+  void dispose() {
+    _texto.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => TextField(
+    controller: _texto,
+    minLines: 1,
+    maxLines: 8,
+    keyboardType: TextInputType.multiline,
+    textCapitalization: TextCapitalization.sentences,
+    decoration: const InputDecoration(
+      labelText: 'Sua resposta',
+      hintText: 'Escreva com suas palavras o que o texto responde',
+      prefixIcon: Icon(Icons.edit_note),
+      border: OutlineInputBorder(),
+      isDense: true,
+    ),
+    onChanged: (v) => Ajustes.instancia.definirRespostaEstudo(
+      widget.estudo,
+      widget.pergunta,
+      v,
+    ),
+  );
 }
 
 /// Estudo bíblico: perguntas com a resposta escondida até a pessoa tocar.
@@ -493,7 +580,10 @@ class _TelaEstudoBiblicoState extends State<TelaEstudoBiblico> {
                         passagem: q.passagem,
                         versao: widget.versao,
                         oculto: !_respostasVisiveis,
+                        noEstudo: true,
                       ),
+                      const SizedBox(height: 6),
+                      SuaResposta(estudo: widget.estudo.id, pergunta: i),
                     ],
                   ),
                 );

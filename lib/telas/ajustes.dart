@@ -4,6 +4,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../dados/ajustes.dart';
 import '../dados/atualizacao.dart';
 import '../dados/biblioteca.dart';
+import '../dados/leitura_voz.dart';
+import '../dados/lembrete.dart';
 import '../dados/nuvem.dart';
 import 'atualizacao_app.dart';
 import 'backup.dart';
@@ -59,13 +61,37 @@ class _TelaAjustesState extends State<TelaAjustes> {
                     '<J>Eu sou o caminho, e a verdade, e a vida.</J>',
                     estilo: t.textTheme.bodyLarge!.copyWith(
                       fontSize: aj.tamanhoLetra,
-                      height: 1.6,
+                      height: aj.espacoLinhas,
+                      fontFamily: aj.letraSerifa ? familiaSerifa() : null,
                     ),
                     corJesus: corJesus(context),
                     vermelho: aj.letrasVermelhas,
                   ),
                 ),
               ),
+            ),
+            ListTile(
+              title: const Text('Espaço entre as linhas'),
+              subtitle: Slider(
+                value: aj.espacoLinhas,
+                min: Ajustes.minEspacoLinhas,
+                max: Ajustes.maxEspacoLinhas,
+                divisions: 12,
+                label: aj.espacoLinhas.toStringAsFixed(1).replaceAll('.', ','),
+                onChanged: (v) => aj.espacoLinhas = v,
+              ),
+              trailing: TextButton(
+                onPressed: aj.espacoLinhas == Ajustes.espacoLinhasPadrao
+                    ? null
+                    : () => aj.espacoLinhas = Ajustes.espacoLinhasPadrao,
+                child: const Text('Padrão'),
+              ),
+            ),
+            SwitchListTile(
+              title: const Text('Letra com serifa'),
+              subtitle: const Text('Como a de livro impresso'),
+              value: aj.letraSerifa,
+              onChanged: (v) => aj.letraSerifa = v,
             ),
             if (larguraAjustavel)
               ListTile(
@@ -107,6 +133,23 @@ class _TelaAjustesState extends State<TelaAjustes> {
                 onSelectionChanged: (s) => aj.tema = s.first,
               ),
             ),
+            SwitchListTile(
+              title: const Text('Papel sépia'),
+              subtitle: const Text(
+                'No tema claro, um fundo amarelado que cansa menos a vista',
+              ),
+              value: aj.papelSepia,
+              onChanged: (v) => aj.papelSepia = v,
+            ),
+            SwitchListTile(
+              title: const Text('Pouca luz'),
+              subtitle: const Text(
+                'No tema escuro, fundo preto e letra mais suave, para ler '
+                'no escuro',
+              ),
+              value: aj.poucaLuz,
+              onChanged: (v) => aj.poucaLuz = v,
+            ),
             if (telaLarga) ...[
               _titulo(context, 'Painel de estudo'),
               SwitchListTile(
@@ -136,6 +179,56 @@ class _TelaAjustesState extends State<TelaAjustes> {
                 ),
                 trailing: Text('${(aj.larguraPainel * 100).round()}%'),
               ),
+            ],
+            if (LeituraVoz.suportada) ...[
+              _titulo(context, 'Ouvir o capítulo'),
+              ListTile(
+                title: const Text('Velocidade da voz'),
+                trailing: DropdownButton<double>(
+                  value: LeituraVoz.velocidades.contains(aj.velocidadeVoz)
+                      ? aj.velocidadeVoz
+                      : 1.0,
+                  underline: const SizedBox.shrink(),
+                  items: [
+                    for (final v in LeituraVoz.velocidades)
+                      DropdownMenuItem(
+                        value: v,
+                        child: Text(
+                          '${v.toString().replaceAll(RegExp(r'\.0$'), '').replaceAll('.', ',')}×',
+                        ),
+                      ),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) LeituraVoz.instancia.mudarVelocidade(v);
+                  },
+                ),
+              ),
+              SwitchListTile(
+                title: const Text('Seguir para o próximo capítulo'),
+                subtitle: const Text(
+                  'Ao fim do capítulo, a voz continua no seguinte',
+                ),
+                value: aj.vozContinua,
+                onChanged: (v) => aj.vozContinua = v,
+              ),
+            ],
+            if (Lembrete.suportado) ...[
+              _titulo(context, 'Versículo do dia'),
+              SwitchListTile(
+                title: const Text('Aviso do versículo do dia'),
+                subtitle: const Text(
+                  'Uma notificação por dia com o versículo, na tradução que '
+                  'você usa',
+                ),
+                value: aj.avisoVersiculoDoDia,
+                onChanged: (v) => _ligarAvisoVersiculo(context, v),
+              ),
+              if (aj.avisoVersiculoDoDia)
+                ListTile(
+                  title: Text('Às ${_hora(aj.avisoVersiculoMinutos)}'),
+                  subtitle: const Text('Toque para mudar a hora'),
+                  onTap: () => _mudarHoraVersiculo(context),
+                ),
             ],
             _titulo(context, 'Estudo'),
             SwitchListTile(
@@ -246,6 +339,41 @@ class _TelaAjustesState extends State<TelaAjustes> {
         ),
       ),
     );
+  }
+
+  static String _hora(int minutos) =>
+      '${(minutos ~/ 60).toString().padLeft(2, '0')}:'
+      '${(minutos % 60).toString().padLeft(2, '0')}';
+
+  Future<void> _ligarAvisoVersiculo(BuildContext context, bool v) async {
+    if (v) {
+      final msg = ScaffoldMessenger.of(context);
+      if (!await Lembrete.instancia.pedirPermissao()) {
+        msg.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Sem permissão para notificações. Libere nas configurações do '
+              'celular, em Apps > Bíblia de Estudo > Notificações.',
+            ),
+          ),
+        );
+        return;
+      }
+    }
+    Ajustes.instancia.avisoVersiculoDoDia = v;
+    await Lembrete.instancia.atualizar();
+  }
+
+  Future<void> _mudarHoraVersiculo(BuildContext context) async {
+    final m = Ajustes.instancia.avisoVersiculoMinutos;
+    final h = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: m ~/ 60, minute: m % 60),
+      helpText: 'Hora do versículo do dia',
+    );
+    if (h == null) return;
+    Ajustes.instancia.avisoVersiculoMinutos = h.hour * 60 + h.minute;
+    await Lembrete.instancia.atualizar();
   }
 
   Widget _titulo(BuildContext context, String texto) => Padding(
