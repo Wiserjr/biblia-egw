@@ -327,21 +327,29 @@ powershell -ExecutionPolicy Bypass -File ferramentas\test_publicacao.ps1
 
 ### Chave de assinatura
 
-A atualização só entra por cima se o APK novo tiver **a mesma chave** do
-instalado. Crie a chave **antes da primeira distribuição** e guarde cópia fora
-do PC:
+A atualização no Android só entra por cima se o APK novo tiver **a mesma
+chave** do instalado. A chave fica no PC de quem publica, fora do git, e o
+`android\key.properties` diz onde ela está e qual é a senha. Sem ele, ou com
+a chave fora do lugar, o `publicar.ps1` não compila.
+
+**Guarde uma cópia da pasta da chave fora do PC** (Google Drive, pendrive).
+Perder a chave obriga todo mundo a desinstalar e instalar de novo: foi o que
+aconteceu em novembro de 2026, quando a chave das versões 1.0.0 a 1.11.0 sumiu
+do PC. A 1.12.0 em diante sai com outra chave, e é ela que vale daqui em
+diante, mesmo que a antiga apareça.
+
+Para criar uma chave nova (só se a anterior se perdeu):
 
 ```powershell
-keytool -genkey -v -keystore $env:USERPROFILE\biblia-estudo.jks -keyalg RSA -keysize 2048 -validity 10000 -alias biblia
+.\publicar.ps1 -NovaChave
 ```
 
-e `android\key.properties` (fora do git):
+O script recusa se a chave atual estiver em ordem. Ele cria a chave em
+`Documentos\Chave da Biblia de Estudo\biblia-estudo.jks` com uma senha
+aleatória, aponta o `android\key.properties` para ela e deixa uma cópia do
+`key.properties` na mesma pasta; o `key.properties` anterior vai para lá como
+`key.properties.antiga`. Guardar essa pasta guarda tudo o que é preciso.
 
-```
-storeFile=C:\\Users\\<voce>\\biblia-estudo.jks
-storePassword=...
-keyAlias=biblia
-keyPassword=...
-```
-
-Sem ela, o release sai assinado com a chave de debug do PC que compilou.
+Num PC novo, copie a pasta e crie o `android\key.properties` igual ao da
+cópia (barras normais no caminho, `C:/Users/...`). O Gradle sozinho, sem o
+script, assina com a chave de debug do PC quando falta o `key.properties`.

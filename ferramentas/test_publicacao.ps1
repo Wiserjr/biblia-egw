@@ -388,6 +388,145 @@ Teste 'falha sem cache, sem instancia ou com o Visual Studio sumido: nada a dize
     if ($null -ne (Descrever-FaltaAtl (CompiladoCom (Join-Path $tmp 'vs-sumiu')))) { throw 'sumido' }
 }
 
+# --- chave de assinatura ---
+# Uma pasta android\app de mentira e o key.properties ao lado dela.
+function PastaAndroid([string]$nome) {
+    $p = [System.IO.Path]::Combine($tmp, 'chave', $nome)
+    if (Test-Path -LiteralPath $p) { Remove-Item -LiteralPath $p -Recurse -Force }
+    [void][System.IO.Directory]::CreateDirectory([System.IO.Path]::Combine($p, 'app'))
+    return $p
+}
+function Escrever([string]$arquivo, [string[]]$linhas) {
+    [System.IO.File]::WriteAllText($arquivo, (($linhas -join "`n") + "`n"))
+}
+# Faz o papel do keytool: so cria o arquivo da chave.
+$geradorFalso = {
+    param($kt, $chave, $senha, $nome)
+    $script:geradas++
+    [System.IO.File]::WriteAllText($chave, 'chave')
+    'saida do keytool'
+}
+
+Teste 'key.properties: le como o Java (barra dupla vira uma, barra sozinha some)' {
+    $a = PastaAndroid 'ler'
+    $f = Join-Path $a 'key.properties'
+    Escrever $f @('# comentario', 'storeFile=C:\\Users\\WiseJr\\biblia.jks', 'keyAlias : biblia', 'outro=C:\Users')
+    $p = Ler-Chave $f
+    Igual 'C:\Users\WiseJr\biblia.jks' $p['storeFile']
+    Igual 'biblia' $p['keyAlias']
+    Igual 'C:Users' $p['outro']
+    if ($null -ne (Ler-Chave (Join-Path $a 'nao-existe'))) { throw 'leu algo' }
+}
+Teste 'sem key.properties: recusa e diz como criar a chave' {
+    $a = PastaAndroid 'sem'
+    Deve-Falhar { Conferir-Chave (Join-Path $a 'key.properties') (Join-Path $a 'app') } '-NovaChave'
+}
+Teste 'key.properties sem storeFile: recusa' {
+    $a = PastaAndroid 'semstore'
+    $f = Join-Path $a 'key.properties'
+    Escrever $f @('storePassword=x', 'keyAlias=biblia', 'keyPassword=x')
+    Deve-Falhar { Conferir-Chave $f (Join-Path $a 'app') } 'storeFile'
+}
+Teste 'chave sumiu do lugar: recusa dizendo onde ela deveria estar' {
+    $a = PastaAndroid 'sumiu'
+    $f = Join-Path $a 'key.properties'
+    $chave = Join-Path $a 'biblia-estudo.jks'
+    Escrever $f @("storeFile=$($chave.Replace('\', '/'))", 'storePassword=x', 'keyAlias=biblia', 'keyPassword=x')
+    Deve-Falhar { Conferir-Chave $f (Join-Path $a 'app') } "nao esta em $($chave.Replace('\', '/'))"
+    Deve-Falhar { Conferir-Chave $f (Join-Path $a 'app') } '-NovaChave'
+    # Uma pasta com o nome da chave nao e a chave.
+    [void][System.IO.Directory]::CreateDirectory($chave)
+    Deve-Falhar { Conferir-Chave $f (Join-Path $a 'app') } 'nao esta em'
+}
+Teste 'chave no lugar: aceita, inclusive com caminho relativo a android\app' {
+    $a = PastaAndroid 'certa'
+    $f = Join-Path $a 'key.properties'
+    [System.IO.File]::WriteAllText((Join-Path $a 'biblia-estudo.jks'), 'chave')
+    Escrever $f @('storeFile=../biblia-estudo.jks', 'storePassword=x', 'keyAlias=biblia', 'keyPassword=x')
+    $c = Conferir-Chave $f (Join-Path $a 'app')
+    if (-not (Test-Path -LiteralPath $c)) { throw "devolveu $c" }
+    Escrever $f @('storeFile=../biblia-estudo.jks', 'storePassword=x', 'keyAlias=biblia')
+    Deve-Falhar { Conferir-Chave $f (Join-Path $a 'app') } 'keyPassword'
+}
+Teste 'senha nova: 48 letras e numeros, outra a cada vez' {
+    $s1 = Nova-Senha
+    $s2 = Nova-Senha
+    if ($s1 -notmatch '^[0-9a-f]{48}$') { throw "senha: $s1" }
+    if ($s1 -eq $s2) { throw 'repetiu' }
+}
+Teste 'keytool: acha no lugar indicado; sem nenhum, diz onde procurar' {
+    $kt = Join-Path (PastaAndroid 'kt') 'keytool.exe'
+    [System.IO.File]::WriteAllText($kt, 'x')
+    Igual $kt (Achar-Keytool @((Join-Path $tmp 'nao-existe.exe'), $kt) $false)
+    Deve-Falhar { Achar-Keytool @((Join-Path $tmp 'nao-existe.exe')) $false } 'flutter doctor -v'
+}
+Teste 'chave nova sem key.properties: cria, aponta e deixa copia na pasta da chave' {
+    $a = PastaAndroid 'nova'
+    $f = Join-Path $a 'key.properties'
+    $pasta = Join-Path $a 'Chave da Biblia'
+    $script:geradas = 0
+    $c = Criar-Chave -pasta $pasta -arquivo $f -pastaApp (Join-Path $a 'app') -keytool 'kt' -gerar $geradorFalso
+    Igual 1 $script:geradas
+    if ($c -isnot [string]) { throw "devolveu mais que o caminho: $c" }
+    Igual (Join-Path $pasta 'biblia-estudo.jks') $c
+    Igual $c (Conferir-Chave $f (Join-Path $a 'app')).Replace('/', [System.IO.Path]::DirectorySeparatorChar)
+    $p = Ler-Chave $f
+    if ($p['storeFile'] -match '\\') { throw "barra invertida: $($p['storeFile'])" }
+    if ($p['storePassword'] -notmatch '^[0-9a-f]{48}$') { throw 'sem senha' }
+    Igual $p['storePassword'] $p['keyPassword']
+    Igual 'biblia' $p['keyAlias']
+    Igual ((Get-Content -LiteralPath $f) -join '|') ((Get-Content -LiteralPath (Join-Path $pasta 'key.properties')) -join '|')
+}
+Teste 'chave nova com a antiga em ordem: recusa sem criar nada' {
+    $a = PastaAndroid 'emordem'
+    $f = Join-Path $a 'key.properties'
+    [System.IO.File]::WriteAllText((Join-Path $a 'antiga.jks'), 'chave')
+    Escrever $f @('storeFile=../antiga.jks', 'storePassword=x', 'keyAlias=biblia', 'keyPassword=x')
+    $script:geradas = 0
+    Deve-Falhar { Criar-Chave -pasta (Join-Path $a 'nova') -arquivo $f -pastaApp (Join-Path $a 'app') -keytool 'kt' -gerar $geradorFalso } 'nao crio outra'
+    Igual 0 $script:geradas
+    Igual 'storeFile=../antiga.jks' (Get-Content -LiteralPath $f -TotalCount 1)
+}
+Teste 'chave nova quando a antiga sumiu: guarda o key.properties antigo na pasta nova' {
+    $a = PastaAndroid 'perdida'
+    $f = Join-Path $a 'key.properties'
+    Escrever $f @('storeFile=C:/sumiu/biblia-estudo.jks', 'storePassword=antiga', 'keyAlias=biblia', 'keyPassword=antiga')
+    $pasta = Join-Path $a 'nova'
+    $null = Criar-Chave -pasta $pasta -arquivo $f -pastaApp (Join-Path $a 'app') -keytool 'kt' -gerar $geradorFalso
+    Igual 'antiga' (Ler-Chave (Join-Path $pasta 'key.properties.antiga'))['storePassword']
+    if ((Ler-Chave $f)['storePassword'] -eq 'antiga') { throw 'nao trocou' }
+}
+Teste 'chave nova onde ja ha um arquivo de chave: recusa sem apagar' {
+    $a = PastaAndroid 'jaexiste'
+    $pasta = Join-Path $a 'nova'
+    [void][System.IO.Directory]::CreateDirectory($pasta)
+    [System.IO.File]::WriteAllText((Join-Path $pasta 'biblia-estudo.jks'), 'outra')
+    $script:geradas = 0
+    Deve-Falhar { Criar-Chave -pasta $pasta -arquivo (Join-Path $a 'key.properties') -pastaApp (Join-Path $a 'app') -keytool 'kt' -gerar $geradorFalso } 'Ja existe'
+    Igual 0 $script:geradas
+    Igual 'outra' ([System.IO.File]::ReadAllText((Join-Path $pasta 'biblia-estudo.jks')))
+}
+Teste 'keytool falhou: o key.properties fica como estava' {
+    $a = PastaAndroid 'falhou'
+    $f = Join-Path $a 'key.properties'
+    Escrever $f @('storeFile=C:/sumiu/biblia-estudo.jks', 'storePassword=antiga', 'keyAlias=biblia', 'keyPassword=antiga')
+    $falha = { param($kt, $chave, $senha, $nome) throw 'O keytool falhou (codigo 1).' }
+    Deve-Falhar { Criar-Chave -pasta (Join-Path $a 'nova') -arquivo $f -pastaApp (Join-Path $a 'app') -keytool 'kt' -gerar $falha } 'keytool falhou'
+    Igual 'antiga' (Ler-Chave $f)['storePassword']
+}
+Teste 'chave nova com o keytool de verdade (se houver): abre com a senha gravada' {
+    $kt = $null
+    try { $kt = Achar-Keytool } catch { return }
+    $a = PastaAndroid 'real'
+    $f = Join-Path $a 'key.properties'
+    $c = Criar-Chave -pasta (Join-Path $a 'Chave da Biblia') -arquivo $f -pastaApp (Join-Path $a 'app') -keytool $kt
+    if ($c -isnot [string]) { throw "devolveu mais que o caminho: $c" }
+    $p = Ler-Chave $f
+    $ErrorActionPreference = 'Continue'
+    $lista = & $kt -list -keystore $c -storepass $p['storePassword'] 2>&1 | Out-String
+    if ($LASTEXITCODE -ne 0 -or $lista -notmatch 'biblia') { throw "keytool -list: $lista" }
+}
+
 Remove-Item $tmp -Recurse -Force
 if ($script:falhas -gt 0) {
     Write-Host "$script:falhas teste(s) falharam."
