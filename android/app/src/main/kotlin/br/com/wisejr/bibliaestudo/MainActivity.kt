@@ -13,7 +13,13 @@ class MainActivity : FlutterActivity() {
     /** Resposta ao Dart que espera a volta da tela "Instalar apps desconhecidos". */
     private var aguardandoFonte: MethodChannel.Result? = null
 
+    /** Texto que abriu o app (ver textoDe), até o Dart pedir. */
+    private var textoInicial: String? = null
+    private var canalTexto: MethodChannel? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Antes do super: o Dart pode pedir o texto assim que o motor sobe.
+        if (savedInstanceState == null) textoInicial = textoDe(intent)
         super.onCreate(savedInstanceState)
         // Só na abertura de verdade, não numa recriação: aí o Dart pode estar no
         // meio de um download que isto apagaria.
@@ -21,6 +27,27 @@ class MainActivity : FlutterActivity() {
             Atualizador.limparCache(this)
             Atualizador.limparSessoes(this)
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val texto = textoDe(intent) ?: return
+        canalTexto?.invokeMethod("texto", texto)
+    }
+
+    /**
+     * O texto que outro app mandou: selecionado e enviado por "Abrir na Bíblia"
+     * (PROCESS_TEXT, no menu de seleção) ou compartilhado (SEND). O lado Dart
+     * (lib/dados/texto_recebido.dart) procura nele uma referência bíblica.
+     */
+    private fun textoDe(i: Intent?): String? {
+        val texto = when (i?.action) {
+            Intent.ACTION_PROCESS_TEXT -> i.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
+            Intent.ACTION_SEND ->
+                if (i.type == "text/plain") i.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString() else null
+            else -> null
+        }
+        return texto?.trim()?.take(2000)?.ifEmpty { null }
     }
 
     // Consultado pelo InstalacaoReceiver: com o app em segundo plano, abrir a
@@ -37,6 +64,16 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        canalTexto = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CANAL_TEXTO).apply {
+            setMethodCallHandler { call, result ->
+                if (call.method == "inicial") {
+                    result.success(textoInicial)
+                    textoInicial = null
+                } else {
+                    result.notImplemented()
+                }
+            }
+        }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CANAL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "versaoInstalada" -> result.success(Atualizador.versaoInstalada(this))
@@ -91,6 +128,7 @@ class MainActivity : FlutterActivity() {
 
     companion object {
         const val CANAL = "br.com.wisejr.bibliaestudo/atualizacao"
+        const val CANAL_TEXTO = "br.com.wisejr.bibliaestudo/texto"
         private const val PEDIDO_FONTE = 4802
         private val VISIVEL = AtomicBoolean(false)
 

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'caminhada.dart';
+import 'memorizar.dart';
 import 'modelos.dart';
 import 'oracao.dart';
 import 'plano.dart';
@@ -669,6 +670,154 @@ class Ajustes extends ChangeNotifier {
         n <= _capitulosDoLivro(l);
   }
 
+  // --- etiquetas nos versículos ---
+
+  static String chaveEtiquetas(int livro, int cap, int ver) =>
+      'e_${livro}_${cap}_$ver';
+
+  /// Etiquetas do versículo ("Promessas", "Família"), em ordem alfabética.
+  List<String> etiquetas(int livro, int cap, int ver) =>
+      _p.getStringList('etiquetas:${_k(livro, cap, ver)}') ?? const [];
+
+  void definirEtiquetas(int livro, int cap, int ver, Iterable<String> lista) {
+    _gravarEtiquetas(_k(livro, cap, ver), lista);
+    notifyListeners();
+    _avisar({chaveEtiquetas(livro, cap, ver)});
+  }
+
+  void _gravarEtiquetas(String posicao, Iterable<String> lista) {
+    final limpa = limparEtiquetas(lista);
+    if (limpa.isEmpty) {
+      _p.remove('etiquetas:$posicao');
+    } else {
+      _p.setStringList('etiquetas:$posicao', limpa);
+    }
+  }
+
+  /// Sem repetir (sem diferença de maiúsculas), sem vazias, em ordem.
+  static List<String> limparEtiquetas(Iterable<String> lista) {
+    final vistas = <String, String>{};
+    for (final e in lista) {
+      final t = e.trim().replaceAll(RegExp(r'\s+'), ' ');
+      if (t.isEmpty) continue;
+      vistas.putIfAbsent(t.toLowerCase(), () => t);
+    }
+    return vistas.values.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+  }
+
+  /// Todos os versículos com etiqueta, na ordem da Bíblia.
+  List<((int, int, int), List<String>)> todasEtiquetas() {
+    final r = <((int, int, int), List<String>)>[];
+    for (final k in _p.getKeys()) {
+      if (!k.startsWith('etiquetas:')) continue;
+      final p = k.substring(10).split(':').map(int.tryParse).toList();
+      final e = _p.getStringList(k);
+      if (p.length == 3 && !p.contains(null) && e != null && e.isNotEmpty) {
+        r.add(((p[0]!, p[1]!, p[2]!), e));
+      }
+    }
+    r.sort((a, b) => _comparar(a.$1, b.$1));
+    return r;
+  }
+
+  /// Os nomes de todas as etiquetas em uso.
+  List<String> get nomesEtiquetas =>
+      limparEtiquetas([for (final (_, e) in todasEtiquetas()) ...e]);
+
+  /// Troca o nome da etiqueta [de] por [para] em todos os versículos ([para]
+  /// vazio apaga a etiqueta).
+  void renomearEtiqueta(String de, String para) {
+    final mudaram = <String>{};
+    for (final (k, e) in todasEtiquetas()) {
+      if (!e.any((x) => x.toLowerCase() == de.toLowerCase())) continue;
+      _gravarEtiquetas(_k(k.$1, k.$2, k.$3), [
+        for (final x in e)
+          if (x.toLowerCase() != de.toLowerCase()) x,
+        if (para.trim().isNotEmpty) para,
+      ]);
+      mudaram.add(chaveEtiquetas(k.$1, k.$2, k.$3));
+    }
+    if (mudaram.isEmpty) return;
+    notifyListeners();
+    _avisar(mudaram);
+  }
+
+  // --- versículos para memorizar ---
+
+  static const _prefixoMemorizar = 'memorizar:';
+
+  /// As passagens que a pessoa está decorando, das mais novas às mais
+  /// antigas.
+  List<Memorizacao> get memorizar {
+    final r = <Memorizacao>[];
+    for (final k in _p.getKeys()) {
+      if (!k.startsWith(_prefixoMemorizar)) continue;
+      final m = _lerMemorizacao(k.substring(_prefixoMemorizar.length));
+      if (m != null) r.add(m);
+    }
+    r.sort((a, b) => b.criada.compareTo(a.criada));
+    return r;
+  }
+
+  Memorizacao? memorizacao(int livro, int cap, int ver) =>
+      _lerMemorizacao(_k(livro, cap, ver));
+
+  Memorizacao? _lerMemorizacao(String posicao) {
+    final p = posicao.split(':').map(int.tryParse).toList();
+    if (p.length != 3 || p.contains(null)) return null;
+    return Memorizacao.deMapa(
+      p[0]!,
+      p[1]!,
+      p[2]!,
+      _jsonOuNull(_p.getString('$_prefixoMemorizar$posicao') ?? ''),
+    );
+  }
+
+  void salvarMemorizacao(Memorizacao m) {
+    _p.setString('$_prefixoMemorizar${m.posicao}', jsonEncode(m.paraMapa()));
+    notifyListeners();
+    _avisar({m.chave});
+  }
+
+  void apagarMemorizacao(Memorizacao m) {
+    _p.remove('$_prefixoMemorizar${m.posicao}');
+    notifyListeners();
+    _avisar({m.chave});
+  }
+
+  bool _juntarMemorizacao(Memorizacao m) {
+    final atual = memorizacao(m.livro, m.capitulo, m.versiculo);
+    if (atual != null && atual.atualizado >= m.atualizado) return false;
+    _p.setString('$_prefixoMemorizar${m.posicao}', jsonEncode(m.paraMapa()));
+    return true;
+  }
+
+  // --- buscas recentes (só neste aparelho) ---
+
+  static const maxBuscas = 10;
+
+  List<String> get buscasRecentes =>
+      _p.getStringList('buscasRecentes') ?? const [];
+
+  void registrarBusca(String consulta) {
+    final c = consulta.trim();
+    if (c.length < 2) return;
+    _p.setStringList(
+      'buscasRecentes',
+      [
+        c,
+        for (final b in buscasRecentes)
+          if (b.toLowerCase() != c.toLowerCase()) b,
+      ].take(maxBuscas).toList(),
+    );
+  }
+
+  void limparBuscas() {
+    _p.remove('buscasRecentes');
+    notifyListeners();
+  }
+
   // --- lista de oração ---
 
   static const _prefixoOracao = 'oracao:';
@@ -781,6 +930,10 @@ class Ajustes extends ChangeNotifier {
     'diasLeitura': diasDeLeitura.toList()..sort(),
     'capitulosLidos': _ordenarCapitulos(capitulosLidos),
     'oracoes': {for (final o in oracoes) '${o.id}': o.paraMapa()},
+    'etiquetas': {
+      for (final (k, e) in todasEtiquetas()) '${k.$1}:${k.$2}:${k.$3}': e,
+    },
+    'memorizar': {for (final m in memorizar) m.posicao: m.paraMapa()},
   };
 
   /// O plano em andamento como vai na cópia e na nuvem, ou null.
@@ -929,6 +1082,27 @@ class Ajustes extends ChangeNotifier {
     final medalhasAntes = caminhada.ganhas();
     _somar(chaveDias, dados['diasLeitura']);
     _somar(chaveCapitulos, dados['capitulosLidos']);
+    final et = dados['etiquetas'];
+    if (et is Map) {
+      for (final e in et.entries) {
+        final k = chave(e.key);
+        final v = e.value;
+        if (k == null || v is! List) continue;
+        _gravarEtiquetas(_k(k.$1, k.$2, k.$3), [
+          ...etiquetas(k.$1, k.$2, k.$3),
+          ...v.whereType<String>(),
+        ]);
+      }
+    }
+    final me = dados['memorizar'];
+    if (me is Map) {
+      for (final e in me.entries) {
+        final k = chave(e.key);
+        if (k == null) continue;
+        final m = Memorizacao.deMapa(k.$1, k.$2, k.$3, e.value);
+        if (m != null) _juntarMemorizacao(m);
+      }
+    }
     final os = dados['oracoes'];
     if (os is Map) {
       for (final e in os.entries) {
@@ -972,6 +1146,8 @@ class Ajustes extends ChangeNotifier {
     if (capitulosLidos.isNotEmpty)
       chaveCapitulos: _ordenarCapitulos(capitulosLidos),
     for (final o in oracoes) o.chave: o.paraMapa(),
+    for (final (k, e) in todasEtiquetas()) chaveEtiquetas(k.$1, k.$2, k.$3): e,
+    for (final m in memorizar) m.chave: m.paraMapa(),
   };
 
   /// Grava, como estão, itens vindos da nuvem (null apaga o item), sem avisar
@@ -1013,6 +1189,18 @@ class Ajustes extends ChangeNotifier {
         // Só crescem: o que veio se soma ao daqui.
         case chaveDias || chaveCapitulos when n.isEmpty:
           _somar(chave, valor);
+        case 'e' when n.length == 3 && _posicaoValida(n):
+          _gravarEtiquetas(_k(n[0], n[1], n[2]), [
+            if (valor is List) ...valor.whereType<String>(),
+          ]);
+        case 'v' when n.length == 3 && _posicaoValida(n):
+          final k = '$_prefixoMemorizar${_k(n[0], n[1], n[2])}';
+          final m = Memorizacao.deMapa(n[0], n[1], n[2], valor);
+          if (valor == null) {
+            _p.remove(k);
+          } else if (m != null) {
+            _p.setString(k, jsonEncode(m.paraMapa()));
+          }
         case 'o' when n.length == 1:
           if (valor == null) {
             _p.remove('$_prefixoOracao${n[0]}');
@@ -1078,6 +1266,8 @@ class Ajustes extends ChangeNotifier {
     final anotacoes = <String, Object?>{};
     final realces = <Object?>[];
     final oracoes = <String, Object?>{};
+    final etiquetas = <String, Object?>{};
+    final memorizar = <String, Object?>{};
     Object? plano, dias, capitulos;
     for (final MapEntry(key: chave, value: valor) in itens.entries) {
       final partes = chave.split('_');
@@ -1097,6 +1287,10 @@ class Ajustes extends ChangeNotifier {
           capitulos = valor;
         case 'o':
           oracoes[posicao] = valor;
+        case 'e':
+          etiquetas[posicao] = valor;
+        case 'v':
+          memorizar[posicao] = valor;
       }
     }
     importar({
@@ -1108,6 +1302,8 @@ class Ajustes extends ChangeNotifier {
       'diasLeitura': ?dias,
       'capitulosLidos': ?capitulos,
       'oracoes': oracoes,
+      'etiquetas': etiquetas,
+      'memorizar': memorizar,
     });
   }
 

@@ -5,8 +5,8 @@
 ## Sem conta
 
 O app funciona sem conta. Sem conta, marcações, anotações, realces nos livros,
-o plano de leitura, a lista de oração e a sua caminhada de leitura ficam só no
-seu aparelho.
+o plano de leitura, a lista de oração, a sua caminhada de leitura, as etiquetas
+e os versículos para memorizar ficam só no seu aparelho.
 
 Mesmo sem conta, o app usa a internet para baixar os livros de Ellen G. White
 (do site do Centro de Pesquisas Ellen G. White) e para ver se há versão nova
@@ -24,10 +24,11 @@ na nuvem:
 - os pedidos da lista de oração, com os detalhes e as respostas que você
   escrever;
 - a caminhada de leitura: os dias em que você leu a Bíblia e os capítulos
-  lidos.
+  lidos;
+- as etiquetas dos versículos e os versículos que você está memorizando.
 
-Os livros baixados e os ajustes de leitura (letra, tema, tradução) não vão
-para a nuvem.
+Os livros baixados, os ajustes de leitura (letra, tema, tradução) e as buscas
+recentes não vão para a nuvem.
 
 Esses dados servem só para aparecerem nos seus outros aparelhos. O app não
 tem anúncios e não usa os dados para mais nada.

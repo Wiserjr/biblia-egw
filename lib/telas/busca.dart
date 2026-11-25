@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../dados/ajustes.dart';
 import '../dados/biblia.dart';
 import '../dados/modelos.dart';
 import '../dados/referencias.dart';
@@ -9,8 +10,11 @@ import '../dados/referencias.dart';
 /// Busca: vai direto a uma referência ("jo 3:16", "Salmo 23") ou procura
 /// palavras no texto da tradução em uso.
 class TelaBusca extends StatefulWidget {
-  const TelaBusca({super.key, required this.versao});
+  const TelaBusca({super.key, required this.versao, this.consultaInicial});
   final Versao versao;
+
+  /// Texto para já começar buscando (vindo de outro app, por exemplo).
+  final String? consultaInicial;
 
   @override
   State<TelaBusca> createState() => _TelaBuscaState();
@@ -21,7 +25,73 @@ class _TelaBuscaState extends State<TelaBusca> {
   Timer? _espera;
   String _consulta = '';
   int? _testamento;
+
+  /// Só neste livro (1 a 66).
+  int? _livro;
+
+  /// As palavras juntas, nesta ordem.
+  bool _frase = false;
   Future<List<(int, int, int, String)>>? _resultados;
+
+  @override
+  void initState() {
+    super.initState();
+    final c = widget.consultaInicial?.trim();
+    if (c != null && c.isNotEmpty) {
+      _ctrl.text = c;
+      _buscar(c);
+    }
+  }
+
+  void _buscar(String texto) {
+    _consulta = texto.trim();
+    _resultados = _consulta.length < 3
+        ? null
+        : Biblia.instancia.buscar(
+            widget.versao.id,
+            _consulta,
+            testamento: _livro == null ? _testamento : null,
+            livro: _livro,
+            frase: _frase,
+          );
+  }
+
+  /// Guarda a busca nas recentes e devolve [p] ao leitor.
+  void _ir(Posicao p) {
+    Ajustes.instancia.registrarBusca(_ctrl.text);
+    Navigator.pop(context, p);
+  }
+
+  Future<void> _escolherLivro() async {
+    final l = await showModalBottomSheet<int>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (c) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        builder: (c, rolagem) => ListView(
+          controller: rolagem,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.clear_all),
+              title: const Text('Todos os livros'),
+              onTap: () => Navigator.pop(c, 0),
+            ),
+            for (var i = 1; i <= 66; i++)
+              ListTile(
+                selected: _livro == i,
+                title: Text(Referencias.nome(i)),
+                onTap: () => Navigator.pop(c, i),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (l == null) return;
+    _livro = l == 0 ? null : l;
+    setState(() => _buscar(_ctrl.text));
+  }
 
   @override
   void dispose() {
@@ -34,16 +104,7 @@ class _TelaBuscaState extends State<TelaBusca> {
     _espera?.cancel();
     _espera = Timer(const Duration(milliseconds: 350), () {
       if (!mounted) return;
-      setState(() {
-        _consulta = texto.trim();
-        _resultados = _consulta.length < 3
-            ? null
-            : Biblia.instancia.buscar(
-                widget.versao.id,
-                _consulta,
-                testamento: _testamento,
-              );
-      });
+      setState(() => _buscar(texto));
     });
   }
 
@@ -64,13 +125,18 @@ class _TelaBuscaState extends State<TelaBusca> {
           onChanged: _mudou,
           onSubmitted: (texto) {
             final r = Referencias.interpretar(texto);
-            if (r != null) Navigator.pop(context, r);
+            if (r != null) {
+              _ir(r);
+            } else {
+              Ajustes.instancia.registrarBusca(texto);
+            }
           },
         ),
       ),
       body: Column(
         children: [
-          Padding(
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
               children: [
@@ -83,13 +149,33 @@ class _TelaBuscaState extends State<TelaBusca> {
                     padding: const EdgeInsets.only(right: 6),
                     child: ChoiceChip(
                       label: Text(rotulo),
-                      selected: _testamento == v,
+                      selected: _livro == null && _testamento == v,
                       onSelected: (_) {
                         _testamento = v;
+                        _livro = null;
                         _mudou(_ctrl.text);
                       },
                     ),
                   ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: ChoiceChip(
+                    avatar: const Icon(Icons.menu_book_outlined, size: 16),
+                    label: Text(
+                      _livro == null ? 'Um livro' : Referencias.nome(_livro!),
+                    ),
+                    selected: _livro != null,
+                    onSelected: (_) => _escolherLivro(),
+                  ),
+                ),
+                FilterChip(
+                  label: const Text('Frase exata'),
+                  selected: _frase,
+                  onSelected: (v) {
+                    _frase = v;
+                    _mudou(_ctrl.text);
+                  },
+                ),
               ],
             ),
           ),
@@ -100,11 +186,18 @@ class _TelaBuscaState extends State<TelaBusca> {
                 'Ir para ${Referencias.nome(ref.livro)} ${ref.capitulo}'
                 '${ref.versiculo != null ? ':${ref.versiculo}' : ''}',
               ),
-              onTap: () => Navigator.pop(context, ref),
+              onTap: () => _ir(ref),
             ),
           const Divider(height: 1),
           Expanded(
-            child: _resultados == null
+            child: _resultados == null && _consulta.isEmpty
+                ? _Recentes(
+                    aoEscolher: (b) {
+                      _ctrl.text = b;
+                      setState(() => _buscar(b));
+                    },
+                  )
+                : _resultados == null
                 ? Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24),
@@ -169,8 +262,7 @@ class _TelaBuscaState extends State<TelaBusca> {
                                 ),
                               ),
                             ),
-                            onTap: () =>
-                                Navigator.pop(context, Posicao(l, c, v)),
+                            onTap: () => _ir(Posicao(l, c, v)),
                           );
                         },
                       );
@@ -179,6 +271,52 @@ class _TelaBuscaState extends State<TelaBusca> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// As buscas recentes, para repetir com um toque.
+class _Recentes extends StatelessWidget {
+  const _Recentes({required this.aoEscolher});
+
+  final void Function(String busca) aoEscolher;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return ListenableBuilder(
+      listenable: Ajustes.instancia,
+      builder: (context, _) {
+        final recentes = Ajustes.instancia.buscasRecentes;
+        return ListView(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'Digite uma referência (ex.: "jo 3:16", "Salmo 23") '
+                'ou palavras do texto (ex.: "amor próximo").',
+                textAlign: TextAlign.center,
+                style: t.textTheme.bodyMedium?.copyWith(color: t.hintColor),
+              ),
+            ),
+            if (recentes.isNotEmpty) ...[
+              ListTile(
+                title: Text('Buscas recentes', style: t.textTheme.titleSmall),
+                trailing: TextButton(
+                  onPressed: Ajustes.instancia.limparBuscas,
+                  child: const Text('Limpar'),
+                ),
+              ),
+              for (final b in recentes)
+                ListTile(
+                  leading: const Icon(Icons.history),
+                  title: Text(b),
+                  onTap: () => aoEscolher(b),
+                ),
+            ],
+          ],
+        );
+      },
     );
   }
 }

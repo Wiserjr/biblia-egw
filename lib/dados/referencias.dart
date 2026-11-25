@@ -127,4 +127,31 @@ class Referencias {
     if (cap < 1 || cap > caps) return null;
     return Posicao(livro, cap, ver);
   }
+
+  /// A primeira referência bíblica dentro de um texto qualquer ("Leia João
+  /// 3:16 hoje", "cf. 1 Co 13.4-7"), ou null se não houver nenhuma.
+  static Posicao? encontrar(String texto) {
+    final candidato = RegExp(
+      r'(?<![A-Za-zÀ-ÿ\d])(?:[1-3]\s*)?[A-Za-zÀ-ÿ]+(?:\s+(?:dos|de|do)\s+[A-Za-zÀ-ÿ]+)?\.?\s*\d{1,3}(?:\s*[:.,]\s*\d{1,3})?',
+    );
+    // Um candidato que não é referência ("cf. 1") pode ter engolido o começo
+    // da seguinte ("1 Co 13.4"): a busca recomeça na palavra seguinte.
+    var inicio = 0;
+    while (inicio < texto.length) {
+      final m = candidato.firstMatch(texto.substring(inicio));
+      if (m == null) return null;
+      final c = m.group(0)!;
+      final p = interpretar(c);
+      if (p != null) return p;
+      // "Cântico dos Cânticos 2:4" não entra inteiro: tenta a última palavra.
+      final ultima = RegExp(r'[A-Za-zÀ-ÿ]+\.?\s*\d.*$').firstMatch(c);
+      if (ultima != null && ultima.start > 0) {
+        final q = interpretar(ultima.group(0)!);
+        if (q != null) return q;
+      }
+      final espaco = texto.indexOf(RegExp(r'\s'), inicio + m.start);
+      inicio = espaco < 0 ? texto.length : espaco + 1;
+    }
+    return null;
+  }
 }

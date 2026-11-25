@@ -9,6 +9,7 @@ import '../dados/lembrete.dart';
 import '../dados/modelos.dart';
 import '../dados/plano.dart';
 import '../dados/referencias.dart';
+import '../dados/texto_recebido.dart';
 import '../dados/versiculo_do_dia.dart';
 import '../dados/widget_versiculo.dart';
 import 'ajustes.dart';
@@ -24,6 +25,7 @@ import 'hoje.dart';
 import 'introducao.dart';
 import 'leitor.dart';
 import 'mapas.dart';
+import 'memorizar.dart';
 import 'marcacoes.dart';
 import 'navegacao.dart';
 import 'oracao.dart';
@@ -164,10 +166,33 @@ class _TelaInicioState extends State<TelaInicio> {
   Future<void> _carregarVersoes() async {
     final v = await Biblia.instancia.versoes();
     final escolhida = Ajustes.instancia.versao;
+    final primeira = _versoes.isEmpty;
     setState(() {
       _versoes = v;
       _versao = v.firstWhere((x) => x.id == escolhida, orElse: () => v.first);
     });
+    // Só depois de saber a tradução: o texto pode virar uma busca.
+    if (primeira) TextoRecebido.ouvir(_textoDeFora);
+  }
+
+  /// Texto vindo de outro app: abre a referência que estiver nele, ou busca
+  /// o texto na Bíblia.
+  void _textoDeFora(String texto) {
+    final versao = _versao;
+    if (!mounted || versao == null) return;
+    Navigator.of(context).popUntil((r) => r.isFirst);
+    final p = Referencias.encontrar(texto);
+    if (p != null) {
+      _ir(p, abrirEstudo: p.versiculo != null);
+    } else {
+      final t = texto.trim().replaceAll(RegExp(r'\s+'), ' ');
+      _abrir(
+        TelaBusca(
+          versao: versao,
+          consultaInicial: t.length > 80 ? t.substring(0, 80) : t,
+        ),
+      );
+    }
   }
 
   void _ir(Posicao p, {bool abrirEstudo = false}) {
@@ -402,6 +427,9 @@ class _TelaInicioState extends State<TelaInicio> {
               'hoje' when versao != null => _abrir(TelaHoje(versao: versao)),
               'oracao' => _abrir(const TelaOracao()),
               'caminhada' => _abrir(const TelaCaminhada()),
+              'memorizar' when versao != null => _abrir(
+                TelaMemorizar(versao: versao),
+              ),
               'versiculoDoDia' when versao != null => _versiculoDoDiaEmImagem(
                 versao,
               ),
@@ -436,6 +464,13 @@ class _TelaInicioState extends State<TelaInicio> {
                 child: ListTile(
                   leading: Icon(Icons.volunteer_activism_outlined),
                   title: Text('Lista de oração'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'memorizar',
+                child: ListTile(
+                  leading: Icon(Icons.psychology_outlined),
+                  title: Text('Memorizar versículos'),
                 ),
               ),
               PopupMenuItem(

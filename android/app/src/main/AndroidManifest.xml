@@ -42,6 +42,20 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Texto selecionado em outro app: "Abrir na Bíblia" no menu de
+                 seleção abre a referência ("João 3:16") ou busca o texto
+                 (ver textoDe em MainActivity.kt). -->
+            <intent-filter android:label="Abrir na Bíblia">
+                <action android:name="android.intent.action.PROCESS_TEXT"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="text/plain"/>
+            </intent-filter>
+            <!-- Texto compartilhado com a Bíblia de Estudo, do mesmo jeito. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="text/plain"/>
+            </intent-filter>
         </activity>
         <!-- Resultado da instalação da atualização. Declarado aqui, e não
              registrado em runtime: o commit() do PackageInstaller exige um

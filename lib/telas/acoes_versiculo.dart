@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import '../dados/ajustes.dart';
 import '../dados/biblia.dart';
 import '../dados/leitura_voz.dart';
+import '../dados/memorizar.dart';
 import '../dados/modelos.dart';
 import '../dados/referencias.dart';
 import 'acoes_texto.dart';
@@ -84,6 +85,32 @@ Future<void> mostrarAcoesVersiculo(
               onTap: () {
                 Navigator.pop(c);
                 editarAnotacao(context, p);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.label_outline),
+              title: const Text('Etiquetas'),
+              subtitle: _resumoEtiquetas(p),
+              onTap: () {
+                Navigator.pop(c);
+                editarEtiquetas(context, p);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.psychology_outlined),
+              title: Text(
+                Ajustes.instancia.memorizacao(
+                          p.livro,
+                          p.capitulo,
+                          p.versiculo!,
+                        ) ==
+                        null
+                    ? 'Memorizar'
+                    : 'Já está em Memorizar versículos',
+              ),
+              onTap: () {
+                Navigator.pop(c);
+                adicionarParaMemorizar(context, p);
               },
             ),
             if (LeituraVoz.suportada)
@@ -216,4 +243,144 @@ Future<void> editarAnotacao(BuildContext context, Posicao p) async {
   );
   if (salvar == true) aj.anotar(p.livro, p.capitulo, p.versiculo!, ctrl.text);
   ctrl.dispose();
+}
+
+Widget? _resumoEtiquetas(Posicao p) {
+  final e = Ajustes.instancia.etiquetas(p.livro, p.capitulo, p.versiculo!);
+  return e.isEmpty ? null : Text(e.join(', '));
+}
+
+/// Põe o versículo [p] na lista de Memorizar versículos (se ainda não
+/// estiver) e avisa.
+void adicionarParaMemorizar(BuildContext context, Posicao p) {
+  final aj = Ajustes.instancia;
+  final ref = '${Referencias.nome(p.livro)} ${p.capitulo}:${p.versiculo}';
+  final msg = ScaffoldMessenger.of(context);
+  if (aj.memorizacao(p.livro, p.capitulo, p.versiculo!) != null) {
+    msg.showSnackBar(
+      SnackBar(content: Text('$ref já está em Memorizar versículos.')),
+    );
+    return;
+  }
+  final agora = DateTime.now().millisecondsSinceEpoch;
+  aj.salvarMemorizacao(
+    Memorizacao(
+      livro: p.livro,
+      capitulo: p.capitulo,
+      versiculo: p.versiculo!,
+      ate: p.versiculo!,
+      criada: agora,
+      atualizado: agora,
+    ),
+  );
+  msg.showSnackBar(
+    SnackBar(content: Text('$ref entrou em Memorizar versículos, no menu.')),
+  );
+}
+
+/// Escolhe as etiquetas do versículo [p]: as que já existem, com um toque, ou
+/// uma nova.
+Future<void> editarEtiquetas(BuildContext context, Posicao p) async {
+  final aj = Ajustes.instancia;
+  final escolhidas = {
+    for (final e in aj.etiquetas(p.livro, p.capitulo, p.versiculo!))
+      e.toLowerCase(): e,
+  };
+  final todas = {
+    for (final e in [...aj.nomesEtiquetas, ...escolhidas.values])
+      e.toLowerCase(): e,
+  };
+  final nova = TextEditingController();
+  final salvar = await showDialog<bool>(
+    context: context,
+    builder: (c) => StatefulBuilder(
+      builder: (c, setState) {
+        void adicionar() {
+          final t = nova.text.trim();
+          if (t.isEmpty) return;
+          setState(() {
+            todas.putIfAbsent(t.toLowerCase(), () => t);
+            escolhidas[t.toLowerCase()] = todas[t.toLowerCase()]!;
+            nova.clear();
+          });
+        }
+
+        final nomes = Ajustes.limparEtiquetas(todas.values);
+        return AlertDialog(
+          title: Text(
+            'Etiquetas — ${Referencias.nome(p.livro)} ${p.capitulo}:${p.versiculo}',
+          ),
+          content: SizedBox(
+            width: 480,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (nomes.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        'Etiquetas juntam versículos por assunto: '
+                        '"Promessas", "Família", "Para pregar"...',
+                      ),
+                    ),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      for (final e in nomes)
+                        FilterChip(
+                          label: Text(e),
+                          selected: escolhidas.containsKey(e.toLowerCase()),
+                          onSelected: (sim) => setState(() {
+                            if (sim) {
+                              escolhidas[e.toLowerCase()] = e;
+                            } else {
+                              escolhidas.remove(e.toLowerCase());
+                            }
+                          }),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: nova,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: InputDecoration(
+                      labelText: 'Nova etiqueta',
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        tooltip: 'Adicionar',
+                        icon: const Icon(Icons.add),
+                        onPressed: adicionar,
+                      ),
+                    ),
+                    onSubmitted: (_) => adicionar(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () {
+                adicionar();
+                Navigator.pop(c, true);
+              },
+              child: const Text('Salvar'),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+  if (salvar == true) {
+    aj.definirEtiquetas(p.livro, p.capitulo, p.versiculo!, escolhidas.values);
+  }
+  nova.dispose();
 }
