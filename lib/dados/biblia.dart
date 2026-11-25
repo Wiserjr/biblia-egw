@@ -158,19 +158,27 @@ class Biblia {
     int versao,
     String consulta, {
     int? testamento,
+    int? livro,
+    bool frase = false,
     int limite = 300,
   }) async {
-    final palavras = consulta
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((p) => p.length > 1)
-        .toList();
-    if (palavras.isEmpty) return [];
+    final palavras = frase
+        ? [consulta.trim().replaceAll(RegExp(r'\s+'), ' ')]
+        : consulta
+              .trim()
+              .split(RegExp(r'\s+'))
+              .where((p) => p.length > 1)
+              .toList();
+    if (palavras.isEmpty || palavras.first.length < 2) return [];
     final filtros = palavras.map((_) => 'texto LIKE ?').join(' AND ');
     final args = <Object>[versao, ...palavras.map((p) => '%$p%')];
     var extra = '';
     if (testamento != null) {
       extra = testamento == 1 ? ' AND livro <= 39' : ' AND livro >= 40';
+    }
+    if (livro != null) {
+      extra += ' AND livro = ?';
+      args.add(livro);
     }
     final rows = await _bancoDe(versao).rawQuery(
       'SELECT livro, capitulo, versiculo, texto FROM versiculo '

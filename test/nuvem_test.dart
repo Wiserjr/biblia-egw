@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:biblia_estudo/dados/ajustes.dart';
+import 'package:biblia_estudo/dados/modelos.dart';
 import 'package:biblia_estudo/dados/nuvem.dart';
 import 'package:biblia_estudo/telas/conta.dart';
 import 'package:flutter/material.dart';
@@ -306,7 +307,9 @@ void main() {
 
     final r = await nuvem.entrar('ana@exemplo.com', 'segredo1', criar: true);
 
-    expect(r, (vieram: 0, foram: 4));
+    // Mais os dias de leitura e os capítulos lidos, que marcar o dia do
+    // plano registra.
+    expect(r, (vieram: 0, foram: 6));
     expect(nuvem.conectada, isTrue);
     expect(nuvem.email, 'ana@exemplo.com');
     expect(nuvem.pendentes, 0);
@@ -319,6 +322,8 @@ void main() {
       containsPair('nota', 'nota do livro'),
     );
     expect(fb.valor(uid, 'plano'), containsPair('lidos', [0]));
+    expect(fb.valor(uid, Ajustes.chaveCapitulos), ['40:1', '40:2']);
+    expect(fb.valor(uid, Ajustes.chaveDias), hasLength(1));
   });
 
   test('entrar em outro aparelho junta tudo, sem apagar nada', () async {
@@ -414,6 +419,45 @@ void main() {
       expect(fb.valor(uid, 'plano'), containsPair('lidos', [0, 1, 2]));
     },
   );
+
+  test('dias de leitura e capítulos lidos se somam; pedidos de oração vão e voltam', () async {
+    aj.registrarLeitura(
+      capitulos: const [Posicao(43, 1)],
+      agora: DateTime(2026, 11, 24),
+    );
+    await nuvem.entrar('ana@exemplo.com', 'segredo1', criar: true);
+    final uid = fb.docs.keys.single;
+
+    // Os dois aparelhos leem no mesmo dia, antes de sincronizar.
+    aj.registrarLeitura(
+      capitulos: const [Posicao(43, 2)],
+      agora: DateTime(2026, 11, 25),
+    );
+    fb.gravarDeOutroAparelho(uid, Ajustes.chaveDias, [
+      '2026-11-24',
+      '2026-11-23',
+    ]);
+    fb.gravarDeOutroAparelho(uid, Ajustes.chaveCapitulos, ['43:1', '1:1']);
+    fb.gravarDeOutroAparelho(uid, 'o_5000', {
+      'texto': 'Do celular',
+      'atualizado': 5000,
+    });
+    await nuvem.sincronizar();
+
+    expect(aj.diasDeLeitura, {'2026-11-23', '2026-11-24', '2026-11-25'});
+    expect(aj.capitulosLidos, {'1:1', '43:1', '43:2'});
+    expect(fb.valor(uid, Ajustes.chaveDias), [
+      '2026-11-23',
+      '2026-11-24',
+      '2026-11-25',
+    ]);
+    expect(fb.valor(uid, Ajustes.chaveCapitulos), ['1:1', '43:1', '43:2']);
+    expect(aj.oracoes.single.texto, 'Do celular');
+
+    aj.apagarOracao(aj.oracoes.single);
+    await nuvem.sincronizar();
+    expect(fb.valor(uid, 'o_5000'), 'apagado');
+  });
 
   test('sem internet, as mudanças esperam no aparelho', () async {
     await nuvem.entrar('ana@exemplo.com', 'segredo1', criar: true);

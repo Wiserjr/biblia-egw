@@ -177,6 +177,31 @@ class _PainelEstudoState extends State<PainelEstudo> {
             ),
           ],
         ),
+        if (aj
+            .etiquetas(
+              widget.posicao.livro,
+              widget.posicao.capitulo,
+              widget.posicao.versiculo!,
+            )
+            .isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Wrap(
+              spacing: 6,
+              children: [
+                for (final e in aj.etiquetas(
+                  widget.posicao.livro,
+                  widget.posicao.capitulo,
+                  widget.posicao.versiculo!,
+                ))
+                  ActionChip(
+                    avatar: const Icon(Icons.label_outline, size: 16),
+                    label: Text(e),
+                    onPressed: () => editarEtiquetas(context, widget.posicao),
+                  ),
+              ],
+            ),
+          ),
         if (anotacao != null)
           Card(
             child: ListTile(

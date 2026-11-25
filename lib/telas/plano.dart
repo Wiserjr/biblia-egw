@@ -278,7 +278,7 @@ final _programaRadio = Uri.parse(
   'https://www.novotempo.com/programa/reavivadosporsuapalavraradio/',
 );
 
-Future<void> _abrirSite(BuildContext context, Uri url) async {
+Future<void> abrirSite(BuildContext context, Uri url) async {
   final msg = ScaffoldMessenger.of(context);
   try {
     if (await launchUrl(url, mode: LaunchMode.externalApplication)) return;
@@ -370,7 +370,7 @@ class _ProgressoPorDataState extends State<_ProgressoPorData> {
                     OutlinedButton.icon(
                       icon: const Icon(Icons.forum_outlined),
                       label: const Text('Comentário do dia'),
-                      onPressed: () => _abrirSite(
+                      onPressed: () => abrirSite(
                         context,
                         comentarioDoDia(plano.dataDe(hoje)),
                       ),
@@ -481,7 +481,7 @@ class _ProgressoPorDataState extends State<_ProgressoPorData> {
           title: const Text('Programa no rádio Novo Tempo'),
           subtitle: const Text('Um capítulo por dia, com o Pr. Valdeci Júnior'),
           trailing: const Icon(Icons.open_in_new),
-          onTap: () => _abrirSite(context, _programaRadio),
+          onTap: () => abrirSite(context, _programaRadio),
         ),
       ],
     );
@@ -531,7 +531,7 @@ class _ProgressoPorDataState extends State<_ProgressoPorData> {
       case 'marcar':
         aj.marcarDia(d, !lido);
       case 'comentario':
-        _abrirSite(context, comentarioDoDia(plano.dataDe(d)));
+        abrirSite(context, comentarioDoDia(plano.dataDe(d)));
     }
   }
 }

@@ -42,6 +42,20 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Texto selecionado em outro app: "Abrir na Bíblia" no menu de
+                 seleção abre a referência ("João 3:16") ou busca o texto
+                 (ver textoDe em MainActivity.kt). -->
+            <intent-filter android:label="Abrir na Bíblia">
+                <action android:name="android.intent.action.PROCESS_TEXT"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="text/plain"/>
+            </intent-filter>
+            <!-- Texto compartilhado com a Bíblia de Estudo, do mesmo jeito. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="text/plain"/>
+            </intent-filter>
         </activity>
         <!-- Resultado da instalação da atualização. Declarado aqui, e não
              registrado em runtime: o commit() do PackageInstaller exige um
@@ -74,6 +88,18 @@
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
             </intent-filter>
+        </receiver>
+        <!-- Widget do versículo do dia na tela inicial (VersiculoWidget.kt). -->
+        <receiver
+            android:name=".VersiculoWidget"
+            android:exported="false"
+            android:label="Versículo do dia">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_versiculo_info" />
         </receiver>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
