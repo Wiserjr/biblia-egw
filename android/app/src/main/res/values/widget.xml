@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_titulo">VERSÍCULO DO DIA</string>
+    <string name="widget_descricao">O versículo do dia, na tradução que você usa no app.</string>
+    <color name="widget_fundo">#F2FBF8F2</color>
+    <color name="widget_texto">#1F2430</color>
+    <color name="widget_destaque">#2F4A73</color>
+</resources>

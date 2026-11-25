@@ -52,6 +52,10 @@ class Lembrete {
   static const _diasVersiculo = 14;
   static const _idVersiculo = 101;
 
+  /// Lembrete de oração: 200 no Android, 201 a 207 no Windows.
+  static const _idOracao = 200;
+  static const _canalOracao = 'lembrete_oracao';
+
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _iniciado = false;
 
@@ -104,6 +108,7 @@ class Lembrete {
     try {
       if (!await _iniciar()) return;
       await _atualizarVersiculoDoDia();
+      await _atualizarOracao();
       for (var id = 1; id <= _diasWindows; id++) {
         await _plugin.cancel(id: id);
       }
@@ -222,6 +227,61 @@ class Lembrete {
     }
   }
 
+  /// Lembrete diário de oração: no Android, um aviso que se repete (id
+  /// [_idOracao]); no Windows, um por dia, [_diasWindows] dias à frente.
+  Future<void> _atualizarOracao() async {
+    for (var i = 0; i <= _diasWindows; i++) {
+      await _plugin.cancel(id: _idOracao + i);
+    }
+    final aj = Ajustes.instancia;
+    if (!aj.lembreteOracao) return;
+    const detalhes = NotificationDetails(
+      android: AndroidNotificationDetails(
+        _canalOracao,
+        'Lembrete de oração',
+        channelDescription: 'Um aviso por dia, na hora escolhida.',
+        styleInformation: BigTextStyleInformation(''),
+      ),
+    );
+    final corpo = textoAvisoOracao([
+      for (final o in aj.oracoes)
+        if (o.ativa) o.texto,
+    ]);
+    final agora = DateTime.now();
+    final minutos = aj.lembreteOracaoMinutos;
+    DateTime noDia(DateTime d) =>
+        DateTime(d.year, d.month, d.day, minutos ~/ 60, minutos % 60);
+    var proximo = noDia(agora);
+    if (!proximo.isAfter(agora)) {
+      proximo = noDia(agora.add(const Duration(days: 1)));
+    }
+    if (Platform.isAndroid) {
+      await _plugin.zonedSchedule(
+        id: _idOracao,
+        title: 'Hora de orar',
+        body: corpo,
+        scheduledDate: tz.TZDateTime.from(proximo, tz.UTC),
+        notificationDetails: detalhes,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+      return;
+    }
+    for (var i = 0; i < _diasWindows; i++) {
+      await _plugin.zonedSchedule(
+        id: _idOracao + 1 + i,
+        title: 'Hora de orar',
+        body: corpo,
+        scheduledDate: tz.TZDateTime.from(
+          noDia(proximo.add(Duration(days: i))),
+          tz.UTC,
+        ),
+        notificationDetails: detalhes,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    }
+  }
+
   static String _texto(PlanoLeitura plano, DateTime dia) {
     if (!plano.porData) return '${plano.nome}: abra a leitura de hoje.';
     final d = plano.diaDe(dia);
@@ -231,8 +291,7 @@ class Lembrete {
 
 /// Título ("Versículo do dia · João 3:16") e texto do aviso do versículo do
 /// dia, a partir dos versículos do capítulo; null se o capítulo não tiver os
-/// versículos da passagem.
-@visibleForTesting
+/// versículos da passagem. Serve também ao widget (widget_versiculo.dart).
 ({String titulo, String corpo})? textoAvisoVersiculo(
   ReferenciaDoDia r,
   Iterable<(int, String)> versiculos,
@@ -250,4 +309,13 @@ class Lembrete {
       '${Referencias.nome(r.livro)} ${r.capitulo}:${r.versiculo}'
       '${r.ate > r.versiculo ? '-${r.ate}' : ''}';
   return (titulo: 'Versículo do dia · $ref', corpo: partes.join(' '));
+}
+
+/// Texto do lembrete de oração com os pedidos [ativos].
+@visibleForTesting
+String textoAvisoOracao(List<String> ativos) {
+  if (ativos.isEmpty) return 'Um momento com Deus: abra a sua lista de oração.';
+  final primeiros = ativos.take(3).join('; ');
+  final resto = ativos.length - 3;
+  return 'Seus pedidos: $primeiros${resto > 0 ? ' e mais $resto' : ''}.';
 }

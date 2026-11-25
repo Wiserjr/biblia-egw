@@ -753,9 +753,11 @@ class Nuvem extends ChangeNotifier {
     for (final item in r.itens) {
       final local = aqui[item.chave];
       Object? novo = item.valor;
-      if (pendentes.contains(item.chave)) {
+      if (pendentes.contains(item.chave) &&
+          !Ajustes.chavesSomadas.contains(item.chave)) {
         // Mudou aqui também: vale o daqui, que vai em seguida. Do mesmo
-        // plano, os dias lidos lá entram também.
+        // plano, os dias lidos lá entram também. (Os dias de leitura e os
+        // capítulos lidos se somam em aplicarItens.)
         if (item.chave != Ajustes.chavePlano) continue;
         novo = juntarPlanos(local, item.valor);
       }
@@ -763,6 +765,15 @@ class Nuvem extends ChangeNotifier {
     }
     final planoAntes = Ajustes.instancia.plano;
     Ajustes.instancia.aplicarItens(aplicar);
+    // Somados aqui com algo que a nuvem ainda não tem: a soma volta para lá.
+    final depois = Ajustes.instancia.itens();
+    final somados = {
+      for (final item in r.itens)
+        if (Ajustes.chavesSomadas.contains(item.chave) &&
+            jsonCanonico(depois[item.chave]) != jsonCanonico(item.valor))
+          item.chave,
+    };
+    if (somados.isNotEmpty) _gravarPendentes({..._pendentes, ...somados});
     if (Ajustes.instancia.plano != planoAntes) aoMudarPlano?.call();
     if (r.lidoEm != null) _p!.setString('nuvemDesde', r.lidoEm!);
     await _enviar(s);

@@ -1,11 +1,12 @@
 # Política de privacidade da Bíblia de Estudo
 
-Última atualização: 4 de outubro de 2026.
+Última atualização: 25 de novembro de 2026.
 
 ## Sem conta
 
-O app funciona sem conta. Sem conta, marcações, anotações, realces nos livros
-e o plano de leitura ficam só no seu aparelho.
+O app funciona sem conta. Sem conta, marcações, anotações, realces nos livros,
+o plano de leitura, a lista de oração e a sua caminhada de leitura ficam só no
+seu aparelho.
 
 Mesmo sem conta, o app usa a internet para baixar os livros de Ellen G. White
 (do site do Centro de Pesquisas Ellen G. White) e para ver se há versão nova
@@ -19,7 +20,11 @@ na nuvem:
 - o e-mail e a senha da conta;
 - as marcações e anotações nos versículos;
 - os realces nos livros, com o trecho realçado e a sua nota;
-- o plano de leitura em andamento e os dias lidos.
+- o plano de leitura em andamento e os dias lidos;
+- os pedidos da lista de oração, com os detalhes e as respostas que você
+  escrever;
+- a caminhada de leitura: os dias em que você leu a Bíblia e os capítulos
+  lidos.
 
 Os livros baixados e os ajustes de leitura (letra, tema, tradução) não vão
 para a nuvem.

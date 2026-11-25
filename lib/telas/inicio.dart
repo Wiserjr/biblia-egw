@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../dados/ajustes.dart';
@@ -8,19 +10,23 @@ import '../dados/modelos.dart';
 import '../dados/plano.dart';
 import '../dados/referencias.dart';
 import '../dados/versiculo_do_dia.dart';
+import '../dados/widget_versiculo.dart';
 import 'ajustes.dart';
 import 'area_dividida.dart';
 import 'atualizacao_app.dart';
 import 'barra_voz.dart';
 import 'biblioteca.dart';
 import 'busca.dart';
+import 'caminhada.dart';
 import 'cartao_versiculo.dart';
 import 'estudo.dart';
+import 'hoje.dart';
 import 'introducao.dart';
 import 'leitor.dart';
 import 'mapas.dart';
 import 'marcacoes.dart';
 import 'navegacao.dart';
+import 'oracao.dart';
 import 'plano.dart';
 import 'seletor.dart';
 import 'sinotico.dart';
@@ -58,6 +64,22 @@ class _TelaInicioState extends State<TelaInicio> {
   /// Referência do versículo do dia ("Êxodo 20:8"), para a faixa.
   String? _versiculoDoDia;
 
+  /// Meio minuto no mesmo capítulo conta como capítulo lido (ver
+  /// [Ajustes.registrarLeitura]).
+  Timer? _leitura;
+  static const tempoDeLeitura = Duration(seconds: 30);
+
+  void _contarLeitura() {
+    _leitura?.cancel();
+    final p = _pos;
+    _leitura = Timer(tempoDeLeitura, () {
+      if (!mounted || p.livro != _pos.livro || p.capitulo != _pos.capitulo) {
+        return;
+      }
+      Ajustes.instancia.registrarLeitura(capitulos: [p]);
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -73,12 +95,26 @@ class _TelaInicioState extends State<TelaInicio> {
     });
     destinoLeitura.addListener(_destinoPedido);
     LeituraVoz.instancia.addListener(_seguirVoz);
+    _contarLeitura();
+    Ajustes.instancia.aoGanharMedalhas = (novas) {
+      if (!mounted) return;
+      avisarMedalhas(
+        ScaffoldMessenger.of(context),
+        Navigator.of(context),
+        novas,
+      );
+    };
     // Checagem silenciosa: só aparece algo se houver versão nova.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) FluxoAtualizacao.verificar(context);
       // No Windows os lembretes são marcados alguns dias à frente; cada
       // abertura renova a lista.
       Lembrete.instancia.atualizar();
+      WidgetVersiculo.atualizar();
+      WidgetVersiculo.aoTocar(() {
+        final versao = _versao;
+        if (mounted && versao != null) _abrir(TelaHoje(versao: versao));
+      });
     });
   }
 
@@ -87,6 +123,8 @@ class _TelaInicioState extends State<TelaInicio> {
     destinoLeitura.removeListener(_destinoPedido);
     LeituraVoz.instancia.removeListener(_seguirVoz);
     LeituraVoz.instancia.parar();
+    _leitura?.cancel();
+    Ajustes.instancia.aoGanharMedalhas = null;
     super.dispose();
   }
 
@@ -112,6 +150,7 @@ class _TelaInicioState extends State<TelaInicio> {
       _rolarPara = null;
     });
     Ajustes.instancia.ultimaPosicao = _pos;
+    _contarLeitura();
   }
 
   /// Versículo pedido por um mapa, tema ou estudo (ver navegacao.dart).
@@ -142,6 +181,7 @@ class _TelaInicioState extends State<TelaInicio> {
       _rolarPara = p.versiculo;
     });
     Ajustes.instancia.ultimaPosicao = _pos;
+    _contarLeitura();
     if (abrirEstudo && p.versiculo != null) {
       if (_largo(context)) {
         _abrirPainelSePedido();
@@ -359,6 +399,9 @@ class _TelaInicioState extends State<TelaInicio> {
                 TelaTemas(versao: versao, abaInicial: 1),
               ),
               'plano' => _abrir(const TelaPlano()),
+              'hoje' when versao != null => _abrir(TelaHoje(versao: versao)),
+              'oracao' => _abrir(const TelaOracao()),
+              'caminhada' => _abrir(const TelaCaminhada()),
               'versiculoDoDia' when versao != null => _versiculoDoDiaEmImagem(
                 versao,
               ),
@@ -367,6 +410,13 @@ class _TelaInicioState extends State<TelaInicio> {
               _ => null,
             },
             itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'hoje',
+                child: ListTile(
+                  leading: Icon(Icons.today_outlined),
+                  title: Text('Hoje'),
+                ),
+              ),
               PopupMenuItem(
                 value: 'plano',
                 child: ListTile(
@@ -379,6 +429,20 @@ class _TelaInicioState extends State<TelaInicio> {
                 child: ListTile(
                   leading: Icon(Icons.wb_sunny_outlined),
                   title: Text('Versículo do dia'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'oracao',
+                child: ListTile(
+                  leading: Icon(Icons.volunteer_activism_outlined),
+                  title: Text('Lista de oração'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'caminhada',
+                child: ListTile(
+                  leading: Icon(Icons.emoji_events_outlined),
+                  title: Text('Sua caminhada'),
                 ),
               ),
               PopupMenuItem(

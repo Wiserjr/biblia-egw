@@ -3,8 +3,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'caminhada.dart';
 import 'modelos.dart';
+import 'oracao.dart';
 import 'plano.dart';
+import 'referencias.dart';
 import 'guia_biblioteca.dart';
 
 /// Preferências e o que a pessoa cria: tradução, letra, tema, onde parou,
@@ -435,6 +438,12 @@ class Ajustes extends ChangeNotifier {
     lido ? d.addAll(dias) : d.removeAll(dias);
     _gravarLidos(d);
     if (lido) _p.setString('planoLeuEm', _diaDeHoje(DateTime.now()));
+    final plAtual = PlanoLeitura.porId(plano);
+    if (lido && plAtual != null) {
+      registrarLeitura(
+        capitulos: [for (final dia in dias) ...plAtual.leituraDoDia(dia)],
+      );
+    }
     // Posto em dia: a faixa volta a mostrar só a leitura de hoje.
     final pl = PlanoLeitura.porId(plano);
     if (porEmDia &&
@@ -555,6 +564,200 @@ class Ajustes extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- caminhada: dias de leitura e capítulos lidos ---
+
+  /// Item da nuvem com os dias em que a pessoa leu ("2026-11-25").
+  static const chaveDias = 'diasLeitura';
+
+  /// Item da nuvem com os capítulos lidos ("43:3").
+  static const chaveCapitulos = 'capsLidos';
+
+  /// Itens que só crescem: na nuvem e na cópia, o daqui e o de lá se somam.
+  static const chavesSomadas = {chaveDias, chaveCapitulos};
+
+  Set<String> get diasDeLeitura => {...?_p.getStringList(chaveDias)};
+  Set<String> get capitulosLidos => {...?_p.getStringList(chaveCapitulos)};
+
+  bool leuNoDia(DateTime d) => diasDeLeitura.contains(diaIso(d));
+
+  Caminhada get caminhada => Caminhada(
+    dias: diasDeLeitura,
+    capitulos: capitulosLidos,
+    oracoesRespondidas: oracoes.where((o) => o.respondida).length,
+  );
+
+  /// Avisado com as medalhas que a pessoa acabou de ganhar.
+  void Function(List<Medalha> novas)? aoGanharMedalhas;
+
+  /// Conta [agora] (padrão: hoje) como dia de leitura e os [capitulos] como
+  /// lidos.
+  void registrarLeitura({
+    Iterable<Posicao> capitulos = const [],
+    DateTime? agora,
+  }) {
+    final antes = caminhada.ganhas();
+    final mudou = <String>{};
+    final dias = diasDeLeitura;
+    if (dias.add(diaIso(agora ?? DateTime.now()))) {
+      _p.setStringList(chaveDias, dias.toList()..sort());
+      mudou.add(chaveDias);
+    }
+    final caps = capitulosLidos;
+    final n = caps.length;
+    for (final c in capitulos) {
+      if (c.livro < 1 || c.livro > 66) continue;
+      if (c.capitulo < 1 || c.capitulo > _capitulosDoLivro(c.livro)) continue;
+      caps.add('${c.livro}:${c.capitulo}');
+    }
+    if (caps.length != n) {
+      _p.setStringList(chaveCapitulos, _ordenarCapitulos(caps));
+      mudou.add(chaveCapitulos);
+    }
+    if (mudou.isEmpty) return;
+    notifyListeners();
+    _avisar(mudou);
+    _verMedalhas(antes);
+  }
+
+  static int _capitulosDoLivro(int livro) => Referencias.capitulos[livro - 1];
+
+  static List<String> _ordenarCapitulos(Iterable<String> caps) {
+    int k(String c) {
+      final p = c.split(':');
+      return (int.tryParse(p[0]) ?? 0) * 1000 +
+          (int.tryParse(p.length > 1 ? p[1] : '') ?? 0);
+    }
+
+    return caps.toList()..sort((a, b) => k(a).compareTo(k(b)));
+  }
+
+  void _verMedalhas(Set<String> antes) {
+    final novas = medalhasNovas(antes, caminhada.ganhas());
+    if (novas.isNotEmpty) aoGanharMedalhas?.call(novas);
+  }
+
+  /// Junta [valor] (lista de textos, vinda da nuvem ou da cópia) ao item
+  /// somado [chave]. Devolve se algo entrou.
+  bool _somar(String chave, Object? valor) {
+    if (valor is! List) return false;
+    final atual = {...?_p.getStringList(chave)};
+    final n = atual.length;
+    for (final v in valor) {
+      if (v is! String) continue;
+      if (chave == chaveDias ? numeroDoDia(v) == null : !_capituloValido(v)) {
+        continue;
+      }
+      atual.add(v);
+    }
+    if (atual.length == n) return false;
+    _p.setStringList(
+      chave,
+      chave == chaveDias ? (atual.toList()..sort()) : _ordenarCapitulos(atual),
+    );
+    return true;
+  }
+
+  static bool _capituloValido(String c) {
+    final p = c.split(':');
+    if (p.length != 2) return false;
+    final l = int.tryParse(p[0]), n = int.tryParse(p[1]);
+    return l != null &&
+        n != null &&
+        l >= 1 &&
+        l <= 66 &&
+        n >= 1 &&
+        n <= _capitulosDoLivro(l);
+  }
+
+  // --- lista de oração ---
+
+  static const _prefixoOracao = 'oracao:';
+
+  /// Todos os pedidos, do mais novo ao mais antigo.
+  List<Oracao> get oracoes {
+    final r = <Oracao>[];
+    for (final k in _p.getKeys()) {
+      if (!k.startsWith(_prefixoOracao)) continue;
+      final id = int.tryParse(k.substring(_prefixoOracao.length));
+      final texto = _p.getString(k);
+      if (id == null || texto == null) continue;
+      final o = Oracao.deMapa(id, _jsonOuNull(texto));
+      if (o != null) r.add(o);
+    }
+    r.sort((a, b) => b.id.compareTo(a.id));
+    return r;
+  }
+
+  /// Grava o pedido novo ou mudado.
+  void salvarOracao(Oracao o) {
+    final antes = caminhada.ganhas();
+    _p.setString('$_prefixoOracao${o.id}', jsonEncode(o.paraMapa()));
+    notifyListeners();
+    _avisar({o.chave});
+    _verMedalhas(antes);
+  }
+
+  void apagarOracao(Oracao o) {
+    _p.remove('$_prefixoOracao${o.id}');
+    notifyListeners();
+    _avisar({o.chave});
+  }
+
+  /// Grava [o] se for novo aqui ou mais recente que o daqui.
+  bool _juntarOracao(Oracao o) {
+    final k = '$_prefixoOracao${o.id}';
+    final atual = Oracao.deMapa(o.id, _jsonOuNull(_p.getString(k) ?? ''));
+    if (atual != null && atual.atualizado >= o.atualizado) return false;
+    _p.setString(k, jsonEncode(o.paraMapa()));
+    return true;
+  }
+
+  /// Lembrete diário de oração.
+  bool get lembreteOracao => _p.getBool('lembreteOracao') ?? false;
+  set lembreteOracao(bool v) {
+    _p.setBool('lembreteOracao', v);
+    notifyListeners();
+  }
+
+  /// Hora do lembrete de oração, em minutos desde a meia-noite (padrão: 21h).
+  int get lembreteOracaoMinutos =>
+      _p.getInt('lembreteOracaoMinutos') ?? 21 * 60;
+  set lembreteOracaoMinutos(int v) {
+    _p.setInt('lembreteOracaoMinutos', v.clamp(0, 24 * 60 - 1));
+    notifyListeners();
+  }
+
+  // --- hoje: meditação matinal e oração ---
+
+  /// O livro de meditações diárias escolhido (id em `obrasMeditacao`).
+  int? get meditacaoObra => _p.getInt('meditacaoObra');
+  set meditacaoObra(int? v) {
+    if (v == null) {
+      _p.remove('meditacaoObra');
+    } else {
+      _p.setInt('meditacaoObra', v);
+    }
+    notifyListeners();
+  }
+
+  bool get meditacaoLidaHoje =>
+      _p.getString('meditacaoLidaEm') == _diaDeHoje(DateTime.now());
+
+  void marcarMeditacaoLida() {
+    _p.setString('meditacaoLidaEm', _diaDeHoje(DateTime.now()));
+    notifyListeners();
+  }
+
+  bool get oreiHoje => _p.getString('oreiEm') == _diaDeHoje(DateTime.now());
+  set oreiHoje(bool v) {
+    if (v) {
+      _p.setString('oreiEm', _diaDeHoje(DateTime.now()));
+    } else {
+      _p.remove('oreiEm');
+    }
+    notifyListeners();
+  }
+
   // --- cópia de segurança ---
 
   /// Tudo o que a pessoa criou, para guardar fora do aparelho: marcações,
@@ -575,6 +778,9 @@ class Ajustes extends ChangeNotifier {
     'plano': ?_planoItem,
     'guiaBiblioteca': GuiaBiblioteca.instancia.exportar(),
     'respostasEstudos': respostasEstudos,
+    'diasLeitura': diasDeLeitura.toList()..sort(),
+    'capitulosLidos': _ordenarCapitulos(capitulosLidos),
+    'oracoes': {for (final o in oracoes) '${o.id}': o.paraMapa()},
   };
 
   /// O plano em andamento como vai na cópia e na nuvem, ou null.
@@ -720,8 +926,19 @@ class Ajustes extends ChangeNotifier {
         }
       }
     }
+    final medalhasAntes = caminhada.ganhas();
+    _somar(chaveDias, dados['diasLeitura']);
+    _somar(chaveCapitulos, dados['capitulosLidos']);
+    final os = dados['oracoes'];
+    if (os is Map) {
+      for (final e in os.entries) {
+        final o = Oracao.deMapa(int.tryParse('${e.key}') ?? 0, e.value);
+        if (o != null) _juntarOracao(o);
+      }
+    }
     notifyListeners();
     if (antes != null) _avisar(itensDiferentes(antes, itens()));
+    _verMedalhas(medalhasAntes);
     return (marcacoes: nMarcas, anotacoes: nNotas, realces: nRealces);
   }
 
@@ -751,6 +968,10 @@ class Ajustes extends ChangeNotifier {
       chaveAnotacao(k.$1, k.$2, k.$3): texto,
     for (final r in todosRealces()) r.chave: r.paraMapa(),
     chavePlano: ?_planoItem,
+    if (diasDeLeitura.isNotEmpty) chaveDias: diasDeLeitura.toList()..sort(),
+    if (capitulosLidos.isNotEmpty)
+      chaveCapitulos: _ordenarCapitulos(capitulosLidos),
+    for (final o in oracoes) o.chave: o.paraMapa(),
   };
 
   /// Grava, como estão, itens vindos da nuvem (null apaga o item), sem avisar
@@ -789,6 +1010,18 @@ class Ajustes extends ChangeNotifier {
           }
         case chavePlano when n.isEmpty:
           _aplicarPlano(valor);
+        // Só crescem: o que veio se soma ao daqui.
+        case chaveDias || chaveCapitulos when n.isEmpty:
+          _somar(chave, valor);
+        case 'o' when n.length == 1:
+          if (valor == null) {
+            _p.remove('$_prefixoOracao${n[0]}');
+          } else {
+            final o = Oracao.deMapa(n[0], valor);
+            if (o != null) {
+              _p.setString('$_prefixoOracao${o.id}', jsonEncode(o.paraMapa()));
+            }
+          }
       }
     }
     if (marcas != null) {
@@ -844,7 +1077,8 @@ class Ajustes extends ChangeNotifier {
     final marcacoes = <String, Object?>{};
     final anotacoes = <String, Object?>{};
     final realces = <Object?>[];
-    Object? plano;
+    final oracoes = <String, Object?>{};
+    Object? plano, dias, capitulos;
     for (final MapEntry(key: chave, value: valor) in itens.entries) {
       final partes = chave.split('_');
       final posicao = partes.skip(1).join(':');
@@ -857,6 +1091,12 @@ class Ajustes extends ChangeNotifier {
           realces.add(valor);
         case chavePlano:
           plano = valor;
+        case chaveDias:
+          dias = valor;
+        case chaveCapitulos:
+          capitulos = valor;
+        case 'o':
+          oracoes[posicao] = valor;
       }
     }
     importar({
@@ -865,6 +1105,9 @@ class Ajustes extends ChangeNotifier {
       'anotacoes': anotacoes,
       'realces': realces,
       'plano': ?plano,
+      'diasLeitura': ?dias,
+      'capitulosLidos': ?capitulos,
+      'oracoes': oracoes,
     });
   }
 

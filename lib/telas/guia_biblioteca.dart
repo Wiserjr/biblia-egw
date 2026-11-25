@@ -38,48 +38,8 @@ class _TelaGuiaBibliotecaState extends State<TelaGuiaBiblioteca> {
     }
   }
 
-  Future<void> _ler(Obra obra, {int? pagina}) async {
-    final bib = Biblioteca.instancia;
-    if (!bib.disponivel(obra)) {
-      final baixar = await showDialog<bool>(
-        context: context,
-        builder: (c) => AlertDialog(
-          title: Text('Baixar ${obra.titulo}?'),
-          content: Text(
-            'O livro precisa estar no aparelho para ler. Download: ${tamanhoLegivel(obra.bytes)}.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(c, false),
-              child: const Text('Agora não'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(c, true),
-              child: const Text('Baixar'),
-            ),
-          ],
-        ),
-      );
-      if (baixar != true) return;
-      try {
-        await bib.baixar(obra);
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text('$e')));
-        }
-        return;
-      }
-    }
-    if (!mounted) return;
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) =>
-            TelaPdf(obra: obra, pagina: pagina ?? 0, retomar: pagina == null),
-      ),
-    );
-  }
+  Future<void> _ler(Obra obra, {int? pagina}) =>
+      lerObra(context, obra, pagina: pagina);
 
   Future<void> _novoPlano(
     Map<int, Obra> obras,
@@ -366,4 +326,51 @@ class _TelaGuiaBibliotecaState extends State<TelaGuiaBiblioteca> {
       ],
     );
   }
+}
+
+/// Abre o livro [obra] na [pagina] (a partir de 0; sem ela, onde a pessoa
+/// parou), oferecendo baixar antes se ele ainda não estiver no aparelho.
+/// Devolve false se o livro não abriu.
+Future<bool> lerObra(BuildContext context, Obra obra, {int? pagina}) async {
+  final bib = Biblioteca.instancia;
+  if (!bib.disponivel(obra)) {
+    final baixar = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text('Baixar ${obra.titulo}?'),
+        content: Text(
+          'O livro precisa estar no aparelho para ler. Download: ${tamanhoLegivel(obra.bytes)}.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Agora não'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Baixar'),
+          ),
+        ],
+      ),
+    );
+    if (baixar != true) return false;
+    try {
+      await bib.baixar(obra);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
+      }
+      return false;
+    }
+  }
+  if (!context.mounted) return false;
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) =>
+          TelaPdf(obra: obra, pagina: pagina ?? 0, retomar: pagina == null),
+    ),
+  );
+  return true;
 }
