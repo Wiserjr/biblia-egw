@@ -124,6 +124,32 @@ class Ajustes extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Na ARA, ouvir a narração com voz neural pela internet (quando o livro
+  /// já foi narrado); desligado, lê sempre a voz do aparelho.
+  bool get narracaoNeural => _p.getBool('narracaoNeural') ?? true;
+  set narracaoNeural(bool v) {
+    _p.setBool('narracaoNeural', v);
+    notifyListeners();
+  }
+
+  /// A voz escolhida ("nome|idioma"), ou null para a padrão do aparelho.
+  /// Fica só neste aparelho: as vozes mudam de um para outro.
+  (String, String)? get vozEscolhida {
+    final s = _p.getString('vozEscolhida');
+    final i = s?.lastIndexOf('|') ?? -1;
+    if (s == null || i <= 0) return null;
+    return (s.substring(0, i), s.substring(i + 1));
+  }
+
+  set vozEscolhida((String, String)? v) {
+    if (v == null) {
+      _p.remove('vozEscolhida');
+    } else {
+      _p.setString('vozEscolhida', '${v.$1}|${v.$2}');
+    }
+    notifyListeners();
+  }
+
   // --- aviso do versículo do dia ---
 
   bool get avisoVersiculoDoDia => _p.getBool('avisoVersiculoDoDia') ?? false;

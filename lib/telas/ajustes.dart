@@ -14,6 +14,7 @@ import 'inicio.dart' show TelaInicio;
 import 'largura_texto.dart' show larguraMinimaParaAjuste;
 import 'texto_biblico.dart';
 import 'tema.dart';
+import 'vozes.dart';
 
 class TelaAjustes extends StatefulWidget {
   const TelaAjustes({super.key});
@@ -182,6 +183,25 @@ class _TelaAjustesState extends State<TelaAjustes> {
             ],
             if (LeituraVoz.suportada) ...[
               _titulo(context, 'Ouvir o capítulo'),
+              SwitchListTile(
+                title: const Text('Narração com voz neural (ARA)'),
+                subtitle: const Text(
+                  'Na ARA, ouve uma voz bem mais natural, tocada pela '
+                  'internet (cerca de 20 MB por hora). Sem internet, ou nos '
+                  'livros ainda não narrados, lê a voz do aparelho.',
+                ),
+                value: aj.narracaoNeural,
+                onChanged: (v) => aj.narracaoNeural = v,
+              ),
+              ListTile(
+                title: const Text('Voz'),
+                subtitle: Text(descreverVozEscolhida()),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TelaVozes()),
+                ),
+              ),
               ListTile(
                 title: const Text('Velocidade da voz'),
                 trailing: DropdownButton<double>(

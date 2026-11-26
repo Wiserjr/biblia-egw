@@ -207,6 +207,27 @@ python ferramentas/construir_estudo.py
 O app avisa, junto de cada nota, que ela é gerada por IA. **Revise antes de
 publicar**, a começar pelos livros que mais serão lidos.
 
+## Narração da Bíblia (voz neural)
+
+Na ARA, o app toca pela internet a narração de cada capítulo
+(`lib/dados/narracao.dart`). Os áudios são gerados no PC com
+`ferramentas/narrar_biblia.py`, que usa o edge-tts (vozes neurais do Microsoft
+Edge, sem chave), e ficam nas releases `narracao-ara-at` e `narracao-ara-nt`
+(o GitHub aceita até 1.000 arquivos por release). Cada livro tem um MP3 por
+capítulo (`NN-CCC.mp3`) e um `tempos-NN.json` com o início de cada versículo.
+
+```
+pip install edge-tts
+python ferramentas/narrar_biblia.py --amostra          # Salmo 23, para ouvir antes
+python ferramentas/narrar_biblia.py Genesis Joao --publicar
+python ferramentas/narrar_biblia.py --tudo --publicar  # a Bíblia inteira (~85 h, ~1,8 GB)
+```
+
+Pode parar e rodar de novo: o que já foi gerado (em `ferramentas/cache/narracao`)
+e o que já foi enviado não são refeitos. A voz padrão é `pt-BR-AntonioNeural`;
+`--vozes` lista as outras e `--voz` escolhe. Um livro ainda não publicado é
+lido pela voz do aparelho. A narração não depende de versão nova do app.
+
 ## Testes
 
 ```bash

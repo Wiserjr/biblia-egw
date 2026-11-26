@@ -81,6 +81,7 @@ class MainActivity : FlutterActivity() {
                 "precisaLiberarFonte" -> result.success(Atualizador.precisaLiberarFonte(this))
                 "liberarFonte" -> liberarFonte(result)
                 "conferirApk" -> result.success(Atualizador.conferir(this))
+                "baixarVozes" -> result.success(abrirVozes())
                 "instalar" -> {
                     if (!Atualizador.arquivo(this).exists()) {
                         result.error("sem_arquivo", "A atualização não foi baixada.", null)
@@ -95,6 +96,24 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+    }
+
+    /**
+     * Abre a tela do motor de voz onde se baixam vozes (ACTION_INSTALL_TTS_DATA)
+     * ou, se o aparelho não tiver, os ajustes de texto para voz do Android.
+     */
+    private fun abrirVozes(): Boolean {
+        for (acao in listOf(
+            android.speech.tts.TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA,
+            "com.android.settings.TTS_SETTINGS",
+        )) {
+            try {
+                startActivity(Intent(acao).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                return true
+            } catch (_: Exception) {
+            }
+        }
+        return false
     }
 
     /**

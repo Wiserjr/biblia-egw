@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui' show IsolateNameServer;
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -11,7 +12,9 @@ import 'ajustes.dart';
 import 'biblia.dart';
 import 'lembrete.dart';
 import 'modelos.dart';
+import 'narracao.dart';
 import 'referencias.dart';
+import 'vozes.dart';
 
 /// Leitura do capítulo em voz alta, com a voz do próprio aparelho (funciona
 /// sem internet quando a voz em português está instalada).
@@ -100,6 +103,7 @@ class LeituraVoz extends ChangeNotifier {
     Ajustes.instancia.velocidadeVoz = v;
     notifyListeners();
     await _tts?.setSpeechRate(taxaDaVelocidade(v));
+    if (tocandoGravado) await _player?.setPlaybackRate(v);
   }
 
   Future<FlutterTts> _motor() async {
@@ -109,7 +113,49 @@ class LeituraVoz extends ChangeNotifier {
     await tts.awaitSpeakCompletion(true);
     await tts.setLanguage('pt-BR');
     await tts.setSpeechRate(taxaDaVelocidade(Ajustes.instancia.velocidadeVoz));
+    await _aplicarVoz(tts);
     return _tts = tts;
+  }
+
+  // --- voz ---
+
+  /// As vozes em português do aparelho, a melhor primeiro.
+  Future<List<VozTts>> vozes() async {
+    try {
+      final tts = await _motor();
+      return vozesEmPortugues(await tts.getVoices);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Passa a ler com [voz] (null volta à padrão do aparelho); vale a partir
+  /// do próximo versículo.
+  Future<void> escolherVoz(VozTts? voz) async {
+    Ajustes.instancia.vozEscolhida = voz == null ? null : (voz.nome, voz.local);
+    notifyListeners();
+    final tts = _tts;
+    if (tts != null) await _aplicarVoz(tts);
+  }
+
+  /// Lê a frase de amostra com [voz], que fica escolhida.
+  Future<void> ouvirAmostra(VozTts? voz) async {
+    await escolherVoz(voz);
+    await falar(amostraDeVoz);
+  }
+
+  Future<void> _aplicarVoz(FlutterTts tts) async {
+    final v = Ajustes.instancia.vozEscolhida;
+    try {
+      if (v != null) {
+        await tts.setVoice({'name': v.$1, 'locale': v.$2});
+        return;
+      }
+      await tts.clearVoice();
+    } catch (_) {
+      // O Windows não tem clearVoice: escolher o idioma volta à voz padrão.
+    }
+    if (v == null) await tts.setLanguage('pt-BR');
   }
 
   /// Lê o capítulo na tradução [versaoId], do versículo [aPartirDe] em
@@ -140,6 +186,22 @@ class LeituraVoz extends ChangeNotifier {
         _versiculo = 0;
         notifyListeners();
         await _mostrarNotificacao();
+        final gravado = Ajustes.instancia.narracaoNeural
+            ? await Narracao.instancia.capitulo(versaoId, l, c)
+            : null;
+        if (rodada != _rodada) return;
+        if (gravado != null && await _tocarGravado(rodada, gravado, desde)) {
+          if (rodada != _rodada) return;
+          final prox = proximoCapitulo(l, c);
+          if (!Ajustes.instancia.vozContinua || _pararNoFim || prox == null) {
+            terminou = true;
+            return;
+          }
+          (l, c) = (prox.livro, prox.capitulo);
+          desde = null;
+          continue;
+        }
+        if (rodada != _rodada) return;
         final versiculos = await Biblia.instancia.capitulo(versaoId, l, c);
         if (rodada != _rodada) return;
         await tts.speak(
@@ -170,12 +232,83 @@ class LeituraVoz extends ChangeNotifier {
     }
   }
 
+  // --- narração gravada ---
+
+  AudioPlayer? _player;
+
+  /// Mantém o aparelho acordado tocando com a tela apagada (o serviço da
+  /// notificação "Lendo..." mantém o app vivo).
+  static final _contextoAudio = AudioContextConfig(
+    stayAwake: true,
+    focus: AudioContextConfigFocus.gain,
+  ).build();
+  void Function()? _fimGravado;
+
+  /// Se está tocando um capítulo gravado (e não a voz do aparelho).
+  bool get tocandoGravado => _fimGravado != null;
+
+  /// Toca pela internet o capítulo gravado do versículo [desde] (do começo, se null),
+  /// acompanhando o versículo. Devolve false se não conseguiu tocar (aí a
+  /// voz do aparelho lê); true quando terminou ou foi interrompido.
+  Future<bool> _tocarGravado(int rodada, CapituloGravado g, int? desde) async {
+    final player = _player ??= AudioPlayer();
+    final fim = Completer<void>();
+    void terminar() {
+      if (!fim.isCompleted) fim.complete();
+    }
+
+    final subs = [
+      player.onPositionChanged.listen((pos) {
+        if (rodada != _rodada) return;
+        final v = g.versiculoEm(pos.inMilliseconds);
+        if (v != _versiculo) {
+          _versiculo = v;
+          notifyListeners();
+        }
+      }),
+      player.onPlayerComplete.listen((_) => terminar()),
+    ];
+    _fimGravado = terminar;
+    notifyListeners();
+    try {
+      await player.setAudioContext(_contextoAudio);
+      await player.play(
+        UrlSource(g.endereco, mimeType: 'audio/mpeg'),
+        position: desde == null
+            ? null
+            : Duration(milliseconds: g.inicioDe(desde)),
+      );
+      await player.setPlaybackRate(Ajustes.instancia.velocidadeVoz);
+      if (rodada != _rodada) terminar();
+      await fim.future;
+      return true;
+    } catch (_) {
+      return rodada != _rodada;
+    } finally {
+      for (final s in subs) {
+        await s.cancel();
+      }
+      if (_fimGravado == terminar) _fimGravado = null;
+    }
+  }
+
+  Future<void> _pararGravado() async {
+    final fim = _fimGravado;
+    _fimGravado = null;
+    if (fim == null) return;
+    try {
+      await _player?.stop();
+    } catch (_) {}
+    fim();
+  }
+
   /// Para no versículo em leitura, guardando o lugar para [continuar].
   Future<void> pausar() async {
     if (!lendo || _pausada) return;
     _rodada++;
     _pausada = true;
     notifyListeners();
+    await _pararGravado();
     await _tts?.stop();
     await _mostrarNotificacao();
   }
@@ -218,6 +351,7 @@ class LeituraVoz extends ChangeNotifier {
     if (!lendo && !_falandoTrecho) return;
     _rodada++;
     _limpar();
+    await _pararGravado();
     await _tts?.stop();
   }
 
@@ -226,6 +360,7 @@ class LeituraVoz extends ChangeNotifier {
   Future<void> _interromper() async {
     _rodada++;
     _falandoTrecho = false;
+    await _pararGravado();
     await _tts?.stop();
   }
 
