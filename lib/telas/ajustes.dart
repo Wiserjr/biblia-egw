@@ -183,6 +183,16 @@ class _TelaAjustesState extends State<TelaAjustes> {
             ],
             if (LeituraVoz.suportada) ...[
               _titulo(context, 'Ouvir o capítulo'),
+              SwitchListTile(
+                title: const Text('Narração com voz neural (ARA)'),
+                subtitle: const Text(
+                  'Na ARA, ouve uma voz bem mais natural, tocada pela '
+                  'internet (cerca de 20 MB por hora). Sem internet, ou nos '
+                  'livros ainda não narrados, lê a voz do aparelho.',
+                ),
+                value: aj.narracaoNeural,
+                onChanged: (v) => aj.narracaoNeural = v,
+              ),
               ListTile(
                 title: const Text('Voz'),
                 subtitle: Text(descreverVozEscolhida()),

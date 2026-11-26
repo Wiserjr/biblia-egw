@@ -1,5 +1,6 @@
 ## Bíblia de Estudo 1.15.0
 
+- **A Bíblia narrada com voz neural.** Na ARA, *Ouvir o capítulo* passa a tocar pela internet uma narração com voz neural, bem mais natural que a voz do aparelho, como o YouVersion faz. O leitor acompanha o versículo narrado, e a velocidade, a pausa, o timer para dormir e a passagem para o próximo capítulo funcionam como antes. O app não fica maior: cada capítulo vem da internet na hora (cerca de 20 MB por hora de áudio). Sem internet, ou nos livros que ainda não foram narrados, quem lê é a voz do aparelho. Para desligar, use *Ajustes → Ouvir o capítulo → Narração com voz neural*. A narração vai sendo publicada livro a livro.
 - **Escolha a voz que lê a Bíblia.** Em *Ajustes → Ouvir o capítulo → Voz*, o app lista as vozes em português do aparelho, as de melhor qualidade primeiro. Toque numa para ouvir uma amostra; a última que você tocar passa a ler os capítulos. No Android, as vozes marcadas "mais natural, usa internet" são as do Google, bem menos robóticas (sem internet, o aparelho usa uma voz comum). Em **Baixar mais vozes** você instala outras vozes do português do Brasil e volta para escolher. No Windows, as vozes novas entram por *Configurações → Hora e idioma → Fala*.
 
 ## Bíblia de Estudo 1.14.0

@@ -124,6 +124,14 @@ class Ajustes extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Na ARA, ouvir a narração com voz neural pela internet (quando o livro
+  /// já foi narrado); desligado, lê sempre a voz do aparelho.
+  bool get narracaoNeural => _p.getBool('narracaoNeural') ?? true;
+  set narracaoNeural(bool v) {
+    _p.setBool('narracaoNeural', v);
+    notifyListeners();
+  }
+
   /// A voz escolhida ("nome|idioma"), ou null para a padrão do aparelho.
   /// Fica só neste aparelho: as vozes mudam de um para outro.
   (String, String)? get vozEscolhida {

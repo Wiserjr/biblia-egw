@@ -3,6 +3,9 @@
          atualização. O Flutter só adiciona esta permissão nos manifestos de
          debug e profile; no release ela precisa estar declarada aqui. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- A narração da Bíblia tocada pela internet continua com a tela apagada
+         (audioplayers com stayAwake, ver lib/dados/leitura_voz.dart). -->
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <!-- Atualização automática (ver Atualizador.kt): o app entrega o APK novo
          ao instalador do sistema, que sempre pede a confirmação da pessoa. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
