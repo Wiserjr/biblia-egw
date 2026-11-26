@@ -14,6 +14,7 @@ import 'inicio.dart' show TelaInicio;
 import 'largura_texto.dart' show larguraMinimaParaAjuste;
 import 'texto_biblico.dart';
 import 'tema.dart';
+import 'vozes.dart';
 
 class TelaAjustes extends StatefulWidget {
   const TelaAjustes({super.key});
@@ -182,6 +183,15 @@ class _TelaAjustesState extends State<TelaAjustes> {
             ],
             if (LeituraVoz.suportada) ...[
               _titulo(context, 'Ouvir o capítulo'),
+              ListTile(
+                title: const Text('Voz'),
+                subtitle: Text(descreverVozEscolhida()),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TelaVozes()),
+                ),
+              ),
               ListTile(
                 title: const Text('Velocidade da voz'),
                 trailing: DropdownButton<double>(
